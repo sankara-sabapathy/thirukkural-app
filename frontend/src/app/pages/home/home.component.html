@@ -1,0 +1,120 @@
+<app-header></app-header>
+
+<main class="page-main">
+    <section class="hero-section">
+        <div class="container">
+            <div class="hero-content fade-in">
+                <div class="hero-badge">✨ Daily Wisdom Delivered</div>
+                <h1 class="hero-title">
+                    Start Your Day with<br>
+                    <span class="gradient-text">Thirukkural</span>
+                </h1>
+                <p class="hero-description">
+                    Join thousands of subscribers receiving timeless Tamil wisdom every morning.
+                    Explore 1,330 couplets of profound insights on virtue, wealth, and love.
+                </p>
+
+                <div class="hero-cta">
+                    <button class="btn btn-primary" (click)="scrollToSubscribe()">
+                        Start Daily Wisdom
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M10 4l6 6-6 6M4 10h12" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                    <a href="https://en.wikipedia.org/wiki/Tirukku%E1%B9%9Ba%E1%B8%B7" target="_blank"
+                        class="btn btn-outline">
+                        Learn More
+                    </a>
+                </div>
+
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">1,330</div>
+                        <div class="stat-label">Couplets</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <div class="stat-number">133</div>
+                        <div class="stat-label">Chapters</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <div class="stat-number">2,000+</div>
+                        <div class="stat-label">Years of Legacy</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Decorative background elements -->
+        <div class="hero-glow glow-1"></div>
+        <div class="hero-glow glow-2"></div>
+    </section>
+
+    <section class="features-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Why Subscribe?</h2>
+                <p>Experience the depth of Tamil literature in a modern format.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card card">
+                    <div class="feature-icon-wrapper">
+                        <span class="feature-icon">📖</span>
+                    </div>
+                    <h3>Ancient Wisdom</h3>
+                    <p>Timeless insights from one of the greatest works in Tamil literature, curated for modern life.
+                    </p>
+                </div>
+
+                <div class="feature-card card">
+                    <div class="feature-icon-wrapper">
+                        <span class="feature-icon">⚡</span>
+                    </div>
+                    <h3>Daily Inspiration</h3>
+                    <p>A fresh couplet delivered to your inbox every morning at 9 AM to start your day with purpose.</p>
+                </div>
+
+                <div class="feature-card card">
+                    <div class="feature-icon-wrapper">
+                        <span class="feature-icon">🛡️</span>
+                    </div>
+                    <h3>Privacy First</h3>
+                    <p>Secure Google OAuth authentication. We respect your privacy and never share your data.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="subscribe-section" id="subscribe">
+        <div class="container">
+            <div class="subscribe-wrapper">
+                <ng-container *ngIf="user$ | async as user; else loginPrompt">
+                    <div class="subscribe-active fade-in">
+                        <app-subscription [email]="user.attributes.email"></app-subscription>
+                    </div>
+                </ng-container>
+
+                <ng-template #loginPrompt>
+                    <div class="subscribe-cta card fade-in">
+                        <div class="cta-content">
+                            <h2>Ready to get started?</h2>
+                            <p>Sign in with your Google account to begin your journey of wisdom.</p>
+                            <div class="cta-actions">
+                                <div class="status-badge">
+                                    <span class="status-dot"></span>
+                                    Sign in required
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </ng-template>
+            </div>
+        </div>
+    </section>
+</main>
+
+
+<app-footer></app-footer>

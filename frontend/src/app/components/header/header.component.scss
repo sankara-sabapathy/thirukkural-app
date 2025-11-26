@@ -1,0 +1,98 @@
+.main-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(15, 15, 30, 0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 0;
+}
+
+.main-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(15, 15, 30, 0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 0;
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+}
+
+.brand-logo {
+    height: 36px;
+    width: auto;
+    border-radius: 8px;
+    margin-right: 0.75rem;
+}
+
+.brand-text {
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.btn-login {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem !important;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)) !important;
+    color: white !important;
+    border-radius: 10px !important;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    text-transform: none !important;
+
+    &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+}
+
+.user-menu {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.875rem;
+}
+
+.btn-logout {
+    color: var(--text-secondary) !important;
+    font-size: 0.875rem;
+
+    &:hover {
+        color: var(--text-primary) !important;
+    }
+}

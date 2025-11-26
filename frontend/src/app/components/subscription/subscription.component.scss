@@ -1,0 +1,124 @@
+.subscription-wrapper {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.subscription-card {
+    padding: 3rem 2rem !important;
+    text-align: center;
+
+    &.success {
+        border-color: rgba(16, 185, 129, 0.3);
+    }
+}
+
+.card-header {
+    margin-bottom: 2rem;
+
+    h3 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+    }
+
+    p {
+        font-size: 1rem;
+        color: var(--text-secondary);
+    }
+}
+
+.card-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.btn-subscribe {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 2.5rem !important;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)) !important;
+    color: white !important;
+    border-radius: 12px !important;
+    font-weight: 600;
+    font-size: 1rem;
+    text-transform: none !important;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    }
+}
+
+.email-info {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+
+    strong {
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+}
+
+.success-icon {
+    margin-bottom: 1.5rem;
+
+    svg {
+        animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+}
+
+.subscription-card.success {
+    h3 {
+        font-size: 1.75rem;
+        margin-bottom: 1rem;
+        color: #10b981;
+    }
+
+    p {
+        margin-bottom: 1.5rem;
+        font-size: 1rem;
+
+        strong {
+            color: var(--text-primary);
+        }
+    }
+}
+
+.btn-unsubscribe {
+    color: var(--text-secondary) !important;
+    font-size: 0.9375rem;
+    padding: 0.5rem 1rem !important;
+
+    &:hover {
+        color: #ef4444 !important;
+        background: rgba(239, 68, 68, 0.1) !important;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .subscription-card {
+        padding: 2rem 1.5rem !important;
+    }
+
+    .card-header h3 {
+        font-size: 1.5rem;
+    }
+}

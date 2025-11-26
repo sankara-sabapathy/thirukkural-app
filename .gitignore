@@ -1,0 +1,30 @@
+# Node modules
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Build output
+backend/dist/
+frontend/dist/
+
+# Environment files
+.env
+backend/.env
+frontend/.env
+
+# CDK assets
+cdk.out/
+
+# Local IDE / OS files
+.DS_Store
+.idea/
+.vscode/
+
+# Generated files
+*.log
+*.tsbuildinfo
+
+# GPT ignore (optional, already present but keep out of repo)
+.gptignore
+
+implementation_plan.md

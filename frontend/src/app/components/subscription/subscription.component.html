@@ -1,0 +1,32 @@
+<div class="subscription-wrapper">
+    <div class="subscription-card card" *ngIf="!subscribed">
+        <div class="card-header">
+            <h3>Subscribe to Daily Thirukkural</h3>
+            <p>Get a carefully selected couplet delivered to your inbox every morning</p>
+        </div>
+        <div class="card-body">
+            <button mat-raised-button class="btn-subscribe" (click)="subscribe()">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M2 5l8 5 8-5M2 5v10l8 5 8-5V5" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" />
+                </svg>
+                Subscribe Now
+            </button>
+            <p class="email-info">Subscribing as <strong>{{ email }}</strong></p>
+        </div>
+    </div>
+
+    <div class="subscription-card card success" *ngIf="subscribed">
+        <div class="success-icon">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <circle cx="24" cy="24" r="22" stroke="#10b981" stroke-width="2" />
+                <path d="M14 24l8 8 16-16" stroke="#10b981" stroke-width="3" stroke-linecap="round" />
+            </svg>
+        </div>
+        <h3>You're All Set!</h3>
+        <p>Daily wisdom will be delivered to <strong>{{ email }}</strong></p>
+        <button mat-button class="btn-unsubscribe" (click)="unsubscribe()">
+            Unsubscribe
+        </button>
+    </div>
+</div>
