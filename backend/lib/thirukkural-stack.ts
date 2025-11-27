@@ -11,7 +11,6 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
-import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as path from 'path';
 
 export class ThirukkuralStack extends cdk.Stack {
@@ -217,22 +216,12 @@ export class ThirukkuralStack extends cdk.Stack {
             }
         }));
 
-        // Deploy Frontend Assets
-        // Note: This expects the frontend to be built at ../frontend/dist/thirukkural-app
-        // We use a try-catch or check existence in a real pipeline, but for CDK we assume it exists or create a placeholder.
-        // For this open-source setup, we will point to the dist folder.
-        new s3deploy.BucketDeployment(this, 'DeployWebsite', {
-            sources: [s3deploy.Source.asset(path.join(__dirname, '../../../frontend/dist/thirukkural-app'))],
-            destinationBucket: websiteBucket,
-            distribution,
-            distributionPaths: ['/*'], // Invalidate cache
-        });
-
         // Outputs
         new cdk.CfnOutput(this, 'ApiUrl', { value: api.url });
         new cdk.CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
         new cdk.CfnOutput(this, 'UserPoolClientId', { value: userPoolClient.userPoolClientId });
         new cdk.CfnOutput(this, 'UserPoolDomain', { value: userPoolDomain.domainName });
         new cdk.CfnOutput(this, 'WebsiteUrl', { value: distribution.distributionDomainName });
+        new cdk.CfnOutput(this, 'WebsiteBucketName', { value: websiteBucket.bucketName }); // Export bucket name for frontend deploy
     }
 }
