@@ -52,9 +52,32 @@ export class ThirukkuralStack extends cdk.Stack {
             autoVerify: { email: true },
         });
 
+        // Google Identity Provider setup
+        const googleClientId = process.env.GOOGLE_CLIENT_ID || 'PLACEHOLDER_CLIENT_ID';
+        const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || 'PLACEHOLDER_CLIENT_SECRET';
+
+        let googleProvider: cognito.UserPoolIdentityProviderGoogle | undefined;
+        if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+            googleProvider = new cognito.UserPoolIdentityProviderGoogle(this, 'GoogleIdP', {
+                clientId: googleClientId,
+                clientSecretValue: cdk.SecretValue.unsafePlainText(googleClientSecret),
+                userPool,
+                scopes: ['profile', 'email', 'openid'],
+                attributeMapping: {
+                    email: cognito.ProviderAttribute.GOOGLE_EMAIL,
+                    givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
+                    familyName: cognito.ProviderAttribute.GOOGLE_FAMILY_NAME,
+                    profilePicture: cognito.ProviderAttribute.GOOGLE_PICTURE,
+                },
+            });
+        }
+
         const userPoolClient = new cognito.UserPoolClient(this, 'UserPoolClient', {
             userPool,
             generateSecret: false, // SPA client
+            supportedIdentityProviders: [
+                cognito.UserPoolClientIdentityProvider.GOOGLE,
+            ],
             oAuth: {
                 flows: {
                     authorizationCodeGrant: true,
@@ -71,24 +94,9 @@ export class ThirukkuralStack extends cdk.Stack {
             }
         });
 
-        // Placeholder for Google Client ID/Secret
-        const googleClientId = process.env.GOOGLE_CLIENT_ID || 'PLACEHOLDER_CLIENT_ID';
-        const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || 'PLACEHOLDER_CLIENT_SECRET';
-
-        if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-            const googleProvider = new cognito.UserPoolIdentityProviderGoogle(this, 'GoogleIdP', {
-                clientId: googleClientId,
-                clientSecretValue: cdk.SecretValue.unsafePlainText(googleClientSecret), // Use clientSecretValue
-                userPool,
-                scopes: ['profile', 'email', 'openid'],
-                attributeMapping: {
-                    email: cognito.ProviderAttribute.GOOGLE_EMAIL,
-                    givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
-                    familyName: cognito.ProviderAttribute.GOOGLE_FAMILY_NAME,
-                    profilePicture: cognito.ProviderAttribute.GOOGLE_PICTURE,
-                },
-            });
-            userPool.registerIdentityProvider(googleProvider);
+        // Add dependency to ensure Google provider is created before the client
+        if (googleProvider) {
+            userPoolClient.node.addDependency(googleProvider);
         }
 
         const userPoolDomain = userPool.addDomain('UserPoolDomain', {
