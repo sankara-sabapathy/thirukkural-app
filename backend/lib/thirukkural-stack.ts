@@ -73,7 +73,7 @@ export class ThirukkuralStack extends cdk.Stack {
         if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             const googleProvider = new cognito.UserPoolIdentityProviderGoogle(this, 'GoogleIdP', {
                 clientId: googleClientId,
-                clientSecret: googleClientSecret,
+                clientSecretValue: cdk.SecretValue.unsafePlainText(googleClientSecret), // Use clientSecretValue
                 userPool,
                 scopes: ['profile', 'email', 'openid'],
                 attributeMapping: {
@@ -109,12 +109,12 @@ export class ThirukkuralStack extends cdk.Stack {
         };
 
         const userProfileFn = new nodejs.NodejsFunction(this, 'UserProfileFn', {
-            entry: path.join(__dirname, '../../src/handlers/user-profile.ts'),
+            entry: path.join(__dirname, '../src/handlers/user-profile.ts'), // Corrected path
             ...nodeJsProps,
         });
 
         const sendEmailFn = new nodejs.NodejsFunction(this, 'SendDailyEmailFn', {
-            entry: path.join(__dirname, '../../src/handlers/send-daily-email.ts'),
+            entry: path.join(__dirname, '../src/handlers/send-daily-email.ts'), // Corrected path
             timeout: cdk.Duration.minutes(5), // Allow more time for sending emails
             ...nodeJsProps,
         });
