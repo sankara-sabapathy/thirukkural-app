@@ -109,6 +109,35 @@ cd backend
 npx ts-node scripts/seed.ts
 ```
 
+## 🔄 CI/CD Pipeline Setup (GitHub Actions)
+
+This project includes a pre-configured GitHub Actions workflow (`.github/workflows/backend-deploy.yml`) for automated deployments.
+
+To enable it, go to your GitHub Repository -> **Settings** -> **Secrets and variables** -> **Actions** and add the following secrets:
+
+| Secret Name | Value Description |
+| :--- | :--- |
+| `AWS_ACCESS_KEY_ID` | Your AWS Access Key ID. |
+| `AWS_SECRET_ACCESS_KEY` | Your AWS Secret Access Key. |
+| `SES_SENDER_EMAIL` | The verified email address in AWS SES. |
+| `GOOGLE_CLIENT_ID` | (Optional) Google OAuth Client ID. |
+| `GOOGLE_CLIENT_SECRET` | (Optional) Google OAuth Client Secret. |
+
+*The pipeline is configured to deploy to the `ap-south-1` (Mumbai) region by default.*
+
+## ⚙️ Frontend Configuration Plan
+
+After the backend is deployed, you must update the frontend environment files to connect to your new AWS resources.
+
+| Config Field | Source (CDK Output) | File to Update |
+| :--- | :--- | :--- |
+| `cognito.userPoolId` | `ThirukkuralStack.UserPoolId` | `src/environments/environment.ts` |
+| `cognito.userPoolWebClientId` | `ThirukkuralStack.UserPoolClientId` | `src/environments/environment.ts` |
+| `cognito.domain` | `ThirukkuralStack.UserPoolDomain` | `src/environments/environment.ts` |
+| `api.baseUrl` | `ThirukkuralStack.ApiUrl` | `src/environments/environment.ts` |
+
+**Note**: For production builds (`npm run build --prod`), update `src/environments/environment.prod.ts` with the same values, but ensure `redirectSignIn` and `redirectSignOut` point to your production domain (e.g., `https://your-domain.com/callback`).
+
 ## 🔒 Security & Best Practices
 
 *   **S3 & CloudFront**: The S3 bucket is **private** (`BlockPublicAccess: BLOCK_ALL`). Access is restricted to CloudFront only using **Origin Access Control (OAC)** and a strict Bucket Policy.
