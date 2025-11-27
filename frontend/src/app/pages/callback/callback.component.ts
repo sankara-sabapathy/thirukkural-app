@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { getCurrentUser } from 'aws-amplify/auth';
 
 @Component({
     selector: 'app-callback',
@@ -48,13 +49,30 @@ export class CallbackComponent implements OnInit {
     ) { }
 
     async ngOnInit() {
-        // Give Amplify a moment to process the OAuth callback
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Wait for Amplify to process the OAuth callback
+        // Retry up to 10 times with 500ms delay
+        let attempts = 0;
+        const maxAttempts = 10;
 
-        // Check if user is authenticated
-        await this.authService.checkUser();
-
-        // Redirect to home page
-        this.router.navigate(['/']);
+        while (attempts < maxAttempts) {
+            try {
+                await getCurrentUser();
+                // User is authenticated, update auth service
+                await this.authService.checkUser();
+                // Redirect to home
+                this.router.navigate(['/']);
+                return;
+            } catch (error) {
+                attempts++;
+                if (attempts >= maxAttempts) {
+                    console.error('Failed to authenticate after callback', error);
+                    // Redirect anyway, let the app handle unauthenticated state
+                    this.router.navigate(['/']);
+                    return;
+                }
+                // Wait before retrying
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
     }
 }
