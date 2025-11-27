@@ -203,6 +203,8 @@ export class ThirukkuralStack extends cdk.Stack {
         // Attach OAC to Distribution (L1 construct workaround as L2 doesn't fully support OAC yet in all versions)
         const cfnDistribution = distribution.node.defaultChild as cloudfront.CfnDistribution;
         cfnDistribution.addPropertyOverride('DistributionConfig.Origins.0.OriginAccessControlId', oac.attrId);
+        // Remove OAI which S3Origin adds by default, to avoid "Cannot use both" error
+        cfnDistribution.addPropertyOverride('DistributionConfig.Origins.0.S3OriginConfig.OriginAccessIdentity', '');
 
         // Bucket Policy to allow CloudFront OAC
         websiteBucket.addToResourcePolicy(new iam.PolicyStatement({
