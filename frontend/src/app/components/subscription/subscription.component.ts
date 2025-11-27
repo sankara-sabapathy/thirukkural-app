@@ -19,12 +19,12 @@ export class SubscriptionComponent {
     constructor(private http: HttpClient, private snack: MatSnackBar) { }
 
     subscribe() {
-        if (!environment.api.subscribeUrl || environment.api.subscribeUrl.includes('xxxxxxxx')) {
+        if (!environment.api.baseUrl || environment.api.baseUrl.includes('xxxxxxxx')) {
             this.snack.open('API not configured. Please deploy backend first.', 'Close', { duration: 3000 });
             return;
         }
 
-        this.http.post(environment.api.subscribeUrl, { email: this.email }).subscribe({
+        this.http.post(environment.api.baseUrl + environment.api.endpoints.subscribe, { email: this.email }).subscribe({
             next: () => {
                 this.subscribed = true;
                 this.snack.open('Subscribed successfully!', 'Close', { duration: 3000 });
@@ -37,12 +37,12 @@ export class SubscriptionComponent {
     }
 
     unsubscribe() {
-        if (!environment.api.unsubscribeUrl || environment.api.unsubscribeUrl.includes('xxxxxxxx')) {
+        if (!environment.api.baseUrl || environment.api.baseUrl.includes('xxxxxxxx')) {
             this.snack.open('API not configured. Please deploy backend first.', 'Close', { duration: 3000 });
             return;
         }
 
-        this.http.post(environment.api.unsubscribeUrl, { email: this.email }).subscribe({
+        this.http.post(environment.api.baseUrl + environment.api.endpoints.unsubscribe, { email: this.email }).subscribe({
             next: () => {
                 this.subscribed = false;
                 this.snack.open('Unsubscribed successfully.', 'Close', { duration: 3000 });
