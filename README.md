@@ -82,10 +82,10 @@ After a successful deployment, you will see **Outputs** in your terminal. Use th
 
 **Example Outputs:**
 ```text
-ThirukkuralStack.ApiUrl = https://xyz.execute-api.us-east-1.amazonaws.com/prod/
-ThirukkuralStack.UserPoolId = us-east-1_AbCdEfG
+ThirukkuralStack.ApiUrl = https://xyz.execute-api.ap-south-1.amazonaws.com/prod/
+ThirukkuralStack.UserPoolId = ap-south-1_AbCdEfG
 ThirukkuralStack.UserPoolClientId = 123456789abcdefgh
-ThirukkuralStack.UserPoolDomain = thirukkural-app-123.auth.us-east-1.amazoncognito.com
+ThirukkuralStack.UserPoolDomain = thirukkural-app-123.auth.ap-south-1.amazoncognito.com
 ThirukkuralStack.WebsiteUrl = d12345.cloudfront.net
 ```
 
