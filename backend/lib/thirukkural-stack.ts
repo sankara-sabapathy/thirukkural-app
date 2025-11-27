@@ -60,8 +60,14 @@ export class ThirukkuralStack extends cdk.Stack {
                     authorizationCodeGrant: true,
                 },
                 scopes: [cognito.OAuthScope.EMAIL, cognito.OAuthScope.PROFILE, cognito.OAuthScope.OPENID],
-                callbackUrls: ['http://localhost:4200/callback'], // Update for prod
-                logoutUrls: ['http://localhost:4200/'],
+                callbackUrls: [
+                    'http://localhost:4200/callback',
+                    'https://d232e1w18ndbh2.cloudfront.net/callback'
+                ],
+                logoutUrls: [
+                    'http://localhost:4200/',
+                    'https://d232e1w18ndbh2.cloudfront.net/'
+                ],
             }
         });
 
