@@ -8,6 +8,10 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as path from 'path';
 
 export class ThirukkuralStack extends cdk.Stack {
@@ -18,20 +22,27 @@ export class ThirukkuralStack extends cdk.Stack {
         const kuralTable = new dynamodb.Table(this, 'ThirukkuralTable', {
             partitionKey: { name: 'kuralId', type: dynamodb.AttributeType.NUMBER },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: cdk.RemovalPolicy.RETAIN, // Enterprise: Retain data
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
         });
 
-        const subscriberTable = new dynamodb.Table(this, 'SubscribersTable', {
-            partitionKey: { name: 'email', type: dynamodb.AttributeType.STRING },
+        const usersTable = new dynamodb.Table(this, 'UsersTable', {
+            partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: cdk.RemovalPolicy.RETAIN, // Enterprise: Retain data
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
+        });
+
+        // GSI for email lookups if needed (e.g. for admin tools or debugging)
+        usersTable.addGlobalSecondaryIndex({
+            indexName: 'EmailIndex',
+            partitionKey: { name: 'email', type: dynamodb.AttributeType.STRING },
+            projectionType: dynamodb.ProjectionType.ALL,
         });
 
         // Cognito User Pool with Google IdP
         const userPool = new cognito.UserPool(this, 'UserPool', {
             selfSignUpEnabled: true,
             signInAliases: { email: true },
-            removalPolicy: cdk.RemovalPolicy.RETAIN,
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
             passwordPolicy: {
                 minLength: 8,
                 requireLowercase: true,
@@ -39,23 +50,23 @@ export class ThirukkuralStack extends cdk.Stack {
                 requireDigits: true,
                 requireSymbols: true,
             },
+            autoVerify: { email: true },
         });
 
         const userPoolClient = new cognito.UserPoolClient(this, 'UserPoolClient', {
             userPool,
-            generateSecret: false,
+            generateSecret: false, // SPA client
             oAuth: {
                 flows: {
                     authorizationCodeGrant: true,
                 },
                 scopes: [cognito.OAuthScope.EMAIL, cognito.OAuthScope.PROFILE, cognito.OAuthScope.OPENID],
-                callbackUrls: ['http://localhost:4200/'], // Placeholder, update for prod
+                callbackUrls: ['http://localhost:4200/callback'], // Update for prod
                 logoutUrls: ['http://localhost:4200/'],
             }
         });
 
         // Placeholder for Google Client ID/Secret
-        // In a real enterprise setup, these should be in Secrets Manager or SSM Parameter Store
         const googleClientId = process.env.GOOGLE_CLIENT_ID || 'PLACEHOLDER_CLIENT_ID';
         const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || 'PLACEHOLDER_CLIENT_SECRET';
 
@@ -84,7 +95,7 @@ export class ThirukkuralStack extends cdk.Stack {
         // Lambda functions
         const commonEnv = {
             KURAL_TABLE: kuralTable.tableName,
-            SUBSCRIBER_TABLE: subscriberTable.tableName,
+            USERS_TABLE: usersTable.tableName,
             SES_SENDER: process.env.SES_SENDER_EMAIL ?? 'noreply@example.com',
         };
 
@@ -97,13 +108,8 @@ export class ThirukkuralStack extends cdk.Stack {
             },
         };
 
-        const subscribeFn = new nodejs.NodejsFunction(this, 'SubscribeFn', {
-            entry: path.join(__dirname, '../../src/handlers/subscribe.ts'),
-            ...nodeJsProps,
-        });
-
-        const unsubscribeFn = new nodejs.NodejsFunction(this, 'UnsubscribeFn', {
-            entry: path.join(__dirname, '../../src/handlers/unsubscribe.ts'),
+        const userProfileFn = new nodejs.NodejsFunction(this, 'UserProfileFn', {
+            entry: path.join(__dirname, '../../src/handlers/user-profile.ts'),
             ...nodeJsProps,
         });
 
@@ -115,9 +121,8 @@ export class ThirukkuralStack extends cdk.Stack {
 
         // Permissions
         kuralTable.grantReadData(sendEmailFn);
-        subscriberTable.grantReadWriteData(subscribeFn);
-        subscriberTable.grantReadWriteData(unsubscribeFn);
-        subscriberTable.grantReadData(sendEmailFn);
+        usersTable.grantReadWriteData(userProfileFn);
+        usersTable.grantReadData(sendEmailFn);
 
         sendEmailFn.addToRolePolicy(new iam.PolicyStatement({
             actions: ['ses:SendEmail', 'ses:SendRawEmail'],
@@ -130,25 +135,104 @@ export class ThirukkuralStack extends cdk.Stack {
             defaultCorsPreflightOptions: {
                 allowOrigins: apigateway.Cors.ALL_ORIGINS,
                 allowMethods: apigateway.Cors.ALL_METHODS,
+                allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key', 'X-Amz-Security-Token'],
             },
         });
 
-        const sub = api.root.addResource('subscribe');
-        sub.addMethod('POST', new apigateway.LambdaIntegration(subscribeFn));
+        const authorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'CognitoAuthorizer', {
+            cognitoUserPools: [userPool],
+        });
 
-        const unsub = api.root.addResource('unsubscribe');
-        unsub.addMethod('POST', new apigateway.LambdaIntegration(unsubscribeFn));
+        const profile = api.root.addResource('profile');
+        profile.addMethod('GET', new apigateway.LambdaIntegration(userProfileFn), {
+            authorizer,
+            authorizationType: apigateway.AuthorizationType.COGNITO,
+        });
+        profile.addMethod('PUT', new apigateway.LambdaIntegration(userProfileFn), {
+            authorizer,
+            authorizationType: apigateway.AuthorizationType.COGNITO,
+        });
 
         // EventBridge daily trigger
+        // 8 AM IST = 2:30 AM UTC
         const rule = new events.Rule(this, 'DailyKuralRule', {
-            schedule: events.Schedule.cron({ minute: '0', hour: '1' }), // 01:00 UTC (6:30 AM IST)
+            schedule: events.Schedule.cron({ minute: '30', hour: '2' }),
         });
         rule.addTarget(new targets.LambdaFunction(sendEmailFn));
+
+        // --- Frontend Hosting (S3 + CloudFront) ---
+
+        const websiteBucket = new s3.Bucket(this, 'WebsiteBucket', {
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
+            autoDeleteObjects: true,
+            blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL, // Secure: No public access
+            encryption: s3.BucketEncryption.S3_MANAGED,
+        });
+
+        // Origin Access Control (OAC) for CloudFront to access S3
+        const oac = new cloudfront.CfnOriginAccessControl(this, 'WebsiteOAC', {
+            originAccessControlConfig: {
+                name: 'WebsiteOAC',
+                originAccessControlOriginType: 's3',
+                signingBehavior: 'always',
+                signingProtocol: 'sigv4',
+            },
+        });
+
+        const distribution = new cloudfront.Distribution(this, 'WebsiteDistribution', {
+            defaultBehavior: {
+                origin: new origins.S3Origin(websiteBucket),
+                viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+                cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
+            },
+            defaultRootObject: 'index.html',
+            errorResponses: [
+                {
+                    httpStatus: 404,
+                    responseHttpStatus: 200,
+                    responsePagePath: '/index.html', // SPA Routing
+                },
+                {
+                    httpStatus: 403,
+                    responseHttpStatus: 200,
+                    responsePagePath: '/index.html',
+                },
+            ],
+        });
+
+        // Attach OAC to Distribution (L1 construct workaround as L2 doesn't fully support OAC yet in all versions)
+        const cfnDistribution = distribution.node.defaultChild as cloudfront.CfnDistribution;
+        cfnDistribution.addPropertyOverride('DistributionConfig.Origins.0.OriginAccessControlId', oac.attrId);
+
+        // Bucket Policy to allow CloudFront OAC
+        websiteBucket.addToResourcePolicy(new iam.PolicyStatement({
+            actions: ['s3:GetObject'],
+            resources: [websiteBucket.arnForObjects('*')],
+            principals: [new iam.ServicePrincipal('cloudfront.amazonaws.com')],
+            conditions: {
+                StringEquals: {
+                    'AWS:SourceArn': `arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`
+                }
+            }
+        }));
+
+        // Deploy Frontend Assets
+        // Note: This expects the frontend to be built at ../frontend/dist/thirukkural-app
+        // We use a try-catch or check existence in a real pipeline, but for CDK we assume it exists or create a placeholder.
+        // For this open-source setup, we will point to the dist folder.
+        new s3deploy.BucketDeployment(this, 'DeployWebsite', {
+            sources: [s3deploy.Source.asset(path.join(__dirname, '../../../frontend/dist/thirukkural-app'))],
+            destinationBucket: websiteBucket,
+            distribution,
+            distributionPaths: ['/*'], // Invalidate cache
+        });
 
         // Outputs
         new cdk.CfnOutput(this, 'ApiUrl', { value: api.url });
         new cdk.CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
         new cdk.CfnOutput(this, 'UserPoolClientId', { value: userPoolClient.userPoolClientId });
         new cdk.CfnOutput(this, 'UserPoolDomain', { value: userPoolDomain.domainName });
+        new cdk.CfnOutput(this, 'WebsiteUrl', { value: distribution.distributionDomainName });
     }
 }
