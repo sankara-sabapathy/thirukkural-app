@@ -45,8 +45,13 @@ export class AuthService {
             const attributes = await fetchUserAttributes();
             console.log('User attributes:', attributes);
             this.zone.run(() => this.userSubject.next({ ...user, attributes }));
-        } catch (error) {
-            console.error('Check user failed:', error);
+        } catch (error: any) {
+            // If the error is simply that the user is not signed in, we don't need to log it as an error
+            if (error?.name === 'UserUnAuthenticatedException' || error?.toString().includes('not authenticated')) {
+                console.log('User is not signed in.');
+            } else {
+                console.error('Check user failed:', error);
+            }
             this.zone.run(() => this.userSubject.next(null));
         }
     }

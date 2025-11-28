@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,11 +13,52 @@ import { fetchAuthSession } from 'aws-amplify/auth';
     templateUrl: './subscription.component.html',
     styleUrls: ['./subscription.component.scss']
 })
-export class SubscriptionComponent {
+export class SubscriptionComponent implements OnInit {
     @Input() email!: string;
     subscribed = false;
+    loading = true;
 
     constructor(private http: HttpClient, private snack: MatSnackBar) { }
+
+    async ngOnInit() {
+        await this.checkSubscriptionStatus();
+    }
+
+    async checkSubscriptionStatus() {
+        if (!environment.api.baseUrl || environment.api.baseUrl.includes('xxxxxxxx')) {
+            this.loading = false;
+            return;
+        }
+
+        try {
+            const session = await fetchAuthSession();
+            const token = session.tokens?.idToken?.toString();
+
+            if (!token) {
+                this.loading = false;
+                return;
+            }
+
+            const headers = new HttpHeaders({
+                'Authorization': token
+            });
+
+            this.http.get<any>(environment.api.baseUrl + environment.api.endpoints.profile, { headers })
+                .subscribe({
+                    next: (profile) => {
+                        this.subscribed = profile.receiveDailyEmail;
+                        this.loading = false;
+                    },
+                    error: (err) => {
+                        console.error('Failed to fetch profile', err);
+                        this.loading = false;
+                    }
+                });
+        } catch (err) {
+            console.error('Auth session error', err);
+            this.loading = false;
+        }
+    }
 
     async subscribe() {
         if (!environment.api.baseUrl || environment.api.baseUrl.includes('xxxxxxxx')) {
