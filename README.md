@@ -145,6 +145,63 @@ After the backend is deployed, you must update the frontend environment files to
 *   **Least Privilege**: IAM roles for Lambdas are scoped to only necessary DynamoDB tables and SES actions.
 *   **Data Protection**: DynamoDB tables are set to `DESTROY` on stack deletion for cost safety in this demo, but can be changed to `RETAIN` for production.
 
+## 🔧 Troubleshooting
+
+Common issues and solutions encountered during deployment:
+
+### 1. OAuth Redirect Errors
+*   **Error**: `InvalidOriginException: redirect is coming from a different origin`
+*   **Cause**: The `redirectSignIn` URL in `environment.prod.ts` does not match the Allowed Callback URLs in Cognito.
+*   **Fix**: Update `thirukkural-stack.ts` to include your CloudFront URL in `callbackUrls` and `logoutUrls`. Redeploy backend (`cdk deploy`).
+
+### 2. Google Sign-In Error 400
+*   **Error**: `redirect_uri_mismatch`
+*   **Cause**: The Cognito Callback URL is not registered in Google Cloud Console.
+*   **Fix**: Add `https://<your-cognito-domain>/oauth2/idpresponse` to "Authorized redirect URIs" in your Google OAuth Client settings.
+
+### 3. "Sign In" Button Persists After Login
+*   **Error**: User is redirected back to home but still appears logged out.
+*   **Cause**: Angular app not detecting auth state change immediately after redirect.
+*   **Fix**: Ensure `AuthService` listens to Amplify `Hub` events (`auth` channel) to detect `signedIn` events and refresh user state.
+
+### 4. Production Build Using Wrong Environment
+*   **Error**: App connects to localhost or wrong API in production.
+*   **Cause**: `angular.json` missing `fileReplacements` for production configuration.
+*   **Fix**: Add `fileReplacements` in `angular.json` to swap `environment.ts` with `environment.prod.ts`.
+
+### 5. Cognito Domain Error
+*   **Error**: "Site can't be reached" with double protocol `https://https://...`
+*   **Cause**: `environment.prod.ts` domain field includes `https://`.
+*   **Fix**: Remove `https://` from the `domain` field in `environment.prod.ts`. Amplify adds it automatically.
+
+---
+
+## 🔒 Security & Sensitive Data
+
+When deploying this project or pushing to public repositories, be aware of the following:
+
+### Environment Variables (Secrets)
+These values should **NEVER** be committed to version control. Use `.env` files (gitignored) or CI/CD secrets.
+
+| Variable | Description | Location |
+| :--- | :--- | :--- |
+| `GOOGLE_CLIENT_ID` | Google OAuth Client ID | Backend Deployment / CI Secrets |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret | Backend Deployment / CI Secrets |
+| `SES_SENDER_EMAIL` | Verified SES Email Address | Backend Deployment / CI Secrets |
+| `AWS_ACCESS_KEY_ID` | AWS Credentials | CI Secrets (GitHub Actions) |
+| `AWS_SECRET_ACCESS_KEY` | AWS Credentials | CI Secrets (GitHub Actions) |
+
+### Public Configuration
+The following values are **safe to commit** in `environment.ts` / `environment.prod.ts` as they are exposed in the client-side bundle anyway:
+
+*   `userPoolId`
+*   `userPoolWebClientId`
+*   `domain` (Cognito Domain)
+*   `baseUrl` (API Gateway URL)
+*   `redirectSignIn` / `redirectSignOut` URLs
+
+**Note**: Although safe to expose, these values are specific to your deployment. If you fork this repo, you must update them with your own AWS resource IDs.
+
 ## 🧹 Cleanup
 
 To remove all resources and avoid costs:

@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { getCurrentUser, signInWithRedirect, signOut, fetchUserAttributes } from 'aws-amplify/auth';
+import { Hub } from 'aws-amplify/utils';
 
 @Injectable({
     providedIn: 'root'
@@ -9,7 +10,19 @@ export class AuthService {
     private userSubject = new BehaviorSubject<any>(null);
     user$ = this.userSubject.asObservable();
 
-    constructor() {
+    constructor(private zone: NgZone) {
+        // Listen for auth events
+        Hub.listen('auth', ({ payload }) => {
+            switch (payload.event) {
+                case 'signedIn':
+                    this.checkUser();
+                    break;
+                case 'signedOut':
+                    this.zone.run(() => this.userSubject.next(null));
+                    break;
+            }
+        });
+
         this.checkUser();
     }
 
@@ -21,17 +34,20 @@ export class AuthService {
         if (this.isLocalhost()) {
             const storedUser = localStorage.getItem('dummy_user');
             if (storedUser) {
-                this.userSubject.next(JSON.parse(storedUser));
+                this.zone.run(() => this.userSubject.next(JSON.parse(storedUser)));
             }
             return;
         }
 
         try {
             const user = await getCurrentUser();
+            console.log('Current user:', user);
             const attributes = await fetchUserAttributes();
-            this.userSubject.next({ ...user, attributes });
-        } catch {
-            this.userSubject.next(null);
+            console.log('User attributes:', attributes);
+            this.zone.run(() => this.userSubject.next({ ...user, attributes }));
+        } catch (error) {
+            console.error('Check user failed:', error);
+            this.zone.run(() => this.userSubject.next(null));
         }
     }
 
@@ -46,7 +62,7 @@ export class AuthService {
                 }
             };
             localStorage.setItem('dummy_user', JSON.stringify(dummyUser));
-            this.userSubject.next(dummyUser);
+            this.zone.run(() => this.userSubject.next(dummyUser));
             return;
         }
 
@@ -60,13 +76,13 @@ export class AuthService {
     async logout() {
         if (this.isLocalhost()) {
             localStorage.removeItem('dummy_user');
-            this.userSubject.next(null);
+            this.zone.run(() => this.userSubject.next(null));
             return;
         }
 
         try {
             await signOut();
-            this.userSubject.next(null);
+            this.zone.run(() => this.userSubject.next(null));
         } catch (e) {
             console.error('Logout failed', e);
         }
