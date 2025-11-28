@@ -10,11 +10,7 @@ export const environment = {
     api: {
         baseUrl: 'YOUR_API_GATEWAY_URL', // e.g., https://xyz.execute-api.us-east-1.amazonaws.com/prod
         endpoints: {
-            profile: '/profile',
-            // subscribe/unsubscribe are now handled via profile preferences, 
-            // but if you kept the old endpoints for public access:
-            subscribe: '/subscribe',
-            unsubscribe: '/unsubscribe'
+            profile: '/profile'
         }
     }
 };
