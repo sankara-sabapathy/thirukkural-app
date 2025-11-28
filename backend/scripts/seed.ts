@@ -3,11 +3,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const ddb = new DynamoDBClient({});
-const dataPath = path.resolve(__dirname, '../../sampleThirukkuralDataset.json');
+const DATA_URL = 'https://raw.githubusercontent.com/sankara-sabapathy/thirukkural-dataset/main/allKural.json';
 
 async function main() {
-    const raw = fs.readFileSync(dataPath, 'utf-8');
-    const json = JSON.parse(raw);
+    console.log(`Fetching dataset from ${DATA_URL}...`);
+    const response = await fetch(DATA_URL);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch dataset: ${response.statusText}`);
+    }
+    const json = await response.json() as any;
 
     // The dataset has a root property "allKural" which is an array
     const kurals = json.allKural;

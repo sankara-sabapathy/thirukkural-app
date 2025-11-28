@@ -244,5 +244,6 @@ export class ThirukkuralStack extends cdk.Stack {
         new cdk.CfnOutput(this, 'UserPoolDomain', { value: userPoolDomain.domainName });
         new cdk.CfnOutput(this, 'WebsiteUrl', { value: distribution.distributionDomainName });
         new cdk.CfnOutput(this, 'WebsiteBucketName', { value: websiteBucket.bucketName }); // Export bucket name for frontend deploy
+        new cdk.CfnOutput(this, 'KuralTableName', { value: kuralTable.tableName });
     }
 }

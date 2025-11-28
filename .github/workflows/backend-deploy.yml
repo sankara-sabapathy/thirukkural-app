@@ -39,3 +39,10 @@ jobs:
         GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         SES_SENDER_EMAIL: ${{ secrets.SES_SENDER_EMAIL }}
+
+    - name: Seed Database
+      run: |
+        TABLE_NAME=$(aws cloudformation describe-stacks --stack-name ThirukkuralStack --query "Stacks[0].Outputs[?OutputKey=='KuralTableName'].OutputValue" --output text)
+        echo "Seeding table: $TABLE_NAME"
+        export KURAL_TABLE=$TABLE_NAME
+        npx ts-node scripts/seed.ts
