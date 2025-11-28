@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { MatButtonModule } from '@angular/material/button';
@@ -18,7 +18,7 @@ export class SubscriptionComponent implements OnInit {
     subscribed = false;
     loading = true;
 
-    constructor(private http: HttpClient, private snack: MatSnackBar) { }
+    constructor(private http: HttpClient, private snack: MatSnackBar, private zone: NgZone) { }
 
     async ngOnInit() {
         await this.checkSubscriptionStatus();
@@ -26,7 +26,7 @@ export class SubscriptionComponent implements OnInit {
 
     async checkSubscriptionStatus() {
         if (!environment.api.baseUrl || environment.api.baseUrl.includes('xxxxxxxx')) {
-            this.loading = false;
+            this.zone.run(() => this.loading = false);
             return;
         }
 
@@ -35,7 +35,7 @@ export class SubscriptionComponent implements OnInit {
             const token = session.tokens?.idToken?.toString();
 
             if (!token) {
-                this.loading = false;
+                this.zone.run(() => this.loading = false);
                 return;
             }
 
@@ -43,20 +43,24 @@ export class SubscriptionComponent implements OnInit {
                 'Authorization': token
             });
 
-            this.http.get<any>(environment.api.baseUrl + environment.api.endpoints.profile, { headers })
+            const url = environment.api.baseUrl + environment.api.endpoints.profile;
+
+            this.http.get<any>(url, { headers })
                 .subscribe({
                     next: (profile) => {
-                        this.subscribed = profile.receiveDailyEmail;
-                        this.loading = false;
+                        this.zone.run(() => {
+                            this.subscribed = profile.receiveDailyEmail ?? false;
+                            this.loading = false;
+                        });
                     },
                     error: (err) => {
-                        console.error('Failed to fetch profile', err);
-                        this.loading = false;
+                        console.error('Failed to fetch profile:', err);
+                        this.zone.run(() => this.loading = false);
                     }
                 });
         } catch (err) {
-            console.error('Auth session error', err);
-            this.loading = false;
+            console.error('Auth session error:', err);
+            this.zone.run(() => this.loading = false);
         }
     }
 
