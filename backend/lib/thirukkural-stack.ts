@@ -82,7 +82,12 @@ export class ThirukkuralStack extends cdk.Stack {
                 flows: {
                     authorizationCodeGrant: true,
                 },
-                scopes: [cognito.OAuthScope.EMAIL, cognito.OAuthScope.PROFILE, cognito.OAuthScope.OPENID],
+                scopes: [
+                    cognito.OAuthScope.EMAIL,
+                    cognito.OAuthScope.PROFILE,
+                    cognito.OAuthScope.OPENID,
+                    cognito.OAuthScope.COGNITO_ADMIN // Required for fetchUserAttributes
+                ],
                 callbackUrls: [
                     'http://localhost:4200/callback',
                     'https://d232e1w18ndbh2.cloudfront.net/callback'
