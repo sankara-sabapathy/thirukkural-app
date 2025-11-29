@@ -1,6 +1,10 @@
 name: Deploy Backend
 
 on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'backend/**'
   workflow_dispatch:
 
 jobs:
@@ -39,6 +43,10 @@ jobs:
         GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         SES_SENDER_EMAIL: ${{ secrets.SES_SENDER_EMAIL }}
+        CLOUDFLARE_SECRET_KEY: ${{ secrets.CLOUDFLARE_SECRET_KEY }}
+        BASE_DOMAIN: ${{ secrets.BASE_DOMAIN }}
+        ACM_CERTIFICATE_ARN_API: ${{ secrets.ACM_CERTIFICATE_ARN_API }}
+        ACM_CERTIFICATE_ARN_CLOUDFRONT: ${{ secrets.ACM_CERTIFICATE_ARN_CLOUDFRONT }}
 
     - name: Seed Database
       run: |
