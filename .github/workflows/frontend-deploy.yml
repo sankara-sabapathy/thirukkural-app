@@ -30,12 +30,12 @@ jobs:
     - name: Build
       run: npm run build -- --configuration production
       env:
-        API_BASE_URL: ${{ secrets.API_BASE_URL }}
-        COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
-        COGNITO_WEB_CLIENT_ID: ${{ secrets.COGNITO_WEB_CLIENT_ID }}
-        COGNITO_DOMAIN: ${{ secrets.COGNITO_DOMAIN }}
-        COGNITO_REDIRECT_SIGNIN: ${{ secrets.COGNITO_REDIRECT_SIGNIN }}
-        COGNITO_REDIRECT_SIGNOUT: ${{ secrets.COGNITO_REDIRECT_SIGNOUT }}
+        API_BASE_URL: ${{ vars.API_BASE_URL }}
+        COGNITO_USER_POOL_ID: ${{ vars.COGNITO_USER_POOL_ID }}
+        COGNITO_WEB_CLIENT_ID: ${{ vars.COGNITO_WEB_CLIENT_ID }}
+        COGNITO_DOMAIN: ${{ vars.COGNITO_DOMAIN }}
+        COGNITO_REDIRECT_SIGNIN: ${{ vars.COGNITO_REDIRECT_SIGNIN }}
+        COGNITO_REDIRECT_SIGNOUT: ${{ vars.COGNITO_REDIRECT_SIGNOUT }}
 
     - name: Deploy to S3
       uses: aws-actions/configure-aws-credentials@v2
