@@ -11,6 +11,9 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 import * as path from 'path';
 
 export class ThirukkuralStack extends cdk.Stack {
@@ -35,6 +38,13 @@ export class ThirukkuralStack extends cdk.Stack {
             indexName: 'EmailIndex',
             partitionKey: { name: 'email', type: dynamodb.AttributeType.STRING },
             projectionType: dynamodb.ProjectionType.ALL,
+        });
+
+        const rateLimitTable = new dynamodb.Table(this, 'RateLimitTable', {
+            partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
+            timeToLiveAttribute: 'ttl',
+            billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
         });
 
         // Cognito User Pool with Google IdP
@@ -114,6 +124,7 @@ export class ThirukkuralStack extends cdk.Stack {
         const commonEnv = {
             KURAL_TABLE: kuralTable.tableName,
             USERS_TABLE: usersTable.tableName,
+            RATE_LIMIT_TABLE: rateLimitTable.tableName,
             SES_SENDER: process.env.SES_SENDER_EMAIL ?? 'noreply@example.com',
         };
 
@@ -133,29 +144,88 @@ export class ThirukkuralStack extends cdk.Stack {
 
         const sendEmailFn = new nodejs.NodejsFunction(this, 'SendDailyEmailFn', {
             entry: path.join(__dirname, '../src/handlers/send-daily-email.ts'), // Corrected path
-            timeout: cdk.Duration.minutes(5), // Allow more time for sending emails
+            timeout: cdk.Duration.minutes(15), // Increased to 15 mins to allow 1s delay per user (max ~900 users)
+            ...nodeJsProps,
+        });
+
+        const sendSampleEmailFn = new nodejs.NodejsFunction(this, 'SendSampleEmailFn', {
+            entry: path.join(__dirname, '../src/handlers/send-sample-email.ts'),
             ...nodeJsProps,
         });
 
         // Permissions
         kuralTable.grantReadData(sendEmailFn);
+        kuralTable.grantReadData(sendSampleEmailFn);
         usersTable.grantReadWriteData(userProfileFn);
         usersTable.grantReadData(sendEmailFn);
+        rateLimitTable.grantReadWriteData(sendSampleEmailFn);
 
-        sendEmailFn.addToRolePolicy(new iam.PolicyStatement({
+        const sesPolicy = new iam.PolicyStatement({
             actions: ['ses:SendEmail', 'ses:SendRawEmail'],
             resources: ['*'], // Restrict this in production to specific identities
-        }));
+        });
 
-        // API Gateway
+        sendEmailFn.addToRolePolicy(sesPolicy);
+        sendSampleEmailFn.addToRolePolicy(sesPolicy);
+
+        // API Gateway with Stricter Throttling (Free Layer 1 Defense)
         const api = new apigateway.RestApi(this, 'ThirukkuralApi', {
             restApiName: 'Thirukkural Service',
+            deployOptions: {
+                stageName: 'prod',
+                throttlingRateLimit: 5, // Strict: Max 5 requests per second
+                throttlingBurstLimit: 10, // Strict: Allow bursts of only 10 requests
+                tracingEnabled: true,
+            },
             defaultCorsPreflightOptions: {
                 allowOrigins: apigateway.Cors.ALL_ORIGINS,
                 allowMethods: apigateway.Cors.ALL_METHODS,
                 allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key', 'X-Amz-Security-Token'],
             },
+            // --- Cloudflare Security Integration ---
+            // This policy ensures only requests coming from Cloudflare (with the secret header) are accepted.
+            // UNCOMMENT the policy below AFTER you have configured Cloudflare Transform Rules.
+            /*
+            policy: new iam.PolicyDocument({
+                statements: [
+                    new iam.PolicyStatement({
+                        effect: iam.Effect.ALLOW,
+                        principals: [new iam.AnyPrincipal()],
+                        actions: ['execute-api:Invoke'],
+                        resources: ['execute-api:/*'],
+                    }),
+                    new iam.PolicyStatement({
+                        effect: iam.Effect.DENY,
+                        principals: [new iam.AnyPrincipal()],
+                        actions: ['execute-api:Invoke'],
+                        resources: ['execute-api:/*'],
+                        conditions: {
+                            StringNotEquals: {
+                                'aws:Referer': 'YOUR_CLOUDFLARE_SECRET_KEY_12345' // Replace with a long random string
+                            }
+                        }
+                    })
+                ]
+            })
+            */
         });
+
+        // --- Custom Domain for API (Required for Cloudflare) ---
+        // 1. Create a Certificate in ACM (us-east-1 or region) for api.krss.online
+        // 2. Uncomment the code below
+        /*
+        const apiDomain = new apigateway.DomainName(this, 'ApiDomain', {
+            domainName: 'api.krss.online',
+            certificate: acm.Certificate.fromCertificateArn(this, 'ApiCertificate', 'arn:aws:acm:REGION:ACCOUNT:certificate/ID'),
+            endpointType: apigateway.EndpointType.REGIONAL, // Regional is better for Cloudflare
+        });
+
+        // Map the domain to this API
+        new apigateway.BasePathMapping(this, 'ApiMapping', {
+            domainName: apiDomain,
+            restApi: api,
+        });
+        */
 
         const authorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'CognitoAuthorizer', {
             cognitoUserPools: [userPool],
@@ -170,6 +240,9 @@ export class ThirukkuralStack extends cdk.Stack {
             authorizer,
             authorizationType: apigateway.AuthorizationType.COGNITO,
         });
+
+        const sampleEmail = api.root.addResource('sample-email');
+        sampleEmail.addMethod('POST', new apigateway.LambdaIntegration(sendSampleEmailFn));
 
         // EventBridge daily trigger
         // 8 AM IST = 2:30 AM UTC
@@ -197,6 +270,13 @@ export class ThirukkuralStack extends cdk.Stack {
             },
         });
 
+        // Custom Domain Configuration (Uncomment and update after creating ACM Certificate)
+
+        // 1. Request a certificate in us-east-1 for thirukkural.krss.online
+        // 2. Validate it (DNS validation recommended)
+        // 3. Paste the ARN below
+        const certificate = acm.Certificate.fromCertificateArn(this, 'SiteCertificate', 'arn:aws:acm:us-east-1:612850243659:certificate/294a386d-9fbd-4adf-ad5d-c3027d779260');
+
         const distribution = new cloudfront.Distribution(this, 'WebsiteDistribution', {
             defaultBehavior: {
                 origin: new origins.S3Origin(websiteBucket),
@@ -205,6 +285,8 @@ export class ThirukkuralStack extends cdk.Stack {
                 cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
             },
             defaultRootObject: 'index.html',
+            domainNames: ['thirukkural.krss.online'],
+            certificate: certificate,
             errorResponses: [
                 {
                     httpStatus: 404,

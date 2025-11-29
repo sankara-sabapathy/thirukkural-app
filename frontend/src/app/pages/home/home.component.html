@@ -88,6 +88,26 @@
         </div>
     </section>
 
+    <section class="sample-email-section">
+        <div class="container">
+            <div class="sample-email-wrapper card fade-in">
+                <div class="sample-content">
+                    <h2>Try a Sample Email</h2>
+                    <p>Not ready to subscribe? Send yourself a one-time sample email to see what it looks like.</p>
+                    <div class="sample-form">
+                        <input type="email" [(ngModel)]="sampleEmail" placeholder="Enter your email address"
+                            class="form-input" [disabled]="isLoadingSample" (keyup.enter)="sendSampleEmail()">
+                        <button class="btn btn-secondary" (click)="sendSampleEmail()" [disabled]="isLoadingSample">
+                            <span *ngIf="!isLoadingSample">Send Sample</span>
+                            <span *ngIf="isLoadingSample">Sending...</span>
+                        </button>
+                    </div>
+                    <p class="sample-note">Limited to 1 sample email per day.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section class="subscribe-section" id="subscribe">
         <div class="container">
             <div class="subscribe-wrapper">

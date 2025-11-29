@@ -10,7 +10,8 @@ export const environment = {
     api: {
         baseUrl: 'YOUR_API_GATEWAY_URL', // e.g., https://xyz.execute-api.us-east-1.amazonaws.com/prod
         endpoints: {
-            profile: '/profile'
+            profile: '/profile',
+            sampleEmail: '/sample-email'
         }
     }
 };

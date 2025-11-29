@@ -1,12 +1,12 @@
 .page-main {
-    min-height: 100vh;
-    overflow: hidden;
+    overflow-x: hidden;
 }
 
 .hero-section {
+    position: relative;
     padding: 8rem 0 6rem;
     text-align: center;
-    position: relative;
+    background: radial-gradient(circle at top center, rgba(99, 102, 241, 0.1) 0%, transparent 50%);
 
     .container {
         position: relative;
@@ -166,6 +166,98 @@
 
 .feature-icon {
     font-size: 2rem;
+}
+
+.sample-email-section {
+    padding: 4rem 0;
+    background: var(--surface-card);
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    margin-top: 4rem;
+
+    .sample-email-wrapper {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 3rem;
+        text-align: center;
+        background: var(--surface-ground);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-md);
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        .sample-form {
+            display: flex;
+            gap: 1rem;
+            max-width: 500px;
+            margin: 0 auto 1rem;
+
+            @media (max-width: 600px) {
+                flex-direction: column;
+            }
+
+            .form-input {
+                flex: 1;
+                padding: 0.75rem 1rem;
+                border-radius: var(--radius-md);
+                border: 1px solid var(--border-color);
+                background: var(--surface-card);
+                color: var(--text-primary);
+                font-size: 1rem;
+                transition: all 0.2s ease;
+
+                &:focus {
+                    outline: none;
+                    border-color: var(--primary-color);
+                    box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
+                }
+
+                &:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                }
+            }
+
+            .btn-secondary {
+                background: var(--surface-card);
+                border: 1px solid var(--primary-color);
+                color: var(--primary-color);
+                padding: 0.75rem 1.5rem;
+                border-radius: var(--radius-md);
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+
+                &:hover:not(:disabled) {
+                    background: var(--primary-color);
+                    color: white;
+                }
+
+                &:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                }
+            }
+        }
+
+        .sample-note {
+            font-size: 0.875rem;
+            color: var(--text-tertiary);
+            margin-bottom: 0;
+        }
+    }
 }
 
 .subscribe-section {
