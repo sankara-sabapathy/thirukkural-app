@@ -6,8 +6,8 @@ export const environment = {
         // The 'domain' field should be just the domain name without 'https://' - Amplify adds it automatically.
         domain: 'thirukkural-app-612850243659.auth.ap-south-1.amazoncognito.com',
         // 'redirectSignIn' and 'redirectSignOut' are callback URLs and must include 'https://'.
-        redirectSignIn: 'https://d232e1w18ndbh2.cloudfront.net/callback',
-        redirectSignOut: 'https://d232e1w18ndbh2.cloudfront.net/',
+        redirectSignIn: 'https://thirukkural.krss.online/callback',
+        redirectSignOut: 'https://thirukkural.krss.online/',
     },
     api: {
         // 'baseUrl' for API endpoints also requires the full URL including 'https://'.
