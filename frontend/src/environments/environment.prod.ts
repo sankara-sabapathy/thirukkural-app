@@ -13,7 +13,8 @@ export const environment = {
         // 'baseUrl' for API endpoints also requires the full URL including 'https://'.
         baseUrl: 'https://08wz27wkyc.execute-api.ap-south-1.amazonaws.com/prod',
         endpoints: {
-            profile: '/profile'
+            profile: '/profile',
+            sampleEmail: '/sample-email'
         }
     }
 };
