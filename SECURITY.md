@@ -529,6 +529,7 @@ aws dynamodb delete-item \
 1. Verify Cloudflare Transform Rule is active
 2. Check secret header matches in both Cloudflare and CDK
 3. Ensure CDK policy is uncommented and deployed
+4. **Verify API Gateway Resource Policy in AWS Console**
 
 ### Issue: High API Gateway Costs
 **Cause**: Excessive traffic or attack
@@ -537,6 +538,441 @@ aws dynamodb delete-item \
 2. Lower throttling limits temporarily
 3. Enable Cloudflare proxy if not already active
 4. Review API Gateway access logs
+
+### Issue: CORS Errors (No 'Access-Control-Allow-Origin' Header)
+**Cause**: API Gateway blocking request before CORS check
+**Solution**:
+1. **Verify Cloudflare DNS** is set to **Proxied (Orange Cloud)** for `api.krss.online`
+2. **Check Transform Rule** is adding the `Referer` header
+3. **Test the policy**: Direct requests to API Gateway should fail with 403
+4. **Verify Resource Policy** in AWS Console (see below)
+
+**Steps to Verify:**
+```bash
+# 1. Check DNS is proxied through Cloudflare
+nslookup api.krss.online
+# Should show Cloudflare IPs (104.21.x.x or 172.67.x.x)
+
+# 2. Test direct access (should fail with 403)
+curl https://[your-api-gateway-id].execute-api.region.amazonaws.com/prod/profile
+# Expected: 403 Forbidden
+
+# 3. Test via Cloudflare (should work)
+curl https://api.krss.online/prod/sample-email -X POST -H "Content-Type: application/json" -d '{"email":"test@example.com"}'
+```
+
+### Issue: SSL Error 525 (SSL Handshake Failed)
+**Cause**: Cloudflare cannot connect to API Gateway origin
+**Solutions**:
+
+**1. Check Cloudflare SSL/TLS Mode**
+- Go to Cloudflare → SSL/TLS → Overview
+- Set to **"Full"** (not "Full Strict")
+
+**2. Verify DNS CNAME Target (CRITICAL)**
+- **WRONG**: `api` CNAME → `abc123.execute-api.ap-south-1.amazonaws.com` (raw API endpoint)
+- **CORRECT**: `api` CNAME → `d-xyz123.execute-api.ap-south-1.amazonaws.com` (custom domain endpoint)
+
+**How to get the correct endpoint:**
+1. AWS Console → API Gateway → **Custom domain names**
+2. Click on `api.krss.online`
+3. Copy the **"API Gateway domain name"** (starts with `d-`)
+4. Update Cloudflare CNAME to this value
+
+**3. Verify API Gateway Custom Domain is Deployed**
+```bash
+# AWS Console → API Gateway → Custom domain names
+# Should show: api.krss.online with status "Available"
+```
+
+### Issue: Website Not Loading (thirukkural.krss.online)
+**Cause**: DNS not configured or SSL issues
+**Solution**:
+
+**1. Check DNS Configuration**
+```bash
+nslookup thirukkural.krss.online
+# Should resolve to CloudFront IPs (starts with 2600:9000) if DNS Only
+# OR Cloudflare IPs (104.21.x.x) if Proxied
+```
+
+**2. Verify Cloudflare Settings**
+- **DNS Only (Grey Cloud)**: Direct to CloudFront (simpler, recommended)
+  - CNAME: `thirukkural` → `d232e1w18ndbh2.cloudfront.net`
+  - Proxy: **DNS Only**
+  
+- **Proxied (Orange Cloud)**: Through Cloudflare (more secure, complex)
+  - Requires Cloudflare Origin Certificate
+  - Set SSL/TLS mode to **Full**
+
+**3. Clear DNS Cache**
+```powershell
+ipconfig /flushdns
+```
+
+**4. Verify CloudFront Alternate Domain Name**
+- AWS Console → CloudFront → Distributions
+- General → Alternate domain names (CNAMEs)
+- Should list: `thirukkural.krss.online`
+
+### Issue: Deployment Warning "CLOUDFLARE_SECRET_KEY not provided"
+**Cause**: Environment variable not loaded during deployment
+**Solution**:
+
+**Local Deployment:**
+```bash
+# 1. Ensure .env file exists in backend/ folder
+cd backend
+cat .env  # Should show CLOUDFLARE_SECRET_KEY=...
+
+# 2. Deploy from backend folder
+cdk deploy
+```
+
+**GitHub Actions Deployment:**
+1. Go to Repository → Settings → Secrets and variables → Actions
+2. **Secrets** tab: Verify `CLOUDFLARE_SECRET_KEY` exists
+3. **Variables** tab: Verify all config variables exist
+4. Check workflow file has `env:` block in deploy step
+
+**Verify Policy is Applied:**
+```bash
+# AWS Console → API Gateway → Thirukkural Service → Resource Policy
+# Should show JSON with "StringNotEquals" and "aws:Referer"
+```
+
+### Issue: GitHub Actions Not Triggering Automatically
+**Cause**: Workflow file not committed or branch mismatch
+**Solution**:
+
+1. **Verify workflow is committed to master/main:**
+```bash
+git status
+git log -1 .github/workflows/backend-deploy.yml
+```
+
+2. **Check branch name matches:**
+```yaml
+on:
+  push:
+    branches: [ master ]  # Change to 'main' if using main branch
+```
+
+3. **Verify GitHub Actions permissions:**
+- Repository → Settings → Actions → General
+- Allow all actions and reusable workflows
+- Read and write permissions
+
+4. **Test auto-deploy:**
+```bash
+# Make a change in backend folder
+echo "# Test" >> backend/README.md
+git add backend/README.md
+git commit -m "Test auto-deploy"
+git push origin master
+```
+
+---
+
+## Environment Variables Management
+
+### **Sensitive Secrets (GitHub Secrets)**
+These should be stored in **GitHub Settings > Secrets and variables > Actions > Secrets**:
+
+| Variable Name | Description | Example |
+|--------------|-------------|---------|
+| `GOOGLE_CLIENT_ID` | Google OAuth Client ID | `abc123.apps.googleusercontent.com` |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret | `GOCSPX-xyz...` |
+| `CLOUDFLARE_SECRET_KEY` | Secret for API Gateway protection | `dee875b3aaf...` (64 chars) |
+| `AWS_ACCESS_KEY_ID` | AWS credentials for deployment | `AKIAIOSFODNN7EXAMPLE` |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret key | `wJalrXUtn...` |
+
+### **Configuration Variables (GitHub Variables)**
+These should be stored in **GitHub Settings > Secrets and variables > Actions > Variables**:
+
+| Variable Name | Description | Example |
+|--------------|-------------|---------|
+| `BASE_DOMAIN` | Root domain name | `krss.online` |
+| `SES_SENDER_EMAIL` | Verified SES email | `thirukkural-daily@krss.online` |
+| `ACM_CERTIFICATE_ARN_API` | API Gateway cert (regional) | `arn:aws:acm:ap-south-1:...` |
+| `ACM_CERTIFICATE_ARN_CLOUDFRONT` | CloudFront cert (us-east-1) | `arn:aws:acm:us-east-1:...` |
+| `API_BASE_URL` | Production API endpoint | `https://api.krss.online` ⚠️ **No /prod suffix** |
+| `COGNITO_USER_POOL_ID` | Cognito pool ID | `ap-south-1_g6cAch9nf` |
+| `COGNITO_WEB_CLIENT_ID` | Cognito client ID | `5bjct26m4mgt914kp0rmjfaad4` |
+| `COGNITO_DOMAIN` | Cognito domain | `thirukkural-app-123.auth.ap-south-1.amazoncognito.com` |
+| `COGNITO_REDIRECT_SIGNIN` | OAuth callback | `https://thirukkural.krss.online/callback` |
+| `COGNITO_REDIRECT_SIGNOUT` | OAuth logout redirect | `https://thirukkural.krss.online/` |
+| `S3_BUCKET_NAME` | Frontend S3 bucket | Output from CDK deploy |
+| `CLOUDFRONT_DISTRIBUTION_ID` | CloudFront distribution | Output from CDK deploy |
+
+### **Local Development Setup**
+
+**Backend `.env` file:**
+```bash
+# In backend/.env
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
+CLOUDFLARE_SECRET_KEY=your_64_char_secret
+SES_SENDER_EMAIL=thirukkural-daily@krss.online
+BASE_DOMAIN=krss.online
+ACM_CERTIFICATE_ARN_API=arn:aws:acm:region:account:certificate/id
+ACM_CERTIFICATE_ARN_CLOUDFRONT=arn:aws:acm:us-east-1:account:certificate/id
+```
+
+**Frontend `.env` file:**
+```bash
+# In frontend/.env
+API_BASE_URL=https://api.krss.online
+COGNITO_USER_POOL_ID=ap-south-1_xxxxx
+COGNITO_WEB_CLIENT_ID=xxxxxxxxx
+COGNITO_DOMAIN=thirukkural-app-xxx.auth.region.amazoncognito.com
+COGNITO_REDIRECT_SIGNIN=https://thirukkural.krss.online/callback
+COGNITO_REDIRECT_SIGNOUT=https://thirukkural.krss.online/
+```
+
+**⚠️ Important: API Base URL Configuration**
+
+The `API_BASE_URL` should **NOT** include the `/prod` suffix when using a custom domain. Here's why:
+
+**With Custom Domain (api.krss.online):**
+- ✅ Correct: `https://api.krss.online`
+- ❌ Wrong: `https://api.krss.online/prod`
+
+**With Raw API Gateway Endpoint:**
+- ✅ Correct: `https://abc123.execute-api.region.amazonaws.com/prod`
+
+**Explanation:**
+When you configure a custom domain with API Gateway Base Path Mapping, AWS automatically routes requests to the specified stage (`prod`). The mapping is:
+- Request: `https://api.krss.online/sample-email`
+- AWS internally routes to: `[API-ID]/prod/sample-email`
+
+If you include `/prod` in your base URL, requests would try to access `/prod/prod/sample-email`, resulting in 404 errors.
+
+**Important**: Both `.env` files are in `.gitignore` and should never be committed!
+
+---
+
+## GitHub Actions Configuration
+
+### **Backend Deployment Workflow**
+
+File: `.github/workflows/backend-deploy.yml`
+
+**Triggers:**
+- Automatic: Push to `master` branch when `backend/**` files change
+- Manual: Workflow dispatch
+
+**Environment Variables Mapping:**
+```yaml
+- name: Deploy CDK Stack
+  run: npx cdk deploy --require-approval never
+  env:
+    # Secrets (encrypted)
+    GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+    GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+    CLOUDFLARE_SECRET_KEY: ${{ secrets.CLOUDFLARE_SECRET_KEY }}
+    
+    # Variables (configuration)
+    SES_SENDER_EMAIL: ${{ vars.SES_SENDER_EMAIL }}
+    BASE_DOMAIN: ${{ vars.BASE_DOMAIN }}
+    ACM_CERTIFICATE_ARN_API: ${{ vars.ACM_CERTIFICATE_ARN_API }}
+    ACM_CERTIFICATE_ARN_CLOUDFRONT: ${{ vars.ACM_CERTIFICATE_ARN_CLOUDFRONT }}
+```
+
+### **Frontend Deployment Workflow**
+
+File: `.github/workflows/frontend-deploy.yml`
+
+**Triggers:**
+- Automatic: Push to `master` branch when `frontend/**` files change
+- Manual: Workflow dispatch
+
+**Environment Variables Mapping:**
+```yaml
+- name: Build
+  run: npm run build -- --configuration production
+  env:
+    # All from Variables (non-sensitive config)
+    API_BASE_URL: ${{ vars.API_BASE_URL }}
+    COGNITO_USER_POOL_ID: ${{ vars.COGNITO_USER_POOL_ID }}
+    COGNITO_WEB_CLIENT_ID: ${{ vars.COGNITO_WEB_CLIENT_ID }}
+    COGNITO_DOMAIN: ${{ vars.COGNITO_DOMAIN }}
+    COGNITO_REDIRECT_SIGNIN: ${{ vars.COGNITO_REDIRECT_SIGNIN }}
+    COGNITO_REDIRECT_SIGNOUT: ${{ vars.COGNITO_REDIRECT_SIGNOUT }}
+```
+
+**Build Script:**
+The frontend uses a pre-build script (`scripts/set-env.js`) to generate `environment.prod.ts` from environment variables:
+```json
+{
+  "scripts": {
+    "config": "node scripts/set-env.js",
+    "build": "npm run config && ng build"
+  }
+}
+```
+
+---
+
+## Complete Cloudflare Setup Guide
+
+### **Phase 1: DNS Configuration**
+
+#### **For Frontend (thirukkural.krss.online)**
+1. **Cloudflare** → **DNS** → **Records**
+2. **Add CNAME Record:**
+   - **Type**: CNAME
+   - **Name**: `thirukkural`
+   - **Target**: `d232e1w18ndbh2.cloudfront.net` (your CloudFront domain)
+   - **Proxy Status**: **DNS Only (Grey Cloud)** 🌐 (recommended for simplicity)
+   - **TTL**: Auto
+3. **Save**
+
+#### **For API (api.krss.online)**
+1. **Cloudflare** → **DNS** → **Records**
+2. **Add CNAME Record:**
+   - **Type**: CNAME
+   - **Name**: `api`
+   - **Target**: `d-xyz123.execute-api.ap-south-1.amazonaws.com` ⚠️ **CRITICAL: Use custom domain endpoint, NOT raw execute-api endpoint**
+   - **Proxy Status**: **Proxied (Orange Cloud)** ☁️ (required for security)
+   - **TTL**: Auto
+3. **Save**
+
+**How to get the correct API endpoint:**
+```bash
+# AWS Console → API Gateway → Custom domain names → api.krss.online
+# Look for "API Gateway domain name" (starts with d-)
+```
+
+### **Phase 2: SSL/TLS Configuration**
+
+1. **Cloudflare** → **SSL/TLS** → **Overview**
+2. **Set encryption mode**:
+   - For API: **Full** (not Full Strict)
+   - For Frontend: **Full** or **Flexible**
+3. **Save**
+
+**Why "Full" and not "Full Strict"?**
+- Full Strict requires Cloudflare to validate the origin certificate
+- API Gateway uses AWS-issued certificates that Cloudflare may not fully trust
+- "Full" still encrypts the connection but is more lenient
+
+### **Phase 3: Transform Rules (API Security)**
+
+1. **Cloudflare** → **Rules** → **Transform Rules**
+2. **Create Transform Rule** → **Modify Request Header**
+3. **Configure:**
+   - **Rule Name**: `Add API Secret`
+   - **When incoming requests match**:
+     - Field: `Hostname`
+     - Operator: `equals`
+     - Value: `api.krss.online`
+   - **Then modify headers**:
+     - Action: **Set static**
+     - **Header name**: `Referer`
+     - **Value**: `dee875b3aafcbdae8f255c7cc8a71d408a94a2b933f6f280d0cf9f8d066acdeb` (your secret key)
+4. **Deploy**
+
+**Security Note**: This header is checked by API Gateway's Resource Policy. Requests without it are denied with 403.
+
+### **Phase 4: Verification**
+
+#### **Verify DNS Propagation**
+```powershell
+# Frontend
+nslookup thirukkural.krss.online
+# Should show CloudFront IPs (2600:9000:...)
+
+# API
+nslookup api.krss.online
+# Should show Cloudflare IPs (104.21.x.x, 172.67.x.x)
+```
+
+#### **Verify SSL**
+```bash
+# Both should show valid SSL certificate
+curl -I https://thirukkural.krss.online
+curl -I https://api.krss.online
+```
+
+#### **Verify API Security**
+```powershell
+# Direct access to API Gateway (should FAIL with 403)
+Invoke-WebRequest -Uri "https://[api-gateway-id].execute-api.region.amazonaws.com/prod/profile"
+
+# Access via Cloudflare (should SUCCEED or return proper API response)
+Invoke-WebRequest -Uri "https://api.krss.online/prod/sample-email" -Method POST -Body '{"email":"test@example.com"}' -ContentType "application/json"
+```
+
+### **Phase 5: Troubleshooting Cloudflare Issues**
+
+**Issue**: Error 525 (SSL Handshake Failed)
+- ✅ Set SSL/TLS mode to **Full** (not Full Strict)
+- ✅ Verify CNAME points to **custom domain endpoint** (starts with `d-`)
+- ✅ Ensure API Gateway custom domain is deployed and active
+
+**Issue**: Error 522 (Connection Timed Out)
+- ✅ Check API Gateway is deployed and responding
+- ✅ Verify security groups/NACL rules (if using VPC)
+
+**Issue**: CORS errors persist
+- ✅ Ensure API is **Proxied (Orange Cloud)**
+- ✅ Verify Transform Rule is **Deployed** and **Active**
+- ✅ Check API Gateway Resource Policy is applied
+
+**Issue**: DNS changes not taking effect
+- ✅ Wait 5-15 minutes for global propagation
+- ✅ Clear local DNS cache: `ipconfig /flushdns`
+- ✅ Test in incognito mode or on mobile data
+
+---
+
+## Security Architecture Diagram
+
+```
+┌─────────────┐
+│   User      │
+└──────┬──────┘
+       │
+       ╰─────────────────┬────────────────────┐
+                         │                    │
+                    [Frontend]            [API Calls]
+                         │                    │
+                         ▼                    ▼
+              ┌──────────────────┐  ┌──────────────────┐
+              │   Cloudflare     │  │   Cloudflare     │
+              │  (DNS Only) 🌐   │  │  (Proxied) ☁️    │
+              │                  │  │  + Transform     │
+              └────────┬─────────┘  │  Rule (Referer)  │
+                       │            └────────┬─────────┘
+                       ▼                     │
+              ┌──────────────────┐           │
+              │   CloudFront     │           │
+              │  + ACM Cert      │           │
+              │  + OAC           │           │
+              └────────┬─────────┘           │
+                       │                     ▼
+                       ▼            ┌──────────────────┐
+              ┌──────────────────┐  │  API Gateway     │
+              │   S3 Bucket      │  │  + Custom Domain │
+              │  (Private)       │  │  + ACM Cert      │
+              └──────────────────┘  │  + Resource      │
+                                    │    Policy        │
+                                    │  + Throttling    │
+                                    └────────┬─────────┘
+                                             │
+                                             ▼
+                                    ┌──────────────────┐
+                                    │  Lambda + DDB    │
+                                    │  + Rate Limit    │
+                                    └──────────────────┘
+```
+
+**Security Layers:**
+1. **Cloudflare**: DDoS protection, DNS, SSL/TLS, Transform Rules
+2. **CloudFront**: CDN, caching, AWS Shield Standard
+3. **API Gateway**: Throttling (100 RPS), Resource Policy (Referer check)
+4. **Lambda**: Business logic, DynamoDB rate limiting (24h window)
 
 ---
 
