@@ -1,3 +1,5 @@
+import * as dotenv from 'dotenv';
+dotenv.config();
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
@@ -12,13 +14,32 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
-import * as route53 from 'aws-cdk-lib/aws-route53';
-import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 import * as path from 'path';
 
 export class ThirukkuralStack extends cdk.Stack {
     constructor(scope: Construct, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
+
+        // --- Environment Configuration & Validation ---
+        const googleClientId = process.env.GOOGLE_CLIENT_ID;
+        const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+        const sesSenderEmail = process.env.SES_SENDER_EMAIL || 'noreply@example.com';
+        const baseDomain = process.env.BASE_DOMAIN || 'example.com'; // e.g., krss.online
+        const cloudflareSecretKey = process.env.CLOUDFLARE_SECRET_KEY;
+        const apiCertArn = process.env.ACM_CERTIFICATE_ARN_API;
+        const cloudfrontCertArn = process.env.ACM_CERTIFICATE_ARN_CLOUDFRONT;
+
+        // Derived Domains
+        const apiDomainName = `api.${baseDomain}`;
+        const appDomainName = `thirukkural.${baseDomain}`;
+
+        // Validate critical secrets for production-like deployments
+        if (!googleClientId || !googleClientSecret) {
+            console.warn('WARNING: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not provided. Cognito Google IdP will not be created.');
+        }
+        if (!cloudflareSecretKey) {
+            console.warn('WARNING: CLOUDFLARE_SECRET_KEY not provided. API Gateway will be open to public access.');
+        }
 
         // DynamoDB tables
         const kuralTable = new dynamodb.Table(this, 'ThirukkuralTable', {
@@ -63,11 +84,8 @@ export class ThirukkuralStack extends cdk.Stack {
         });
 
         // Google Identity Provider setup
-        const googleClientId = process.env.GOOGLE_CLIENT_ID || 'PLACEHOLDER_CLIENT_ID';
-        const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || 'PLACEHOLDER_CLIENT_SECRET';
-
         let googleProvider: cognito.UserPoolIdentityProviderGoogle | undefined;
-        if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+        if (googleClientId && googleClientSecret) {
             googleProvider = new cognito.UserPoolIdentityProviderGoogle(this, 'GoogleIdP', {
                 clientId: googleClientId,
                 clientSecretValue: cdk.SecretValue.unsafePlainText(googleClientSecret),
@@ -100,11 +118,11 @@ export class ThirukkuralStack extends cdk.Stack {
                 ],
                 callbackUrls: [
                     'http://localhost:4200/callback',
-                    'https://thirukkural.krss.online/callback'
+                    `https://${appDomainName}/callback`
                 ],
                 logoutUrls: [
                     'http://localhost:4200/',
-                    'https://thirukkural.krss.online/'
+                    `https://${appDomainName}/`
                 ],
             }
         });
@@ -125,7 +143,7 @@ export class ThirukkuralStack extends cdk.Stack {
             KURAL_TABLE: kuralTable.tableName,
             USERS_TABLE: usersTable.tableName,
             RATE_LIMIT_TABLE: rateLimitTable.tableName,
-            SES_SENDER: process.env.SES_SENDER_EMAIL ?? 'noreply@example.com',
+            SES_SENDER: sesSenderEmail,
         };
 
         const nodeJsProps: nodejs.NodejsFunctionProps = {
@@ -173,8 +191,8 @@ export class ThirukkuralStack extends cdk.Stack {
             restApiName: 'Thirukkural Service',
             deployOptions: {
                 stageName: 'prod',
-                throttlingRateLimit: 5, // Strict: Max 5 requests per second
-                throttlingBurstLimit: 10, // Strict: Allow bursts of only 10 requests
+                throttlingRateLimit: 100, // 100 requests per second (reasonable for small app)
+                throttlingBurstLimit: 200, // Allow bursts of 200 requests
                 tracingEnabled: true,
             },
             defaultCorsPreflightOptions: {
@@ -185,8 +203,7 @@ export class ThirukkuralStack extends cdk.Stack {
             // --- Cloudflare Security Integration ---
             // This policy ensures only requests coming from Cloudflare (with the secret header) are accepted.
             // UNCOMMENT the policy below AFTER you have configured Cloudflare Transform Rules.
-            /*
-            policy: new iam.PolicyDocument({
+            policy: cloudflareSecretKey ? new iam.PolicyDocument({
                 statements: [
                     new iam.PolicyStatement({
                         effect: iam.Effect.ALLOW,
@@ -201,31 +218,30 @@ export class ThirukkuralStack extends cdk.Stack {
                         resources: ['execute-api:/*'],
                         conditions: {
                             StringNotEquals: {
-                                'aws:Referer': 'YOUR_CLOUDFLARE_SECRET_KEY_12345' // Replace with a long random string
+                                'aws:Referer': cloudflareSecretKey
                             }
                         }
                     })
                 ]
-            })
-            */
+            }) : undefined
         });
 
         // --- Custom Domain for API (Required for Cloudflare) ---
         // 1. Create a Certificate in ACM (us-east-1 or region) for api.krss.online
         // 2. Uncomment the code below
-        /*
-        const apiDomain = new apigateway.DomainName(this, 'ApiDomain', {
-            domainName: 'api.krss.online',
-            certificate: acm.Certificate.fromCertificateArn(this, 'ApiCertificate', 'arn:aws:acm:REGION:ACCOUNT:certificate/ID'),
-            endpointType: apigateway.EndpointType.REGIONAL, // Regional is better for Cloudflare
-        });
+        if (apiCertArn) {
+            const apiDomain = new apigateway.DomainName(this, 'ApiDomain', {
+                domainName: apiDomainName,
+                certificate: acm.Certificate.fromCertificateArn(this, 'ApiCertificate', apiCertArn),
+                endpointType: apigateway.EndpointType.REGIONAL, // Regional is better for Cloudflare
+            });
 
-        // Map the domain to this API
-        new apigateway.BasePathMapping(this, 'ApiMapping', {
-            domainName: apiDomain,
-            restApi: api,
-        });
-        */
+            // Map the domain to this API
+            new apigateway.BasePathMapping(this, 'ApiMapping', {
+                domainName: apiDomain,
+                restApi: api,
+            });
+        }
 
         const authorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'CognitoAuthorizer', {
             cognitoUserPools: [userPool],
@@ -275,9 +291,7 @@ export class ThirukkuralStack extends cdk.Stack {
         // 1. Request a certificate in us-east-1 for thirukkural.krss.online
         // 2. Validate it (DNS validation recommended)
         // 3. Paste the ARN below
-        const certificate = acm.Certificate.fromCertificateArn(this, 'SiteCertificate', 'arn:aws:acm:us-east-1:612850243659:certificate/294a386d-9fbd-4adf-ad5d-c3027d779260');
-
-        const distribution = new cloudfront.Distribution(this, 'WebsiteDistribution', {
+        const distributionProps: cloudfront.DistributionProps = {
             defaultBehavior: {
                 origin: new origins.S3Origin(websiteBucket),
                 viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -285,8 +299,6 @@ export class ThirukkuralStack extends cdk.Stack {
                 cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
             },
             defaultRootObject: 'index.html',
-            domainNames: ['thirukkural.krss.online'],
-            certificate: certificate,
             errorResponses: [
                 {
                     httpStatus: 404,
@@ -299,7 +311,16 @@ export class ThirukkuralStack extends cdk.Stack {
                     responsePagePath: '/index.html',
                 },
             ],
-        });
+        };
+
+        if (cloudfrontCertArn) {
+            Object.assign(distributionProps, {
+                domainNames: [appDomainName],
+                certificate: acm.Certificate.fromCertificateArn(this, 'SiteCertificate', cloudfrontCertArn),
+            });
+        }
+
+        const distribution = new cloudfront.Distribution(this, 'WebsiteDistribution', distributionProps);
 
         // Attach OAC to Distribution (L1 construct workaround as L2 doesn't fully support OAC yet in all versions)
         const cfnDistribution = distribution.node.defaultChild as cloudfront.CfnDistribution;

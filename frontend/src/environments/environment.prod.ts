@@ -1,17 +1,14 @@
 export const environment = {
     production: true,
     cognito: {
-        userPoolId: 'ap-south-1_g6cAch9nf',
-        userPoolWebClientId: '5bjct26m4mgt914kp0rmjfaad4',
-        // The 'domain' field should be just the domain name without 'https://' - Amplify adds it automatically.
-        domain: 'thirukkural-app-612850243659.auth.ap-south-1.amazoncognito.com',
-        // 'redirectSignIn' and 'redirectSignOut' are callback URLs and must include 'https://'.
-        redirectSignIn: 'https://thirukkural.krss.online/callback',
-        redirectSignOut: 'https://thirukkural.krss.online/',
+        userPoolId: 'PLACEHOLDER_USER_POOL_ID',
+        userPoolWebClientId: 'PLACEHOLDER_WEB_CLIENT_ID',
+        domain: 'PLACEHOLDER_COGNITO_DOMAIN',
+        redirectSignIn: 'PLACEHOLDER_REDIRECT_SIGNIN',
+        redirectSignOut: 'PLACEHOLDER_REDIRECT_SIGNOUT',
     },
     api: {
-        // 'baseUrl' for API endpoints also requires the full URL including 'https://'.
-        baseUrl: 'https://08wz27wkyc.execute-api.ap-south-1.amazonaws.com/prod',
+        baseUrl: 'PLACEHOLDER_API_BASE_URL',
         endpoints: {
             profile: '/profile',
             sampleEmail: '/sample-email'
