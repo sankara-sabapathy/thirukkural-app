@@ -109,6 +109,60 @@ cd backend
 npx ts-node scripts/seed.ts
 ```
 
+## 🧪 Testing
+
+This project includes a comprehensive enterprise-grade test suite with unit tests and end-to-end tests.
+
+### Unit Tests (Vitest)
+
+Run unit tests:
+```bash
+cd frontend
+npm run test
+```
+
+Run tests with coverage report:
+```bash
+npm run test:coverage
+```
+
+The coverage report will be generated in the `coverage/` directory.
+
+**Test Coverage:**
+- `KuralService`: Data fetching, caching, and error handling
+- `HeaderComponent`: Mobile menu toggling and authentication state
+- `HomeComponent`: Email validation and navigation logic
+- `AppComponent`: Component creation and initialization
+
+### End-to-End Tests (Playwright)
+
+Run E2E tests:
+```bash
+cd frontend
+npm run e2e
+```
+
+View the HTML test report:
+```bash
+npx playwright show-report
+```
+
+**E2E Test Coverage:**
+- Homepage loading and title verification
+- Hero section rendering
+- Navigation between pages
+- Cross-browser testing (Chromium, Firefox, WebKit)
+- Mobile viewport testing (Pixel 5, iPhone 12)
+
+### Continuous Integration
+
+The project includes automated testing via GitHub Actions (`.github/workflows/test.yml`):
+- Runs on every push and pull request
+- Executes unit tests with coverage reporting
+- Runs E2E tests across multiple browsers
+- Uploads test reports and coverage as artifacts
+
+
 ## 🔄 CI/CD Pipeline Setup (GitHub Actions)
 
 This project includes a pre-configured GitHub Actions workflow (`.github/workflows/backend-deploy.yml`) for automated deployments.

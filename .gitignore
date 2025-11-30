@@ -24,6 +24,19 @@ cdk.out/
 *.log
 *.tsbuildinfo
 
+# Test coverage and reports
+coverage/
+frontend/coverage/
+backend/coverage/
+*.lcov
+
+# Playwright test results
+playwright-report/
+frontend/playwright-report/
+test-results/
+frontend/test-results/
+.playwright/
+
 # GPT ignore (optional, already present but keep out of repo)
 .gptignore
 
