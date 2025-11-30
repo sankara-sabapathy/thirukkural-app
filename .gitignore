@@ -28,3 +28,7 @@ cdk.out/
 .gptignore
 
 implementation_plan.md
+
+*thirukkural-data
+*thirukkural-data/*
+allKural.json

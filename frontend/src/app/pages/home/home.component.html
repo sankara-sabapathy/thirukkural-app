@@ -1,6 +1,4 @@
-<app-header></app-header>
-
-<main class="page-main">
+<div class="page-main">
     <section class="hero-section">
         <div class="container">
             <div class="hero-content fade-in">
@@ -21,6 +19,9 @@
                             <path d="M10 4l6 6-6 6M4 10h12" stroke="currentColor" stroke-width="2"
                                 stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
+                    </button>
+                    <button class="btn btn-secondary" (click)="goToRandomKural()">
+                        <span class="icon">🎲</span> Random Kural
                     </button>
                     <a href="https://en.wikipedia.org/wiki/Tirukku%E1%B9%9Ba%E1%B8%B7" target="_blank"
                         class="btn btn-outline">
@@ -134,7 +135,4 @@
             </div>
         </div>
     </section>
-</main>
-
-
-<app-footer></app-footer>
+</div>

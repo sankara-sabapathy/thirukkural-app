@@ -1,0 +1,357 @@
+.kural-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    min-height: 80vh;
+}
+
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+}
+
+.kural-content {
+    width: 100%;
+}
+
+.kural-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+
+    .card-header {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+        padding: 2rem 2.5rem;
+
+        .number-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 3.5rem;
+            height: 3.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .category-path {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-top: 0.75rem;
+
+            span {
+                &:not(:last-child)::after {
+                    content: '›';
+                    margin-left: 0.5rem;
+                }
+            }
+        }
+    }
+
+    .card-body {
+        padding: 2.5rem;
+
+        .tamil-section {
+            background: var(--bg-surface);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+
+            .tamil-text {
+                font-family: var(--font-tamil);
+                font-size: 1.5rem;
+                font-weight: 600;
+                line-height: 2;
+                color: var(--text-primary);
+
+                p {
+                    margin: 0.5rem 0;
+                }
+            }
+
+            .transliteration {
+                margin-top: 1.5rem;
+                padding-top: 1.5rem;
+                border-top: 1px solid var(--border-color);
+                font-size: 0.95rem;
+                color: var(--text-secondary);
+                font-style: italic;
+
+                .transliteration-label {
+                    font-weight: 600;
+                    margin-bottom: 0.5rem;
+                    font-style: normal;
+                }
+
+                p {
+                    margin: 0.25rem 0;
+                }
+            }
+        }
+
+        .category-info {
+            .category-details {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .category-item {
+                padding: 1rem;
+                background: var(--bg-surface);
+                border-radius: 8px;
+                border-left: 3px solid var(--primary);
+
+                strong {
+                    display: block;
+                    margin-bottom: 0.5rem;
+                    color: var(--primary);
+                    font-size: 0.9rem;
+                }
+
+                .tamil-text {
+                    font-family: var(--font-tamil);
+                    font-size: 1.1rem;
+                    font-weight: 500;
+                    margin-right: 0.5rem;
+                }
+
+                .english-text {
+                    color: var(--text-secondary);
+                    font-size: 0.95rem;
+                }
+
+                .transliteration-text {
+                    color: var(--text-secondary);
+                    font-size: 0.85rem;
+                    font-style: italic;
+                    margin-left: 0.5rem;
+                }
+            }
+        }
+
+        .commentaries-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 2px solid var(--border-color);
+
+            .section-title {
+                font-size: 1.3rem;
+                color: var(--primary);
+                margin-bottom: 2rem;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                font-weight: 600;
+
+                mat-icon {
+                    font-size: 1.5rem;
+                    width: 1.5rem;
+                    height: 1.5rem;
+                }
+            }
+
+            .detailed-commentary {
+                margin-top: 1rem;
+                padding: 1rem;
+                background: var(--bg-surface);
+                border-radius: 8px;
+                font-size: 0.95rem;
+                line-height: 1.8;
+            }
+        }
+
+        .content-section {
+            margin-bottom: 2rem;
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+
+            h3 {
+                font-size: 1.1rem;
+                color: var(--primary);
+                margin-bottom: 1rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-weight: 600;
+
+                mat-icon {
+                    font-size: 1.25rem;
+                    width: 1.25rem;
+                    height: 1.25rem;
+                }
+            }
+
+            p {
+                line-height: 1.8;
+                color: var(--text-secondary);
+                font-size: 1rem;
+            }
+
+            &.tamil-content p {
+                font-family: var(--font-tamil);
+                font-size: 1.05rem;
+            }
+        }
+    }
+
+    .card-footer {
+        padding: 1.5rem 2.5rem;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--bg-surface);
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+
+            button {
+                min-width: 120px;
+                font-weight: 500;
+
+                &:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+            }
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+
+            button {
+                color: var(--text-secondary);
+
+                &:hover {
+                    color: var(--primary);
+                    background-color: var(--bg-surface);
+                }
+            }
+        }
+
+        .back-to-list {
+            mat-icon {
+                margin-right: 0.25rem;
+            }
+        }
+    }
+}
+
+.error-message {
+    text-align: center;
+    padding: 4rem 2rem;
+
+    mat-icon {
+        font-size: 4rem;
+        width: 4rem;
+        height: 4rem;
+        color: #ef4444;
+        margin-bottom: 1rem;
+    }
+
+    p {
+        font-size: 1.2rem;
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+    }
+}
+
+// Mobile Responsive
+@media (max-width: 768px) {
+    .kural-container {
+        padding: 1rem 0.5rem;
+    }
+
+    .kural-card {
+        .card-header {
+            padding: 1.5rem 1.25rem;
+
+            .number-badge {
+                width: 3rem;
+                height: 3rem;
+                font-size: 1.1rem;
+            }
+
+            h1 {
+                font-size: 1.25rem;
+            }
+
+            .category-path {
+                font-size: 0.85rem;
+            }
+        }
+
+        .card-body {
+            padding: 1.5rem 1.25rem;
+
+            .tamil-section {
+                padding: 1.5rem;
+
+                .tamil-text {
+                    font-size: 1.25rem;
+                }
+            }
+
+            .content-section {
+                h3 {
+                    font-size: 1rem;
+                }
+
+                p {
+                    font-size: 0.95rem;
+                }
+            }
+        }
+
+        .card-footer {
+            padding: 1rem 1.25rem;
+            flex-direction: column;
+            gap: 1rem;
+
+            .nav-buttons {
+                width: 100%;
+
+                button {
+                    flex: 1;
+                    min-width: auto;
+                }
+            }
+
+            .action-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .back-to-list {
+                width: 100%;
+
+                button {
+                    width: 100%;
+                }
+            }
+        }
+    }
+}

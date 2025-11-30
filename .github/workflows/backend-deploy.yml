@@ -48,9 +48,10 @@ jobs:
         ACM_CERTIFICATE_ARN_API: ${{ vars.ACM_CERTIFICATE_ARN_API }}
         ACM_CERTIFICATE_ARN_CLOUDFRONT: ${{ vars.ACM_CERTIFICATE_ARN_CLOUDFRONT }}
 
-    - name: Seed Database
-      run: |
-        TABLE_NAME=$(aws cloudformation describe-stacks --stack-name ThirukkuralStack --query "Stacks[0].Outputs[?OutputKey=='KuralTableName'].OutputValue" --output text)
-        echo "Seeding table: $TABLE_NAME"
-        export KURAL_TABLE=$TABLE_NAME
-        npx ts-node scripts/seed.ts
+    # Seed Database step disabled - data already seeded
+    # - name: Seed Database
+    #   run: |
+    #     TABLE_NAME=$(aws cloudformation describe-stacks --stack-name ThirukkuralStack --query "Stacks[0].Outputs[?OutputKey=='KuralTableName'].OutputValue" --output text)
+    #     echo "Seeding table: $TABLE_NAME"
+    #     export KURAL_TABLE=$TABLE_NAME
+    #     npx ts-node scripts/seed.ts

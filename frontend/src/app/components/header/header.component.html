@@ -5,7 +5,16 @@
       <span class="brand-text">Thirukkural</span>
     </div>
 
-    <div class="nav-actions">
+    <!-- Desktop Navigation -->
+    <div class="nav-links">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">Home</a>
+      <a routerLink="/kurals" routerLinkActive="active" class="nav-link">Library</a>
+      <a routerLink="/about" routerLinkActive="active" class="nav-link">About</a>
+      <a routerLink="/contact" routerLinkActive="active" class="nav-link">Contact</a>
+    </div>
+
+    <!-- Desktop Actions -->
+    <div class="nav-actions desktop-actions">
       <ng-container *ngIf="user$ | async as user; else loginBtn">
         <div class="user-menu">
           <div class="user-avatar">{{ user.attributes.email[0].toUpperCase() }}</div>
@@ -23,5 +32,78 @@
         </button>
       </ng-template>
     </div>
+
+    <!-- Hamburger Menu Button (Mobile Only) -->
+    <button class="hamburger-btn" (click)="toggleMobileMenu()" [class.active]="isMobileMenuOpen" aria-label="Toggle menu">
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+    </button>
   </nav>
+
+  <!-- Mobile Menu Overlay -->
+  <div class="mobile-menu-overlay" [class.active]="isMobileMenuOpen" (click)="closeMobileMenu()"></div>
+  
+  <!-- Mobile Menu -->
+  <div class="mobile-menu" [class.active]="isMobileMenuOpen">
+    <div class="mobile-menu-header">
+      <div class="nav-brand">
+        <img src="logo.jpg" alt="Thirukkural Logo" class="brand-logo">
+        <span class="brand-text">Thirukkural</span>
+      </div>
+    </div>
+
+    <div class="mobile-menu-content">
+      <div class="mobile-nav-links">
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="mobile-nav-link" (click)="closeMobileMenu()">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M3 10l7-7 7 7M4 9v8a1 1 0 001 1h3a1 1 0 001-1v-3a1 1 0 011-1h2a1 1 0 011 1v3a1 1 0 001 1h3a1 1 0 001-1V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Home
+        </a>
+        <a routerLink="/kurals" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M5 4h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2zM7 8h6M7 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Library
+        </a>
+        <a routerLink="/about" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM10 11v4M10 7h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          About
+        </a>
+        <a routerLink="/contact" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Contact
+        </a>
+      </div>
+
+      <div class="mobile-menu-actions">
+        <ng-container *ngIf="user$ | async as user; else mobileLoginBtn">
+          <div class="mobile-user-info">
+            <div class="user-avatar">{{ user.attributes.email[0].toUpperCase() }}</div>
+            <span class="user-email">{{ user.attributes.email }}</span>
+          </div>
+          <button mat-button class="btn-logout mobile-btn" (click)="logout(); closeMobileMenu()">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M9 3H5a2 2 0 00-2 2v10a2 2 0 002 2h4M15 10l4-4m0 0l-4-4m4 4H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            Sign Out
+          </button>
+        </ng-container>
+
+        <ng-template #mobileLoginBtn>
+          <button mat-button class="btn-login mobile-btn" (click)="login(); closeMobileMenu()">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 10a4 4 0 100-8 4 4 0 000 8zm0 2c-4.42 0-8 1.79-8 4v2h16v-2c0-2.21-3.58-4-8-4z" fill="currentColor" />
+            </svg>
+            Sign In
+          </button>
+        </ng-template>
+      </div>
+    </div>
+  </div>
 </header>

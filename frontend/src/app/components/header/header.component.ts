@@ -14,6 +14,7 @@ import { Observable } from 'rxjs';
 })
 export class HeaderComponent {
     user$: Observable<any>;
+    isMobileMenuOpen = false;
 
     constructor(private authService: AuthService) {
         this.user$ = this.authService.user$;
@@ -25,5 +26,13 @@ export class HeaderComponent {
 
     logout() {
         this.authService.logout();
+    }
+
+    toggleMobileMenu() {
+        this.isMobileMenuOpen = !this.isMobileMenuOpen;
+    }
+
+    closeMobileMenu() {
+        this.isMobileMenuOpen = false;
     }
 }

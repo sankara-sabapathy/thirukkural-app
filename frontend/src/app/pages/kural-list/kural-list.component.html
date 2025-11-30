@@ -1,0 +1,62 @@
+<div class="list-container">
+    <div class="search-header">
+        <h1>Thirukkural Library</h1>
+        <p class="subtitle">Explore 1330 verses of timeless Tamil wisdom</p>
+
+        <div class="search-actions">
+            <mat-form-field appearance="outline" class="search-field">
+                <mat-label>Search kurals...</mat-label>
+                <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearch($event)"
+                    placeholder="Try searching by number, Tamil text, or translation">
+                <mat-icon matPrefix>search</mat-icon>
+            </mat-form-field>
+
+            <button mat-stroked-button (click)="goToRandomKural()" class="random-btn">
+                <mat-icon>shuffle</mat-icon>
+                Random Kural
+            </button>
+        </div>
+    </div>
+
+    <div *ngIf="loading" class="loading-spinner">
+        <mat-spinner diameter="50"></mat-spinner>
+    </div>
+
+    <div *ngIf="!loading" class="results-container">
+        <div class="results-header" *ngIf="filteredKurals.length > 0">
+            <span class="results-count">
+                Showing {{ displayedKurals.length }} of {{ filteredKurals.length }} kurals
+            </span>
+        </div>
+
+        <div *ngIf="filteredKurals.length === 0" class="no-results">
+            <mat-icon>search_off</mat-icon>
+            <p>No kurals found matching "{{ searchQuery }}"</p>
+            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Try searching with different keywords</p>
+        </div>
+
+        <div class="kural-grid" *ngIf="displayedKurals.length > 0">
+            <div *ngFor="let kural of displayedKurals" [routerLink]="['/kural', kural.n]" class="kural-item">
+                <div class="kural-header">
+                    <div class="kural-number">{{ kural.n }}</div>
+                    <div class="kural-title">{{ kural.l1 }}</div>
+                </div>
+
+                <div class="kural-translation">
+                    {{ kural.t }}
+                </div>
+
+                <div class="kural-meta">
+                    <span class="meta-tag">{{ kural.p }}</span>
+                    <span class="meta-tag">{{ kural.i }}</span>
+                    <span class="meta-tag">{{ kural.a }}</span>
+                </div>
+            </div>
+        </div>
+
+        <mat-paginator *ngIf="filteredKurals.length > 0" [length]="filteredKurals.length" [pageSize]="pageSize"
+            [pageSizeOptions]="pageSizeOptions" [pageIndex]="pageIndex" (page)="onPageChange($event)"
+            showFirstLastButtons aria-label="Select page">
+        </mat-paginator>
+    </div>
+</div>

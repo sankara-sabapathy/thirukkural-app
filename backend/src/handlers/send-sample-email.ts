@@ -1,9 +1,10 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { ScanCommand, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { PutCommand } from '@aws-sdk/lib-dynamodb';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 import { docClient } from '../shared/dynamo';
 import { createResponse } from '../shared/utils';
 import { generateKuralEmail, Kural } from '../shared/email-templates';
+import { getRandomKural } from '../shared/kural-utils';
 
 const ses = new SESClient({});
 
@@ -54,16 +55,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }
 
         // 2. Pick a random Kural
-        const kuralTable = process.env.KURAL_TABLE;
-        const kuralResult = await docClient.send(new ScanCommand({ TableName: kuralTable }));
-        const kurals = kuralResult.Items ?? [];
+        const randomKural = await getRandomKural();
 
-        if (kurals.length === 0) {
-            console.error('No Kurals found in database');
+        if (!randomKural) {
+            console.error('Failed to fetch random Kural from database');
             return createResponse(500, { message: 'Internal Server Error' });
         }
-
-        const randomKural = kurals[Math.floor(Math.random() * kurals.length)];
 
         // 3. Send Sample Email
         const kuralData: Kural = {

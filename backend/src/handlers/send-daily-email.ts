@@ -2,6 +2,7 @@ import { ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 import { docClient } from '../shared/dynamo';
 import { generateKuralEmail, Kural } from '../shared/email-templates';
+import { getRandomKural } from '../shared/kural-utils';
 
 const ses = new SESClient({});
 
@@ -22,15 +23,12 @@ export const handler = async (): Promise<void> => {
         }
 
         // 2. Pick a random Kural
-        const kuralResult = await docClient.send(new ScanCommand({ TableName: process.env.KURAL_TABLE }));
-        const kurals = kuralResult.Items ?? [];
+        const randomKural = await getRandomKural();
 
-        if (kurals.length === 0) {
-            console.error('No Kurals found in database');
+        if (!randomKural) {
+            console.error('Failed to fetch random Kural from database');
             return;
         }
-
-        const randomKural = kurals[Math.floor(Math.random() * kurals.length)];
 
         // Construct rich email content using shared template
         const kuralData: Kural = {

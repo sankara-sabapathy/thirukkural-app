@@ -1,9 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { HeaderComponent } from '../../components/header/header.component';
-import { FooterComponent } from '../../components/footer/footer.component';
 import { SubscriptionComponent } from '../../components/subscription/subscription.component';
 import { AuthService } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
@@ -12,7 +11,7 @@ import { Observable } from 'rxjs';
 @Component({
     selector: 'app-home',
     standalone: true,
-    imports: [CommonModule, FormsModule, MatSnackBarModule, HeaderComponent, FooterComponent, SubscriptionComponent],
+    imports: [CommonModule, FormsModule, MatSnackBarModule, SubscriptionComponent],
     templateUrl: './home.component.html',
     styleUrls: ['./home.component.scss']
 })
@@ -24,13 +23,19 @@ export class HomeComponent {
     constructor(
         private authService: AuthService,
         private apiService: ApiService,
-        private snackBar: MatSnackBar
+        private snackBar: MatSnackBar,
+        private router: Router
     ) {
         this.user$ = this.authService.user$;
     }
 
     scrollToSubscribe() {
         document.getElementById('subscribe')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    goToRandomKural() {
+        const randomId = Math.floor(Math.random() * 1330) + 1;
+        this.router.navigate(['/kural', randomId]);
     }
 
     sendSampleEmail() {
