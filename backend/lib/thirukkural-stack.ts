@@ -28,6 +28,9 @@ export class ThirukkuralStack extends cdk.Stack {
         const cloudflareSecretKey = process.env.CLOUDFLARE_SECRET_KEY;
         const apiCertArn = process.env.ACM_CERTIFICATE_ARN_API;
         const cloudfrontCertArn = process.env.ACM_CERTIFICATE_ARN_CLOUDFRONT;
+        const vapidPublicKey = process.env.VAPID_PUBLIC_KEY || '';
+        const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || '';
+        const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:example@example.com';
 
         // Derived Domains
         const apiDomainName = `api.${baseDomain}`;
@@ -64,6 +67,12 @@ export class ThirukkuralStack extends cdk.Stack {
         const rateLimitTable = new dynamodb.Table(this, 'RateLimitTable', {
             partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
             timeToLiveAttribute: 'ttl',
+            billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
+        });
+
+        const pushSubscriptionsTable = new dynamodb.Table(this, 'PushSubscriptionsTable', {
+            partitionKey: { name: 'deviceId', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
         });
@@ -143,7 +152,11 @@ export class ThirukkuralStack extends cdk.Stack {
             KURAL_TABLE: kuralTable.tableName,
             USERS_TABLE: usersTable.tableName,
             RATE_LIMIT_TABLE: rateLimitTable.tableName,
+            PUSH_SUBSCRIPTIONS_TABLE: pushSubscriptionsTable.tableName,
             SES_SENDER: sesSenderEmail,
+            VAPID_PUBLIC_KEY: vapidPublicKey,
+            VAPID_PRIVATE_KEY: vapidPrivateKey,
+            VAPID_SUBJECT: vapidSubject,
         };
 
         const nodeJsProps: nodejs.NodejsFunctionProps = {
@@ -171,12 +184,19 @@ export class ThirukkuralStack extends cdk.Stack {
             ...nodeJsProps,
         });
 
+        const subscribePushFn = new nodejs.NodejsFunction(this, 'SubscribePushFn', {
+            entry: path.join(__dirname, '../src/handlers/subscribe-push.ts'),
+            ...nodeJsProps,
+        });
+
         // Permissions
         kuralTable.grantReadData(sendEmailFn);
         kuralTable.grantReadData(sendSampleEmailFn);
         usersTable.grantReadWriteData(userProfileFn);
         usersTable.grantReadData(sendEmailFn);
         rateLimitTable.grantReadWriteData(sendSampleEmailFn);
+        pushSubscriptionsTable.grantReadWriteData(subscribePushFn);
+        pushSubscriptionsTable.grantReadData(sendEmailFn);
 
         const sesPolicy = new iam.PolicyStatement({
             actions: ['ses:SendEmail', 'ses:SendRawEmail'],
@@ -259,6 +279,9 @@ export class ThirukkuralStack extends cdk.Stack {
 
         const sampleEmail = api.root.addResource('sample-email');
         sampleEmail.addMethod('POST', new apigateway.LambdaIntegration(sendSampleEmailFn));
+
+        const subscribe = api.root.addResource('subscribe');
+        subscribe.addMethod('POST', new apigateway.LambdaIntegration(subscribePushFn));
 
         // EventBridge daily trigger
         // 8 AM IST = 2:30 AM UTC

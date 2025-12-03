@@ -18,9 +18,11 @@ const envConfigFile = `export const environment = {
         baseUrl: '${process.env.API_BASE_URL}',
         endpoints: {
             profile: '/profile',
-            sampleEmail: '/sample-email'
+            sampleEmail: '/sample-email',
+            subscribe: '/subscribe'
         }
-    }
+    },
+    vapidPublicKey: '${process.env.VAPID_PUBLIC_KEY}'
 };
 `;
 

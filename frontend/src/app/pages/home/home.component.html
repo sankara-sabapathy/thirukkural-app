@@ -89,6 +89,21 @@
         </div>
     </section>
 
+    <section class="push-notification-section">
+        <div class="container">
+            <div class="push-wrapper card fade-in" style="text-align: center; padding: 2rem; margin-bottom: 2rem;">
+                <div class="push-content">
+                    <h2 style="margin-bottom: 1rem;">Get Daily Wisdom via Push Notifications</h2>
+                    <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Receive Thirukkural directly on your
+                        device. No login required!</p>
+                    <button class="btn btn-primary" (click)="subscribeToPush()">
+                        Enable Notifications
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section class="sample-email-section">
         <div class="container">
             <div class="sample-email-wrapper card fade-in">
@@ -135,4 +150,19 @@
             </div>
         </div>
     </section>
+
+    <!-- Notification Prompt Banner -->
+    <div class="notification-banner" *ngIf="showNotificationPrompt">
+        <div class="banner-content">
+            <span class="banner-text">Enable notifications to get your daily wisdom!</span>
+            <div class="banner-actions">
+                <button class="btn btn-primary btn-sm" (click)="enableNotifications()">Enable</button>
+                <button class="btn btn-icon" (click)="dismissNotificationPrompt()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>

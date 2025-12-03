@@ -6,6 +6,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { SubscriptionComponent } from '../../components/subscription/subscription.component';
 import { AuthService } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
+import { PushNotificationService } from '../../services/push-notification.service';
 import { Observable } from 'rxjs';
 
 @Component({
@@ -20,13 +21,45 @@ export class HomeComponent {
     sampleEmail: string = '';
     isLoadingSample: boolean = false;
 
+    showNotificationPrompt = false;
+
     constructor(
         private authService: AuthService,
         private apiService: ApiService,
         private snackBar: MatSnackBar,
-        private router: Router
+        private router: Router,
+        private pushService: PushNotificationService
     ) {
         this.user$ = this.authService.user$;
+    }
+
+    ngOnInit() {
+        // Check if notifications are supported and permission is default
+        if ('Notification' in window && Notification.permission === 'default') {
+            // Delay prompt slightly to not overwhelm user immediately
+            setTimeout(() => {
+                this.showNotificationPrompt = true;
+            }, 3000);
+        }
+    }
+
+    async subscribeToPush() {
+        try {
+            await this.pushService.subscribeToNotifications();
+            this.showNotificationPrompt = false;
+            this.showSnackBar('Success! You will receive a Thirukkural at 8 AM everyday.', 'success');
+        } catch (err) {
+            console.error(err);
+            this.showSnackBar('Failed to enable notifications. Please check your browser settings.', 'error');
+        }
+    }
+
+    enableNotifications() {
+        this.subscribeToPush();
+    }
+
+    dismissNotificationPrompt() {
+        this.showNotificationPrompt = false;
     }
 
     scrollToSubscribe() {

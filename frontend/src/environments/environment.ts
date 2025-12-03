@@ -11,7 +11,9 @@ export const environment = {
         baseUrl: 'YOUR_API_GATEWAY_URL', // e.g., https://xyz.execute-api.us-east-1.amazonaws.com/prod
         endpoints: {
             profile: '/profile',
-            sampleEmail: '/sample-email'
+            sampleEmail: '/sample-email',
+            subscribe: '/subscribe'
         }
-    }
+    },
+    vapidPublicKey: 'YOUR_VAPID_PUBLIC_KEY'
 };

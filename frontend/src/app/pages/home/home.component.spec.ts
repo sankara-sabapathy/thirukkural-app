@@ -11,6 +11,8 @@ import { Component } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { SwPush } from '@angular/service-worker';
+import { PushNotificationService } from '../../services/push-notification.service';
 
 @Component({
     selector: 'app-subscription',
@@ -26,11 +28,15 @@ describe('HomeComponent', () => {
     let apiServiceMock: any;
     let snackBarMock: any;
     let router: Router;
+    let swPushMock: any;
+    let pushServiceMock: any;
 
     beforeEach(async () => {
         authServiceMock = { user$: of(null) };
         apiServiceMock = { sendSampleEmail: vi.fn().mockReturnValue(of({})) };
         snackBarMock = { open: vi.fn() };
+        swPushMock = { isEnabled: true, subscription: of(null) };
+        pushServiceMock = { subscribeToNotifications: vi.fn().mockResolvedValue(true) };
 
         await TestBed.configureTestingModule({
             imports: [HomeComponent, FormsModule, BrowserAnimationsModule],
@@ -40,7 +46,9 @@ describe('HomeComponent', () => {
                 provideHttpClientTesting(),
                 { provide: AuthService, useValue: authServiceMock },
                 { provide: ApiService, useValue: apiServiceMock },
-                { provide: MatSnackBar, useValue: snackBarMock }
+                { provide: MatSnackBar, useValue: snackBarMock },
+                { provide: SwPush, useValue: swPushMock },
+                { provide: PushNotificationService, useValue: pushServiceMock }
             ]
         })
             .overrideComponent(HomeComponent, {
@@ -74,5 +82,15 @@ describe('HomeComponent', () => {
     it('should navigate to random kural', () => {
         component.goToRandomKural();
         expect(router.navigate).toHaveBeenCalledWith(['/kural', expect.any(Number)]);
+    });
+
+    it('should subscribe to push notifications', async () => {
+        await component.subscribeToPush();
+        expect(pushServiceMock.subscribeToNotifications).toHaveBeenCalled();
+        expect(snackBarMock.open).toHaveBeenCalledWith(
+            'Success! You will receive a Thirukkural at 8 AM everyday.',
+            'Close',
+            expect.any(Object)
+        );
     });
 });

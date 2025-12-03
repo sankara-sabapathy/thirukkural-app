@@ -4,11 +4,15 @@ import { AuthService } from '../../services/auth.service';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
+import { PushNotificationService } from '../../services/push-notification.service';
+import { PwaService } from '../../services/pwa.service';
 
 describe('HeaderComponent', () => {
     let component: HeaderComponent;
     let fixture: ComponentFixture<HeaderComponent>;
     let authServiceMock: any;
+    let pushServiceMock: any;
+    let pwaServiceMock: any;
 
     beforeEach(async () => {
         authServiceMock = {
@@ -16,12 +20,16 @@ describe('HeaderComponent', () => {
             login: vi.fn(),
             logout: vi.fn()
         };
+        pushServiceMock = { subscribeToNotifications: vi.fn().mockResolvedValue(true) };
+        pwaServiceMock = { showInstallBanner$: of(false), installPwa: vi.fn() };
 
         await TestBed.configureTestingModule({
             imports: [HeaderComponent, MatButtonModule],
             providers: [
                 provideRouter([]),
-                { provide: AuthService, useValue: authServiceMock }
+                { provide: AuthService, useValue: authServiceMock },
+                { provide: PushNotificationService, useValue: pushServiceMock },
+                { provide: PwaService, useValue: pwaServiceMock }
             ]
         }).compileComponents();
 
@@ -56,5 +64,17 @@ describe('HeaderComponent', () => {
     it('should call logout on authService', () => {
         component.logout();
         expect(authServiceMock.logout).toHaveBeenCalled();
+    });
+
+    it('should call installPwa on pwaService', () => {
+        component.installPwa();
+        expect(pwaServiceMock.installPwa).toHaveBeenCalled();
+    });
+
+    it('should subscribe to notifications', async () => {
+        // Mock alert since it's used in component
+        vi.spyOn(window, 'alert').mockImplementation(() => { });
+        await component.subscribeToNotifications();
+        expect(pushServiceMock.subscribeToNotifications).toHaveBeenCalled();
     });
 });

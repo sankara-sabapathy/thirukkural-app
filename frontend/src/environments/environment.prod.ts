@@ -1,17 +1,19 @@
 export const environment = {
     production: true,
     cognito: {
-        userPoolId: 'PLACEHOLDER_USER_POOL_ID',
-        userPoolWebClientId: 'PLACEHOLDER_WEB_CLIENT_ID',
-        domain: 'PLACEHOLDER_COGNITO_DOMAIN',
-        redirectSignIn: 'PLACEHOLDER_REDIRECT_SIGNIN',
-        redirectSignOut: 'PLACEHOLDER_REDIRECT_SIGNOUT',
+        userPoolId: 'ap-south-1_g6cAch9nf',
+        userPoolWebClientId: '5bjct26m4mgt914kp0rmjfaad4',
+        domain: 'thirukkural-app-612850243659.auth.ap-south-1.amazoncognito.com',
+        redirectSignIn: 'https://thirukkural.krss.online/callback',
+        redirectSignOut: 'https://thirukkural.krss.online/',
     },
     api: {
-        baseUrl: 'PLACEHOLDER_API_BASE_URL',
+        baseUrl: 'https://api.krss.online',
         endpoints: {
             profile: '/profile',
-            sampleEmail: '/sample-email'
+            sampleEmail: '/sample-email',
+            subscribe: '/subscribe'
         }
-    }
+    },
+    vapidPublicKey: 'undefined'
 };

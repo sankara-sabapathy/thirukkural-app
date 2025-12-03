@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { PushNotificationService } from '../../services/push-notification.service';
+import { PwaService } from '../../services/pwa.service';
 import { Observable } from 'rxjs';
 
 @Component({
@@ -15,9 +17,29 @@ import { Observable } from 'rxjs';
 export class HeaderComponent {
     user$: Observable<any>;
     isMobileMenuOpen = false;
+    showInstallButton$: Observable<boolean>;
 
-    constructor(private authService: AuthService) {
+    constructor(
+        private authService: AuthService,
+        private pushService: PushNotificationService,
+        private pwaService: PwaService
+    ) {
         this.user$ = this.authService.user$;
+        this.showInstallButton$ = this.pwaService.showInstallBanner$;
+    }
+
+    installPwa() {
+        this.pwaService.installPwa();
+    }
+
+    async subscribeToNotifications() {
+        try {
+            await this.pushService.subscribeToNotifications();
+            alert('Successfully subscribed to daily wisdom!');
+        } catch (error) {
+            console.error('Subscription failed', error);
+            alert('Failed to subscribe. Please try again.');
+        }
     }
 
     login() {

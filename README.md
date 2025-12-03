@@ -14,6 +14,15 @@ This project uses a **Serverless Architecture** on AWS:
 *   **Email**: Amazon SES.
 *   **IaC**: AWS Cloud Development Kit (CDK) in TypeScript.
 
+## 📱 PWA & Push Notifications
+
+The application is a fully functional **Progressive Web App (PWA)**:
+*   **Installable**: Users can install the app on their devices (mobile/desktop) for a native-like experience.
+*   **Offline Support**: Caches assets and API responses for offline access.
+*   **Push Notifications**: Supports web push notifications to deliver the daily Thirukkural at 8 AM without requiring the user to be logged in.
+    *   Uses **VAPID** (Voluntary Application Server Identification) for secure push delivery.
+    *   Subscriptions are stored anonymously in DynamoDB.
+
 ## 🚀 Deployment Guide
 
 Follow these steps to deploy the application to your own AWS account.
@@ -47,6 +56,10 @@ $env:SES_SENDER_EMAIL="your-verified-email@example.com"
 # Optional: For Google Sign-In
 $env:GOOGLE_CLIENT_ID="your-google-client-id"
 $env:GOOGLE_CLIENT_SECRET="your-google-client-secret"
+# For Push Notifications (Generate using: npx web-push generate-vapid-keys)
+$env:VAPID_PUBLIC_KEY="your-vapid-public-key"
+$env:VAPID_PRIVATE_KEY="your-vapid-private-key"
+$env:VAPID_SUBJECT="mailto:your-email@example.com"
 ```
 
 **Mac/Linux:**
@@ -54,6 +67,10 @@ $env:GOOGLE_CLIENT_SECRET="your-google-client-secret"
 export SES_SENDER_EMAIL="your-verified-email@example.com"
 export GOOGLE_CLIENT_ID="your-google-client-id"
 export GOOGLE_CLIENT_SECRET="your-google-client-secret"
+# For Push Notifications (Generate using: npx web-push generate-vapid-keys)
+export VAPID_PUBLIC_KEY="your-vapid-public-key"
+export VAPID_PRIVATE_KEY="your-vapid-private-key"
+export VAPID_SUBJECT="mailto:your-email@example.com"
 ```
 
 ### 4. Build Frontend
@@ -244,6 +261,9 @@ These values should **NEVER** be committed to version control. Use `.env` files 
 | `SES_SENDER_EMAIL` | Verified SES Email Address | Backend Deployment / CI Secrets |
 | `AWS_ACCESS_KEY_ID` | AWS Credentials | CI Secrets (GitHub Actions) |
 | `AWS_SECRET_ACCESS_KEY` | AWS Credentials | CI Secrets (GitHub Actions) |
+| `VAPID_PUBLIC_KEY` | Web Push Public Key | Backend Deployment / CI Secrets |
+| `VAPID_PRIVATE_KEY` | Web Push Private Key | Backend Deployment / CI Secrets |
+| `VAPID_SUBJECT` | Web Push Subject (mailto:) | Backend Deployment / CI Secrets |
 
 ### Public Configuration
 The following values are **safe to commit** in `environment.ts` / `environment.prod.ts` as they are exposed in the client-side bundle anyway:
