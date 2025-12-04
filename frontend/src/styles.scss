@@ -191,3 +191,69 @@ a {
 .fade-in {
     animation: fadeIn 0.6s ease-out;
 }
+
+/* Material Snackbar Styles - High contrast for visibility in all modes */
+.mat-mdc-snack-bar-container {
+    &.snackbar-success {
+        --mdc-snackbar-container-color: #059669;
+        --mdc-snackbar-supporting-text-color: white;
+        --mat-snack-bar-button-color: white;
+
+        .mdc-snackbar__surface {
+            background-color: #059669 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 8px 24px rgba(5, 150, 105, 0.4) !important;
+        }
+
+        .mdc-snackbar__label {
+            color: white !important;
+            font-weight: 500;
+        }
+
+        .mat-mdc-button {
+            color: white !important;
+        }
+    }
+
+    &.snackbar-error {
+        --mdc-snackbar-container-color: #dc2626;
+        --mdc-snackbar-supporting-text-color: white;
+        --mat-snack-bar-button-color: white;
+
+        .mdc-snackbar__surface {
+            background-color: #dc2626 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 8px 24px rgba(220, 38, 38, 0.4) !important;
+        }
+
+        .mdc-snackbar__label {
+            color: white !important;
+            font-weight: 500;
+        }
+
+        .mat-mdc-button {
+            color: white !important;
+        }
+    }
+
+    &.snackbar-info {
+        --mdc-snackbar-container-color: #2563eb;
+        --mdc-snackbar-supporting-text-color: white;
+        --mat-snack-bar-button-color: white;
+
+        .mdc-snackbar__surface {
+            background-color: #2563eb !important;
+            border-radius: 12px !important;
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4) !important;
+        }
+
+        .mdc-snackbar__label {
+            color: white !important;
+            font-weight: 500;
+        }
+
+        .mat-mdc-button {
+            color: white !important;
+        }
+    }
+}

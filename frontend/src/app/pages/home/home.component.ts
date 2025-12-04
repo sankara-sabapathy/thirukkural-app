@@ -44,13 +44,13 @@ export class HomeComponent {
     }
 
     async subscribeToPush() {
-        try {
-            await this.pushService.subscribeToNotifications();
-            this.showNotificationPrompt = false;
-            this.showSnackBar('Success! You will receive a Thirukkural at 8 AM everyday.', 'success');
-        } catch (err) {
-            console.error(err);
-            this.showSnackBar('Failed to enable notifications. Please check your browser settings.', 'error');
+        const result = await this.pushService.subscribeToNotifications();
+        this.showNotificationPrompt = false;
+
+        if (result.success) {
+            this.showSnackBar(result.message, 'success');
+        } else {
+            this.showSnackBar(result.message, 'error');
         }
     }
 

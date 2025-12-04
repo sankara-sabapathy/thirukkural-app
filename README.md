@@ -50,15 +50,49 @@ npm install
 
 Set the following environment variables in your terminal before deploying.
 
+#### 3.1 Generate VAPID Keys (Required for Push Notifications)
+
+VAPID (Voluntary Application Server Identification) keys are required for web push notifications. Generate them once and use them for all deployments.
+
+**Step 1: Generate Keys**
+```bash
+npx web-push generate-vapid-keys
+```
+
+This will output something like:
+```
+=======================================
+
+Public Key:
+BNxCpD0m...long-string...
+
+Private Key:
+_HsT7zP9...long-string...
+
+=======================================
+```
+
+**Step 2: Save the Keys**
+- Copy the **Public Key** - you'll need this for BOTH frontend and backend
+- Copy the **Private Key** - you'll need this ONLY for backend (keep it secret!)
+
+**Step 3: Configure Frontend**
+Add the public key to `frontend/src/environments/environment.ts` and `environment.prod.ts`:
+```typescript
+vapidPublicKey: 'BNxCpD0m...your-public-key...'
+```
+
+**Step 4: Set Backend Environment Variables**
+
 **Windows (PowerShell):**
 ```powershell
 $env:SES_SENDER_EMAIL="your-verified-email@example.com"
 # Optional: For Google Sign-In
 $env:GOOGLE_CLIENT_ID="your-google-client-id"
 $env:GOOGLE_CLIENT_SECRET="your-google-client-secret"
-# For Push Notifications (Generate using: npx web-push generate-vapid-keys)
-$env:VAPID_PUBLIC_KEY="your-vapid-public-key"
-$env:VAPID_PRIVATE_KEY="your-vapid-private-key"
+# For Push Notifications
+$env:VAPID_PUBLIC_KEY="BNxCpD0m...your-public-key..."
+$env:VAPID_PRIVATE_KEY="_HsT7zP9...your-private-key..."
 $env:VAPID_SUBJECT="mailto:your-email@example.com"
 ```
 
@@ -67,9 +101,9 @@ $env:VAPID_SUBJECT="mailto:your-email@example.com"
 export SES_SENDER_EMAIL="your-verified-email@example.com"
 export GOOGLE_CLIENT_ID="your-google-client-id"
 export GOOGLE_CLIENT_SECRET="your-google-client-secret"
-# For Push Notifications (Generate using: npx web-push generate-vapid-keys)
-export VAPID_PUBLIC_KEY="your-vapid-public-key"
-export VAPID_PRIVATE_KEY="your-vapid-private-key"
+# For Push Notifications
+export VAPID_PUBLIC_KEY="BNxCpD0m...your-public-key..."
+export VAPID_PRIVATE_KEY="_HsT7zP9...your-private-key..."
 export VAPID_SUBJECT="mailto:your-email@example.com"
 ```
 
