@@ -36,7 +36,11 @@ describe('HomeComponent', () => {
         apiServiceMock = { sendSampleEmail: vi.fn().mockReturnValue(of({})) };
         snackBarMock = { open: vi.fn() };
         swPushMock = { isEnabled: true, subscription: of(null) };
-        pushServiceMock = { subscribeToNotifications: vi.fn().mockResolvedValue(true) };
+        pushServiceMock = {
+            isSubscribed: vi.fn().mockResolvedValue(false),
+            subscribeToNotifications: vi.fn().mockResolvedValue({ success: true, message: 'Subscribed!' }),
+            unsubscribeFromNotifications: vi.fn().mockResolvedValue({ success: true, message: 'Unsubscribed!' })
+        };
 
         await TestBed.configureTestingModule({
             imports: [HomeComponent, FormsModule, BrowserAnimationsModule],
@@ -60,8 +64,10 @@ describe('HomeComponent', () => {
         fixture = TestBed.createComponent(HomeComponent);
         component = fixture.componentInstance;
         router = TestBed.inject(Router);
-        // Mock navigate on the injected router instance
         vi.spyOn(router, 'navigate');
+
+        // Skip initial async operations
+        component.isCheckingPush = false;
         fixture.detectChanges();
     });
 
@@ -74,6 +80,7 @@ describe('HomeComponent', () => {
         component.sendSampleEmail();
         expect(snackBarMock.open).toHaveBeenCalled();
 
+        snackBarMock.open.mockClear();
         component.sampleEmail = 'test@example.com';
         component.sendSampleEmail();
         expect(apiServiceMock.sendSampleEmail).toHaveBeenCalledWith('test@example.com');
@@ -84,13 +91,40 @@ describe('HomeComponent', () => {
         expect(router.navigate).toHaveBeenCalledWith(['/kural', expect.any(Number)]);
     });
 
-    it('should subscribe to push notifications', async () => {
-        await component.subscribeToPush();
+    it('should toggle push notifications to subscribe', async () => {
+        component.isPushSubscribed = false;
+        await component.togglePushNotifications();
         expect(pushServiceMock.subscribeToNotifications).toHaveBeenCalled();
-        expect(snackBarMock.open).toHaveBeenCalledWith(
-            'Success! You will receive a Thirukkural at 8 AM everyday.',
-            'Close',
-            expect.any(Object)
-        );
+        expect(component.isPushSubscribed).toBe(true);
+        expect(snackBarMock.open).toHaveBeenCalledWith('Subscribed!', 'Close', expect.any(Object));
+    });
+
+    it('should toggle push notifications to unsubscribe', async () => {
+        component.isPushSubscribed = true;
+        await component.togglePushNotifications();
+        expect(pushServiceMock.unsubscribeFromNotifications).toHaveBeenCalled();
+        expect(component.isPushSubscribed).toBe(false);
+        expect(snackBarMock.open).toHaveBeenCalledWith('Unsubscribed!', 'Close', expect.any(Object));
+    });
+
+    it('should update state on subscribeToPush', async () => {
+        await component.subscribeToPush();
+        expect(component.isPushSubscribed).toBe(true);
+        expect(component.showNotificationPrompt).toBe(false);
+    });
+
+    it('should handle toggle errors gracefully', async () => {
+        pushServiceMock.subscribeToNotifications.mockResolvedValue({ success: false, message: 'Error!' });
+        component.isPushSubscribed = false;
+        await component.togglePushNotifications();
+        expect(component.isPushSubscribed).toBe(false);
+        expect(snackBarMock.open).toHaveBeenCalledWith('Error!', 'Close', expect.any(Object));
+    });
+
+    it('should not toggle when already toggling', async () => {
+        component.isTogglingPush = true;
+        await component.togglePushNotifications();
+        expect(pushServiceMock.subscribeToNotifications).not.toHaveBeenCalled();
+        expect(pushServiceMock.unsubscribeFromNotifications).not.toHaveBeenCalled();
     });
 });

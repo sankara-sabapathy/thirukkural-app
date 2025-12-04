@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -16,12 +16,17 @@ import { Observable } from 'rxjs';
     templateUrl: './home.component.html',
     styleUrls: ['./home.component.scss']
 })
-export class HomeComponent {
+export class HomeComponent implements OnInit {
     user$: Observable<any>;
     sampleEmail: string = '';
     isLoadingSample: boolean = false;
 
     showNotificationPrompt = false;
+
+    // Push notification toggle state
+    isPushSubscribed = false;
+    isCheckingPush = true;
+    isTogglingPush = false;
 
     constructor(
         private authService: AuthService,
@@ -33,14 +38,67 @@ export class HomeComponent {
         this.user$ = this.authService.user$;
     }
 
-    ngOnInit() {
-        // Check if notifications are supported and permission is default
-        if ('Notification' in window && Notification.permission === 'default') {
-            // Delay prompt slightly to not overwhelm user immediately
+    async ngOnInit() {
+        // Check push notification subscription status
+        await this.checkPushSubscriptionStatus();
+
+        // Show notification prompt only if not subscribed and permission is default
+        if (!this.isPushSubscribed && 'Notification' in window && Notification.permission === 'default') {
             setTimeout(() => {
                 this.showNotificationPrompt = true;
             }, 3000);
         }
+    }
+
+    /**
+     * Check if push notifications are currently enabled
+     */
+    async checkPushSubscriptionStatus() {
+        this.isCheckingPush = true;
+        try {
+            this.isPushSubscribed = await this.pushService.isSubscribed();
+        } catch (err) {
+            console.error('Error checking push subscription:', err);
+            this.isPushSubscribed = false;
+        }
+        this.isCheckingPush = false;
+    }
+
+    /**
+     * Toggle push notifications on/off
+     */
+    async togglePushNotifications() {
+        if (this.isTogglingPush) return;
+
+        this.isTogglingPush = true;
+
+        try {
+            if (this.isPushSubscribed) {
+                // Unsubscribe
+                const result = await this.pushService.unsubscribeFromNotifications();
+                if (result.success) {
+                    this.isPushSubscribed = false;
+                    this.showSnackBar(result.message, 'success');
+                } else {
+                    this.showSnackBar(result.message, 'error');
+                }
+            } else {
+                // Subscribe
+                const result = await this.pushService.subscribeToNotifications();
+                if (result.success) {
+                    this.isPushSubscribed = true;
+                    this.showNotificationPrompt = false;
+                    this.showSnackBar(result.message, 'success');
+                } else {
+                    this.showSnackBar(result.message, 'error');
+                }
+            }
+        } catch (err) {
+            console.error('Error toggling push notifications:', err);
+            this.showSnackBar('Something went wrong. Please try again.', 'error');
+        }
+
+        this.isTogglingPush = false;
     }
 
     async subscribeToPush() {
@@ -48,6 +106,7 @@ export class HomeComponent {
         this.showNotificationPrompt = false;
 
         if (result.success) {
+            this.isPushSubscribed = true;
             this.showSnackBar(result.message, 'success');
         } else {
             this.showSnackBar(result.message, 'error');

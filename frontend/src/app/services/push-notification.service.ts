@@ -13,6 +13,8 @@ export type NotificationPermissionStatus = 'granted' | 'denied' | 'default' | 'u
 export class PushNotificationService {
     private readonly VAPID_PUBLIC_KEY = environment.vapidPublicKey;
     private readonly API_URL = environment.api.baseUrl + environment.api.endpoints.subscribe;
+    private readonly STORAGE_KEY = 'push_subscribed';
+    private readonly DEVICE_ID_KEY = 'device_id';
 
     constructor(
         private swPush: SwPush,
@@ -45,6 +47,35 @@ export class PushNotificationService {
      */
     isGranted(): boolean {
         return this.getPermissionStatus() === 'granted';
+    }
+
+    /**
+     * Check if push notifications are currently subscribed
+     * Uses localStorage for quick state access combined with permission check
+     */
+    async isSubscribed(): Promise<boolean> {
+        // If permission is not granted, not subscribed
+        if (!this.isGranted()) {
+            localStorage.removeItem(this.STORAGE_KEY);
+            return false;
+        }
+
+        // Check localStorage for subscription state
+        const storedState = localStorage.getItem(this.STORAGE_KEY);
+        if (storedState === 'true') {
+            // Verify with SwPush subscription
+            try {
+                const subscription = await firstValueFrom(this.swPush.subscription);
+                if (subscription) {
+                    return true;
+                }
+            } catch {
+                // SwPush not available, rely on localStorage
+                return true;
+            }
+        }
+
+        return false;
     }
 
     async subscribeToNotifications(): Promise<{ success: boolean; message: string }> {
@@ -87,6 +118,9 @@ export class PushNotificationService {
                 deviceId: deviceId
             }));
 
+            // Store subscription state in localStorage
+            localStorage.setItem(this.STORAGE_KEY, 'true');
+
             console.log('Notification subscription sent to server');
             return {
                 success: true,
@@ -110,11 +144,57 @@ export class PushNotificationService {
         }
     }
 
+    /**
+     * Unsubscribe from push notifications
+     */
+    async unsubscribeFromNotifications(): Promise<{ success: boolean; message: string }> {
+        try {
+            // Get current subscription
+            const subscription = await firstValueFrom(this.swPush.subscription);
+
+            if (subscription) {
+                // Unsubscribe from browser
+                await subscription.unsubscribe();
+            }
+
+            // Call backend to remove subscription
+            const deviceId = localStorage.getItem(this.DEVICE_ID_KEY);
+            if (deviceId) {
+                try {
+                    await firstValueFrom(this.http.delete(
+                        `${environment.api.baseUrl}${environment.api.endpoints.subscribe}/${deviceId}`
+                    ));
+                } catch (err) {
+                    console.warn('Failed to remove subscription from server:', err);
+                    // Continue even if server request fails
+                }
+            }
+
+            // Clear localStorage
+            localStorage.removeItem(this.STORAGE_KEY);
+
+            return {
+                success: true,
+                message: 'Push notifications have been disabled.'
+            };
+        } catch (err) {
+            console.error('Failed to unsubscribe from notifications', err);
+
+            // Clear localStorage anyway
+            localStorage.removeItem(this.STORAGE_KEY);
+
+            return {
+                success: false,
+                message: 'Failed to fully unsubscribe. Please try again.'
+            };
+        }
+    }
+
     private getDeviceId(): string {
-        let deviceId = localStorage.getItem('device_id');
+        let deviceId = localStorage.getItem(this.DEVICE_ID_KEY);
         if (!deviceId) {
             deviceId = uuidv4();
-            localStorage.setItem('device_id', deviceId);
+            localStorage.setItem(this.DEVICE_ID_KEY, deviceId);
         }
         return deviceId;
     }

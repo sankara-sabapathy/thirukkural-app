@@ -283,6 +283,17 @@ export class ThirukkuralStack extends cdk.Stack {
         const subscribe = api.root.addResource('subscribe');
         subscribe.addMethod('POST', new apigateway.LambdaIntegration(subscribePushFn));
 
+        // Unsubscribe push notification endpoint
+        const unsubscribePushFn = new nodejs.NodejsFunction(this, 'UnsubscribePushFn', {
+            entry: path.join(__dirname, '../src/handlers/unsubscribe-push.ts'),
+            ...nodeJsProps,
+        });
+        pushSubscriptionsTable.grantReadWriteData(unsubscribePushFn);
+
+        const subscribeWithDeviceId = subscribe.addResource('{deviceId}');
+        subscribeWithDeviceId.addMethod('DELETE', new apigateway.LambdaIntegration(unsubscribePushFn));
+
+
         // EventBridge daily trigger
         // 8 AM IST = 2:30 AM UTC
         const rule = new events.Rule(this, 'DailyKuralRule', {
