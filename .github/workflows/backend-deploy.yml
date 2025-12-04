@@ -47,6 +47,9 @@ jobs:
         BASE_DOMAIN: ${{ vars.BASE_DOMAIN }}
         ACM_CERTIFICATE_ARN_API: ${{ vars.ACM_CERTIFICATE_ARN_API }}
         ACM_CERTIFICATE_ARN_CLOUDFRONT: ${{ vars.ACM_CERTIFICATE_ARN_CLOUDFRONT }}
+        VAPID_PUBLIC_KEY: ${{ vars.VAPID_PUBLIC_KEY }}
+        VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+        VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}
 
     # Seed Database step disabled - data already seeded
     # - name: Seed Database
