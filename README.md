@@ -206,6 +206,7 @@ After the backend is deployed, you must update the frontend environment files to
 | `cognito.userPoolWebClientId` | `ThirukkuralStack.UserPoolClientId` | `src/environments/environment.ts` |
 | `cognito.domain` | `ThirukkuralStack.UserPoolDomain` | `src/environments/environment.ts` |
 | `api.baseUrl` | `ThirukkuralStack.ApiUrl` | `src/environments/environment.ts` |
+| `vapidPublicKey` | Your Generated VAPID Public Key | `src/environments/environment.ts` |
 
 **Note**: For production builds (`npm run build --prod`), update `src/environments/environment.prod.ts` with the same values, but ensure `redirectSignIn` and `redirectSignOut` point to your production domain (e.g., `https://your-domain.com/callback`).
 

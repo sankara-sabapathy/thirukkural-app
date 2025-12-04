@@ -1,14 +1,11 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HeaderComponent } from '../../components/header/header.component';
-import { FooterComponent } from '../../components/footer/footer.component';
 
 @Component({
-    selector: 'app-privacy',
-    standalone: true,
-    imports: [CommonModule, HeaderComponent, FooterComponent],
-    template: `
-    <app-header></app-header>
+  selector: 'app-privacy',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
     <main class="page-main">
       <div class="container">
         <div class="content-card card fade-in">
@@ -51,9 +48,8 @@ import { FooterComponent } from '../../components/footer/footer.component';
         </div>
       </div>
     </main>
-    <app-footer></app-footer>
   `,
-    styles: [`
+  styles: [`
     .page-main { padding: 4rem 0; min-height: 80vh; }
     .content-card { max-width: 800px; margin: 0 auto; }
     h1 { font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--accent-primary); }
