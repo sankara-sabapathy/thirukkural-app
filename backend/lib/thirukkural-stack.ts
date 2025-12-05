@@ -197,7 +197,7 @@ export class ThirukkuralStack extends cdk.Stack {
         usersTable.grantReadData(sendEmailFn);
         rateLimitTable.grantReadWriteData(sendSampleEmailFn);
         pushSubscriptionsTable.grantReadWriteData(subscribePushFn);
-        pushSubscriptionsTable.grantReadData(sendEmailFn);
+        pushSubscriptionsTable.grantReadWriteData(sendEmailFn);
 
         const sesPolicy = new iam.PolicyStatement({
             actions: ['ses:SendEmail', 'ses:SendRawEmail'],
