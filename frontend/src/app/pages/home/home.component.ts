@@ -102,14 +102,21 @@ export class HomeComponent implements OnInit {
     }
 
     async subscribeToPush() {
-        const result = await this.pushService.subscribeToNotifications();
-        this.showNotificationPrompt = false;
+        try {
+            const result = await this.pushService.subscribeToNotifications();
+            this.showNotificationPrompt = false;
 
-        if (result.success) {
-            this.isPushSubscribed = true;
-            this.showSnackBar(result.message, 'success');
-        } else {
-            this.showSnackBar(result.message, 'error');
+            if (result.success) {
+                this.isPushSubscribed = true;
+                this.showSnackBar(result.message, 'success');
+            } else {
+                this.showSnackBar(result.message, 'error');
+            }
+        } catch (err) {
+            console.error('Error subscribing to push notifications:', err);
+            this.showSnackBar('Failed to enable notifications. Please try again.', 'error');
+            // Keep prompt visible so user can retry
+            this.showNotificationPrompt = true;
         }
     }
 
