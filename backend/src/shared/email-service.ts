@@ -51,6 +51,8 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
             body: JSON.stringify(data)
         });
 
+        console.log(`Brevo API Response Status: ${response.status} ${response.statusText}`);
+
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`Brevo API Error: ${response.status} ${response.statusText} - ${errorText}`);

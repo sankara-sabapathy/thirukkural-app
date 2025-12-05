@@ -196,6 +196,7 @@ export class ThirukkuralStack extends cdk.Stack {
 
         const sendSampleEmailFn = new nodejs.NodejsFunction(this, 'SendSampleEmailFn', {
             entry: path.join(__dirname, '../src/handlers/send-sample-email.ts'),
+            timeout: cdk.Duration.seconds(30),
             ...nodeJsProps,
         });
 
