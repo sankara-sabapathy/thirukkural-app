@@ -1,15 +1,12 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PutCommand, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { docClient } from '../shared/dynamo';
+import { ALLOWED_ORIGINS, createResponse } from '../shared/utils';
 
 const TABLE_NAME = process.env.PUSH_SUBSCRIPTIONS_TABLE || '';
 const RATE_LIMIT_TABLE = process.env.RATE_LIMIT_TABLE || '';
 
 // Configuration
-const ALLOWED_ORIGINS = [
-    'https://thirukkural.krss.online',
-    'http://localhost:4200',
-];
 const TTL_DAYS = 15;
 const RATE_LIMIT_MAX = 5;      // Max requests per window
 const RATE_LIMIT_WINDOW = 60;  // Window in seconds (1 minute)
@@ -30,21 +27,6 @@ interface SubscribeRequestBody {
     subscription: PushSubscription;
     deviceId: string;
 }
-
-// Helper: Create CORS-aware response
-const createResponse = (statusCode: number, body: object, origin: string): APIGatewayProxyResult => {
-    const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-    return {
-        statusCode,
-        headers: {
-            'Access-Control-Allow-Origin': allowedOrigin,
-            'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key',
-            'Access-Control-Allow-Methods': 'POST,OPTIONS',
-            'Access-Control-Allow-Credentials': 'true',
-        },
-        body: JSON.stringify(body),
-    };
-};
 
 // Validation function
 const validateSubscription = (body: any): body is SubscribeRequestBody => {
