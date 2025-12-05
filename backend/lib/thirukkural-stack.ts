@@ -75,6 +75,7 @@ export class ThirukkuralStack extends cdk.Stack {
             partitionKey: { name: 'deviceId', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
+            timeToLiveAttribute: 'ttl',
         });
 
         // Cognito User Pool with Google IdP
@@ -281,7 +282,13 @@ export class ThirukkuralStack extends cdk.Stack {
         sampleEmail.addMethod('POST', new apigateway.LambdaIntegration(sendSampleEmailFn));
 
         const subscribe = api.root.addResource('subscribe');
-        subscribe.addMethod('POST', new apigateway.LambdaIntegration(subscribePushFn));
+        subscribe.addMethod('POST', new apigateway.LambdaIntegration(subscribePushFn), {
+            methodResponses: [
+                { statusCode: '200' },
+                { statusCode: '400' },
+                { statusCode: '429' },
+            ],
+        });
 
         // Unsubscribe push notification endpoint
         const unsubscribePushFn = new nodejs.NodejsFunction(this, 'UnsubscribePushFn', {

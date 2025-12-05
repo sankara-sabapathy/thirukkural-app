@@ -1,4 +1,4 @@
-import { ScanCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { ScanCommand, DeleteCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 import { docClient } from '../shared/dynamo';
 import { generateKuralEmail, Kural } from '../shared/email-templates';
@@ -114,6 +114,22 @@ export const handler = async (): Promise<void> => {
                     try {
                         await webpush.sendNotification(sub.subscription, payload);
                         console.log(`Sent push to device ${sub.deviceId}`);
+
+                        // Update lastActivity and extend TTL on successful delivery (15 days)
+                        const newTTL = Math.floor(Date.now() / 1000) + (15 * 24 * 60 * 60);
+                        await docClient.send(new UpdateCommand({
+                            TableName: pushTable,
+                            Key: { deviceId: sub.deviceId },
+                            UpdateExpression: 'SET lastActivity = :now, lastActivityType = :type, #ttl = :ttl',
+                            ExpressionAttributeNames: {
+                                '#ttl': 'ttl',
+                            },
+                            ExpressionAttributeValues: {
+                                ':now': new Date().toISOString(),
+                                ':type': 'push_delivered',
+                                ':ttl': newTTL,
+                            },
+                        }));
                     } catch (error: any) {
                         console.error(`Failed push for device ${sub.deviceId}`, error);
                         if (error.statusCode === 410 || error.statusCode === 404) {
