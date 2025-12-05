@@ -157,6 +157,11 @@ export class ThirukkuralStack extends cdk.Stack {
             SES_SENDER: sesSenderEmail,
             VAPID_PUBLIC_KEY: vapidPublicKey,
             VAPID_SUBJECT: vapidSubject,
+            EMAIL_PROVIDER: process.env.EMAIL_PROVIDER || 'SES',
+            BREVO_API_KEY: process.env.BREVO_API_KEY || '',
+            EMAIL_SENDER_NAME: process.env.EMAIL_SENDER_NAME || 'Thirukkural Daily',
+            EMAIL_SENDER_ADDRESS: process.env.EMAIL_SENDER_ADDRESS || 'noreply@example.com',
+            EMAIL_REPLY_TO: process.env.EMAIL_REPLY_TO || 'noreply@example.com',
         };
 
         // Sensitive push sender secrets - only for Lambdas that send notifications

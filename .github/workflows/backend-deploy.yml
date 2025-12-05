@@ -50,6 +50,11 @@ jobs:
         VAPID_PUBLIC_KEY: ${{ vars.VAPID_PUBLIC_KEY }}
         VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
         VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}
+        EMAIL_PROVIDER: ${{ vars.EMAIL_PROVIDER }}
+        BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+        EMAIL_SENDER_NAME: ${{ vars.EMAIL_SENDER_NAME }}
+        EMAIL_SENDER_ADDRESS: ${{ secrets.EMAIL_SENDER_ADDRESS }}
+        EMAIL_REPLY_TO: ${{ secrets.EMAIL_REPLY_TO }}
 
     # Seed Database step disabled - data already seeded
     # - name: Seed Database

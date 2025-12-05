@@ -1,11 +1,11 @@
 import { ScanCommand, DeleteCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 import { docClient } from '../shared/dynamo';
 import { generateKuralEmail, Kural } from '../shared/email-templates';
 import { getRandomKural } from '../shared/kural-utils';
+import { sendEmail } from '../shared/email-service';
 import * as webpush from 'web-push';
 
-const ses = new SESClient({});
+
 
 export const handler = async (): Promise<void> => {
     try {
@@ -49,23 +49,15 @@ export const handler = async (): Promise<void> => {
                 const email = user.email;
                 if (!email) continue;
 
-                const sendCmd = new SendEmailCommand({
-                    Destination: { ToAddresses: [email] },
-                    Message: {
-                        Body: {
-                            Text: { Data: text },
-                            Html: { Data: html }
-                        },
-                        Subject: { Data: subject },
-                    },
-                    Source: 'Thirukkural Daily <thirukkural-daily@krss.online>',
-                    ReplyToAddresses: ['sabapathy.work@gmail.com'],
-                });
-
                 try {
-                    await ses.send(sendCmd);
+                    await sendEmail({
+                        to: [email],
+                        subject: subject,
+                        text: text,
+                        html: html
+                    });
                     console.log(`Sent email to ${email}`);
-                    // Wait 1 second to respect SES sandbox limits
+                    // Wait 1 second to respect limits (SES sandbox or API rate limits)
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 } catch (e) {
                     console.error(`Failed email for ${email}`, e);
