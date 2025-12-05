@@ -156,8 +156,12 @@ export class ThirukkuralStack extends cdk.Stack {
             PUSH_SUBSCRIPTIONS_TABLE: pushSubscriptionsTable.tableName,
             SES_SENDER: sesSenderEmail,
             VAPID_PUBLIC_KEY: vapidPublicKey,
-            VAPID_PRIVATE_KEY: vapidPrivateKey,
             VAPID_SUBJECT: vapidSubject,
+        };
+
+        // Sensitive push sender secrets - only for Lambdas that send notifications
+        const pushSenderEnv = {
+            VAPID_PRIVATE_KEY: vapidPrivateKey,
         };
 
         const nodeJsProps: nodejs.NodejsFunctionProps = {
@@ -175,9 +179,14 @@ export class ThirukkuralStack extends cdk.Stack {
         });
 
         const sendEmailFn = new nodejs.NodejsFunction(this, 'SendDailyEmailFn', {
-            entry: path.join(__dirname, '../src/handlers/send-daily-email.ts'), // Corrected path
+            entry: path.join(__dirname, '../src/handlers/send-daily-email.ts'),
             timeout: cdk.Duration.minutes(15), // Increased to 15 mins to allow 1s delay per user (max ~900 users)
-            ...nodeJsProps,
+            runtime: lambda.Runtime.NODEJS_20_X,
+            environment: { ...commonEnv, ...pushSenderEnv },
+            bundling: {
+                minify: true,
+                sourceMap: true,
+            },
         });
 
         const sendSampleEmailFn = new nodejs.NodejsFunction(this, 'SendSampleEmailFn', {
