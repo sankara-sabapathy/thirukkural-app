@@ -193,9 +193,8 @@
             <span class="banner-text">Enable notifications to get your daily wisdom!</span>
             <div class="banner-actions">
                 <button class="btn btn-primary btn-sm" (click)="enableNotifications()">Enable</button>
-                <button class="btn btn-icon" (click)="dismissNotificationPrompt()">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 6L6 18M6 6l12 12"></path>
+                <button class="btn btn-icon" (click)="dismissNotificationPrompt()" aria-label="Dismiss notification">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
