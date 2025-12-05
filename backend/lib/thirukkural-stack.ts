@@ -12,7 +12,7 @@ import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
-import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import { S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as path from 'path';
 
@@ -326,16 +326,6 @@ export class ThirukkuralStack extends cdk.Stack {
             encryption: s3.BucketEncryption.S3_MANAGED,
         });
 
-        // Origin Access Control (OAC) for CloudFront to access S3
-        const oac = new cloudfront.CfnOriginAccessControl(this, 'WebsiteOAC', {
-            originAccessControlConfig: {
-                name: 'WebsiteOAC',
-                originAccessControlOriginType: 's3',
-                signingBehavior: 'always',
-                signingProtocol: 'sigv4',
-            },
-        });
-
         // Custom Domain Configuration (Uncomment and update after creating ACM Certificate)
 
         // 1. Request a certificate in us-east-1 for thirukkural.krss.online
@@ -343,7 +333,7 @@ export class ThirukkuralStack extends cdk.Stack {
         // 3. Paste the ARN below
         const distributionProps: cloudfront.DistributionProps = {
             defaultBehavior: {
-                origin: new origins.S3Origin(websiteBucket),
+                origin: S3BucketOrigin.withOriginAccessControl(websiteBucket),
                 viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
                 cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
@@ -371,12 +361,6 @@ export class ThirukkuralStack extends cdk.Stack {
         }
 
         const distribution = new cloudfront.Distribution(this, 'WebsiteDistribution', distributionProps);
-
-        // Attach OAC to Distribution (L1 construct workaround as L2 doesn't fully support OAC yet in all versions)
-        const cfnDistribution = distribution.node.defaultChild as cloudfront.CfnDistribution;
-        cfnDistribution.addPropertyOverride('DistributionConfig.Origins.0.OriginAccessControlId', oac.attrId);
-        // Remove OAI which S3Origin adds by default, to avoid "Cannot use both" error
-        cfnDistribution.addPropertyOverride('DistributionConfig.Origins.0.S3OriginConfig.OriginAccessIdentity', '');
 
         // Bucket Policy to allow CloudFront OAC
         websiteBucket.addToResourcePolicy(new iam.PolicyStatement({
