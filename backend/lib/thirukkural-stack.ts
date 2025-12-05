@@ -12,7 +12,7 @@ import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
-import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import { S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as path from 'path';
 
@@ -28,6 +28,9 @@ export class ThirukkuralStack extends cdk.Stack {
         const cloudflareSecretKey = process.env.CLOUDFLARE_SECRET_KEY;
         const apiCertArn = process.env.ACM_CERTIFICATE_ARN_API;
         const cloudfrontCertArn = process.env.ACM_CERTIFICATE_ARN_CLOUDFRONT;
+        const vapidPublicKey = process.env.VAPID_PUBLIC_KEY || '';
+        const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || '';
+        const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:example@example.com';
 
         // Derived Domains
         const apiDomainName = `api.${baseDomain}`;
@@ -66,6 +69,13 @@ export class ThirukkuralStack extends cdk.Stack {
             timeToLiveAttribute: 'ttl',
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
+        });
+
+        const pushSubscriptionsTable = new dynamodb.Table(this, 'PushSubscriptionsTable', {
+            partitionKey: { name: 'deviceId', type: dynamodb.AttributeType.STRING },
+            billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
+            timeToLiveAttribute: 'ttl',
         });
 
         // Cognito User Pool with Google IdP
@@ -143,7 +153,15 @@ export class ThirukkuralStack extends cdk.Stack {
             KURAL_TABLE: kuralTable.tableName,
             USERS_TABLE: usersTable.tableName,
             RATE_LIMIT_TABLE: rateLimitTable.tableName,
+            PUSH_SUBSCRIPTIONS_TABLE: pushSubscriptionsTable.tableName,
             SES_SENDER: sesSenderEmail,
+            VAPID_PUBLIC_KEY: vapidPublicKey,
+            VAPID_SUBJECT: vapidSubject,
+        };
+
+        // Sensitive push sender secrets - only for Lambdas that send notifications
+        const pushSenderEnv = {
+            VAPID_PRIVATE_KEY: vapidPrivateKey,
         };
 
         const nodeJsProps: nodejs.NodejsFunctionProps = {
@@ -161,13 +179,23 @@ export class ThirukkuralStack extends cdk.Stack {
         });
 
         const sendEmailFn = new nodejs.NodejsFunction(this, 'SendDailyEmailFn', {
-            entry: path.join(__dirname, '../src/handlers/send-daily-email.ts'), // Corrected path
+            entry: path.join(__dirname, '../src/handlers/send-daily-email.ts'),
             timeout: cdk.Duration.minutes(15), // Increased to 15 mins to allow 1s delay per user (max ~900 users)
-            ...nodeJsProps,
+            runtime: lambda.Runtime.NODEJS_20_X,
+            environment: { ...commonEnv, ...pushSenderEnv },
+            bundling: {
+                minify: true,
+                sourceMap: true,
+            },
         });
 
         const sendSampleEmailFn = new nodejs.NodejsFunction(this, 'SendSampleEmailFn', {
             entry: path.join(__dirname, '../src/handlers/send-sample-email.ts'),
+            ...nodeJsProps,
+        });
+
+        const subscribePushFn = new nodejs.NodejsFunction(this, 'SubscribePushFn', {
+            entry: path.join(__dirname, '../src/handlers/subscribe-push.ts'),
             ...nodeJsProps,
         });
 
@@ -177,6 +205,8 @@ export class ThirukkuralStack extends cdk.Stack {
         usersTable.grantReadWriteData(userProfileFn);
         usersTable.grantReadData(sendEmailFn);
         rateLimitTable.grantReadWriteData(sendSampleEmailFn);
+        pushSubscriptionsTable.grantReadWriteData(subscribePushFn);
+        pushSubscriptionsTable.grantReadWriteData(sendEmailFn);
 
         const sesPolicy = new iam.PolicyStatement({
             actions: ['ses:SendEmail', 'ses:SendRawEmail'],
@@ -260,6 +290,26 @@ export class ThirukkuralStack extends cdk.Stack {
         const sampleEmail = api.root.addResource('sample-email');
         sampleEmail.addMethod('POST', new apigateway.LambdaIntegration(sendSampleEmailFn));
 
+        const subscribe = api.root.addResource('subscribe');
+        subscribe.addMethod('POST', new apigateway.LambdaIntegration(subscribePushFn), {
+            methodResponses: [
+                { statusCode: '200' },
+                { statusCode: '400' },
+                { statusCode: '429' },
+            ],
+        });
+
+        // Unsubscribe push notification endpoint
+        const unsubscribePushFn = new nodejs.NodejsFunction(this, 'UnsubscribePushFn', {
+            entry: path.join(__dirname, '../src/handlers/unsubscribe-push.ts'),
+            ...nodeJsProps,
+        });
+        pushSubscriptionsTable.grantReadWriteData(unsubscribePushFn);
+
+        const subscribeWithDeviceId = subscribe.addResource('{deviceId}');
+        subscribeWithDeviceId.addMethod('DELETE', new apigateway.LambdaIntegration(unsubscribePushFn));
+
+
         // EventBridge daily trigger
         // 8 AM IST = 2:30 AM UTC
         const rule = new events.Rule(this, 'DailyKuralRule', {
@@ -276,16 +326,6 @@ export class ThirukkuralStack extends cdk.Stack {
             encryption: s3.BucketEncryption.S3_MANAGED,
         });
 
-        // Origin Access Control (OAC) for CloudFront to access S3
-        const oac = new cloudfront.CfnOriginAccessControl(this, 'WebsiteOAC', {
-            originAccessControlConfig: {
-                name: 'WebsiteOAC',
-                originAccessControlOriginType: 's3',
-                signingBehavior: 'always',
-                signingProtocol: 'sigv4',
-            },
-        });
-
         // Custom Domain Configuration (Uncomment and update after creating ACM Certificate)
 
         // 1. Request a certificate in us-east-1 for thirukkural.krss.online
@@ -293,7 +333,7 @@ export class ThirukkuralStack extends cdk.Stack {
         // 3. Paste the ARN below
         const distributionProps: cloudfront.DistributionProps = {
             defaultBehavior: {
-                origin: new origins.S3Origin(websiteBucket),
+                origin: S3BucketOrigin.withOriginAccessControl(websiteBucket),
                 viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
                 cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
@@ -321,12 +361,6 @@ export class ThirukkuralStack extends cdk.Stack {
         }
 
         const distribution = new cloudfront.Distribution(this, 'WebsiteDistribution', distributionProps);
-
-        // Attach OAC to Distribution (L1 construct workaround as L2 doesn't fully support OAC yet in all versions)
-        const cfnDistribution = distribution.node.defaultChild as cloudfront.CfnDistribution;
-        cfnDistribution.addPropertyOverride('DistributionConfig.Origins.0.OriginAccessControlId', oac.attrId);
-        // Remove OAI which S3Origin adds by default, to avoid "Cannot use both" error
-        cfnDistribution.addPropertyOverride('DistributionConfig.Origins.0.S3OriginConfig.OriginAccessIdentity', '');
 
         // Bucket Policy to allow CloudFront OAC
         websiteBucket.addToResourcePolicy(new iam.PolicyStatement({

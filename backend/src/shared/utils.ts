@@ -1,13 +1,19 @@
 import { APIGatewayProxyResult } from 'aws-lambda';
 
-export const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => {
+export const ALLOWED_ORIGINS = [
+    'https://thirukkural.krss.online',
+    'http://localhost:4200',
+];
+
+export const createResponse = (statusCode: number, body: any, origin?: string): APIGatewayProxyResult => {
+    const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
     return {
         statusCode,
         headers: {
-            'Access-Control-Allow-Origin': '*', // In production, restrict this to the frontend domain
+            'Access-Control-Allow-Origin': allowedOrigin,
             'Access-Control-Allow-Credentials': true,
             'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-            'Access-Control-Allow-Methods': 'OPTIONS,POST',
+            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PUT,DELETE',
         },
         body: JSON.stringify(body),
     };

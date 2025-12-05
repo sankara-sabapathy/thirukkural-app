@@ -1,8 +1,9 @@
-import { ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { ScanCommand, DeleteCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 import { docClient } from '../shared/dynamo';
 import { generateKuralEmail, Kural } from '../shared/email-templates';
 import { getRandomKural } from '../shared/kural-utils';
+import * as webpush from 'web-push';
 
 const ses = new SESClient({});
 
@@ -16,11 +17,6 @@ export const handler = async (): Promise<void> => {
         }));
 
         const users = usersResult.Items ?? [];
-
-        if (users.length === 0) {
-            console.log('No users subscribed to daily email.');
-            return;
-        }
 
         // 2. Pick a random Kural
         const randomKural = await getRandomKural();
@@ -46,40 +42,116 @@ export const handler = async (): Promise<void> => {
 
         const { subject, text, html } = generateKuralEmail(kuralData);
 
-        console.log(`Sending Kural ${kuralData.kuralId} to ${users.length} users`);
-
         // 3. Send email to each user with delay
-        for (const user of users) {
-            const email = user.email;
-            if (!email) continue;
+        if (users.length > 0) {
+            console.log(`Sending Kural ${kuralData.kuralId} to ${users.length} users via Email`);
+            for (const user of users) {
+                const email = user.email;
+                if (!email) continue;
 
-            const sendCmd = new SendEmailCommand({
-                Destination: { ToAddresses: [email] },
-                Message: {
-                    Body: {
-                        Text: { Data: text },
-                        Html: { Data: html }
+                const sendCmd = new SendEmailCommand({
+                    Destination: { ToAddresses: [email] },
+                    Message: {
+                        Body: {
+                            Text: { Data: text },
+                            Html: { Data: html }
+                        },
+                        Subject: { Data: subject },
                     },
-                    Subject: { Data: subject },
-                },
-                Source: 'Thirukkural Daily <thirukkural-daily@krss.online>',
-                ReplyToAddresses: ['sabapathy.work@gmail.com'],
-            });
+                    Source: 'Thirukkural Daily <thirukkural-daily@krss.online>',
+                    ReplyToAddresses: ['sabapathy.work@gmail.com'],
+                });
 
-            try {
-                await ses.send(sendCmd);
-                console.log(`Sent to ${email}`);
-                // Wait 1 second to respect SES sandbox limits
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            } catch (e) {
-                console.error(`Failed for ${email}`, e);
+                try {
+                    await ses.send(sendCmd);
+                    console.log(`Sent email to ${email}`);
+                    // Wait 1 second to respect SES sandbox limits
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                } catch (e) {
+                    console.error(`Failed email for ${email}`, e);
+                }
             }
+        } else {
+            console.log('No users subscribed to daily email.');
         }
 
-        console.log('Daily email job completed');
+        // 4. Send Push Notifications
+        const pushTable = process.env.PUSH_SUBSCRIPTIONS_TABLE;
+        if (pushTable && process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+            console.log('Starting Push Notifications...');
+
+            const pushSubsResult = await docClient.send(new ScanCommand({
+                TableName: pushTable,
+                FilterExpression: 'active = :active',
+                ExpressionAttributeValues: { ':active': true }
+            }));
+
+            const pushSubs = pushSubsResult.Items ?? [];
+
+            if (pushSubs.length > 0) {
+                console.log(`Sending Push to ${pushSubs.length} devices`);
+
+                webpush.setVapidDetails(
+                    process.env.VAPID_SUBJECT || 'mailto:example@example.com',
+                    process.env.VAPID_PUBLIC_KEY,
+                    process.env.VAPID_PRIVATE_KEY
+                );
+
+                const payload = JSON.stringify({
+                    notification: {
+                        title: `Thirukkural #${kuralData.kuralId}`,
+                        body: `${kuralData.line1}\n${kuralData.line2}`,
+                        icon: 'assets/icons/icon-192x192.png',
+                        badge: 'assets/icons/icon-72x72.png',
+                        data: {
+                            url: `/kural/${kuralData.kuralId}`,
+                            kuralId: kuralData.kuralId
+                        }
+                    }
+                });
+
+                for (const sub of pushSubs) {
+                    try {
+                        await webpush.sendNotification(sub.subscription, payload);
+                        console.log(`Sent push to device ${sub.deviceId}`);
+
+                        // Update lastActivity and extend TTL on successful delivery (15 days)
+                        const newTTL = Math.floor(Date.now() / 1000) + (15 * 24 * 60 * 60);
+                        await docClient.send(new UpdateCommand({
+                            TableName: pushTable,
+                            Key: { deviceId: sub.deviceId },
+                            UpdateExpression: 'SET lastActivity = :now, lastActivityType = :type, #ttl = :ttl',
+                            ExpressionAttributeNames: {
+                                '#ttl': 'ttl',
+                            },
+                            ExpressionAttributeValues: {
+                                ':now': new Date().toISOString(),
+                                ':type': 'push_delivered',
+                                ':ttl': newTTL,
+                            },
+                        }));
+                    } catch (error: any) {
+                        console.error(`Failed push for device ${sub.deviceId}`, error);
+                        if (error.statusCode === 410 || error.statusCode === 404) {
+                            console.log(`Deleting expired subscription for device ${sub.deviceId}`);
+                            await docClient.send(new DeleteCommand({
+                                TableName: pushTable,
+                                Key: { deviceId: sub.deviceId }
+                            }));
+                        }
+                    }
+                }
+            } else {
+                console.log('No active push subscriptions found.');
+            }
+        } else {
+            console.log('Push notification configuration missing (Table or Keys). Skipping.');
+        }
+
+        console.log('Daily job completed');
 
     } catch (err) {
-        console.error('Error in daily email job:', err);
+        console.error('Error in daily job:', err);
         throw err;
     }
 };

@@ -36,6 +36,7 @@ jobs:
         COGNITO_DOMAIN: ${{ vars.COGNITO_DOMAIN }}
         COGNITO_REDIRECT_SIGNIN: ${{ vars.COGNITO_REDIRECT_SIGNIN }}
         COGNITO_REDIRECT_SIGNOUT: ${{ vars.COGNITO_REDIRECT_SIGNOUT }}
+        VAPID_PUBLIC_KEY: ${{ vars.VAPID_PUBLIC_KEY }}
 
     - name: Deploy to S3
       uses: aws-actions/configure-aws-credentials@v2

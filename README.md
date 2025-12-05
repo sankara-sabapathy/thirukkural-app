@@ -14,6 +14,15 @@ This project uses a **Serverless Architecture** on AWS:
 *   **Email**: Amazon SES.
 *   **IaC**: AWS Cloud Development Kit (CDK) in TypeScript.
 
+## 📱 PWA & Push Notifications
+
+The application is a fully functional **Progressive Web App (PWA)**:
+*   **Installable**: Users can install the app on their devices (mobile/desktop) for a native-like experience.
+*   **Offline Support**: Caches assets and API responses for offline access.
+*   **Push Notifications**: Supports web push notifications to deliver the daily Thirukkural at 8 AM without requiring the user to be logged in.
+    *   Uses **VAPID** (Voluntary Application Server Identification) for secure push delivery.
+    *   Subscriptions are stored anonymously in DynamoDB.
+
 ## 🚀 Deployment Guide
 
 Follow these steps to deploy the application to your own AWS account.
@@ -41,12 +50,50 @@ npm install
 
 Set the following environment variables in your terminal before deploying.
 
+#### 3.1 Generate VAPID Keys (Required for Push Notifications)
+
+VAPID (Voluntary Application Server Identification) keys are required for web push notifications. Generate them once and use them for all deployments.
+
+**Step 1: Generate Keys**
+```bash
+npx web-push generate-vapid-keys
+```
+
+This will output something like:
+```
+=======================================
+
+Public Key:
+BNxCpD0m...long-string...
+
+Private Key:
+_HsT7zP9...long-string...
+
+=======================================
+```
+
+**Step 2: Save the Keys**
+- Copy the **Public Key** - you'll need this for BOTH frontend and backend
+- Copy the **Private Key** - you'll need this ONLY for backend (keep it secret!)
+
+**Step 3: Configure Frontend**
+Add the public key to `frontend/src/environments/environment.ts` and `environment.prod.ts`:
+```typescript
+vapidPublicKey: 'BNxCpD0m...your-public-key...'
+```
+
+**Step 4: Set Backend Environment Variables**
+
 **Windows (PowerShell):**
 ```powershell
 $env:SES_SENDER_EMAIL="your-verified-email@example.com"
 # Optional: For Google Sign-In
 $env:GOOGLE_CLIENT_ID="your-google-client-id"
 $env:GOOGLE_CLIENT_SECRET="your-google-client-secret"
+# For Push Notifications
+$env:VAPID_PUBLIC_KEY="BNxCpD0m...your-public-key..."
+$env:VAPID_PRIVATE_KEY="_HsT7zP9...your-private-key..."
+$env:VAPID_SUBJECT="mailto:your-email@example.com"
 ```
 
 **Mac/Linux:**
@@ -54,6 +101,10 @@ $env:GOOGLE_CLIENT_SECRET="your-google-client-secret"
 export SES_SENDER_EMAIL="your-verified-email@example.com"
 export GOOGLE_CLIENT_ID="your-google-client-id"
 export GOOGLE_CLIENT_SECRET="your-google-client-secret"
+# For Push Notifications
+export VAPID_PUBLIC_KEY="BNxCpD0m...your-public-key..."
+export VAPID_PRIVATE_KEY="_HsT7zP9...your-private-key..."
+export VAPID_SUBJECT="mailto:your-email@example.com"
 ```
 
 ### 4. Build Frontend
@@ -189,6 +240,7 @@ After the backend is deployed, you must update the frontend environment files to
 | `cognito.userPoolWebClientId` | `ThirukkuralStack.UserPoolClientId` | `src/environments/environment.ts` |
 | `cognito.domain` | `ThirukkuralStack.UserPoolDomain` | `src/environments/environment.ts` |
 | `api.baseUrl` | `ThirukkuralStack.ApiUrl` | `src/environments/environment.ts` |
+| `vapidPublicKey` | Your Generated VAPID Public Key | `src/environments/environment.ts` |
 
 **Note**: For production builds (`npm run build --prod`), update `src/environments/environment.prod.ts` with the same values, but ensure `redirectSignIn` and `redirectSignOut` point to your production domain (e.g., `https://your-domain.com/callback`).
 
@@ -244,6 +296,9 @@ These values should **NEVER** be committed to version control. Use `.env` files 
 | `SES_SENDER_EMAIL` | Verified SES Email Address | Backend Deployment / CI Secrets |
 | `AWS_ACCESS_KEY_ID` | AWS Credentials | CI Secrets (GitHub Actions) |
 | `AWS_SECRET_ACCESS_KEY` | AWS Credentials | CI Secrets (GitHub Actions) |
+| `VAPID_PUBLIC_KEY` | Web Push Public Key | Backend Deployment / CI Secrets |
+| `VAPID_PRIVATE_KEY` | Web Push Private Key | Backend Deployment / CI Secrets |
+| `VAPID_SUBJECT` | Web Push Subject (mailto:) | Backend Deployment / CI Secrets |
 
 ### Public Configuration
 The following values are **safe to commit** in `environment.ts` / `environment.prod.ts` as they are exposed in the client-side bundle anyway:

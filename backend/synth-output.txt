@@ -1,0 +1,1623 @@
+﻿npx : WARNING: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not 
+provided. Cognito Google IdP will not be created.
+At line:1 char:1
++ npx cdk synth 2>&1 | Out-File -FilePath synth-output.txt 
+-Encoding ut ...
++ ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: GOOGL 
+   E...not be created.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+WARNING: CLOUDFLARE_SECRET_KEY not provided. API Gateway 
+will be open to public access.
+Bundling asset ThirukkuralStack/UserProfileFn/Code/Stage...
+
+  ...26777572a52bc883932c9a4cc80217b48e10365fe7c48247-buildi
+ng\index.js  2.3kb
+  ...7572a52bc883932c9a4cc80217b48e10365fe7c48247-building\i
+ndex.js.map  7.5kb
+
+Done in 9ms
+Bundling asset 
+ThirukkuralStack/SendDailyEmailFn/Code/Stage...
+
+  ...f040a6aeb62106040cdf564c746ddfe5a20418006ca3d5-building
+\index.js  121.6kb
+  ...a6aeb62106040cdf564c746ddfe5a20418006ca3d5-building\ind
+ex.js.map  409.6kb
+
+Done in 47ms
+Bundling asset 
+ThirukkuralStack/SendSampleEmailFn/Code/Stage...
+
+  ...3a5e5fc87ef4504066b6732dd726ac5815a40ad02db1899-buildin
+g\index.js   7.9kb
+  ...5fc87ef4504066b6732dd726ac5815a40ad02db1899-building\in
+dex.js.map  16.5kb
+
+Done in 11ms
+Bundling asset 
+ThirukkuralStack/SubscribePushFn/Code/Stage...
+
+  ...75986640e307c794592d0e12ff425eddd43d6446fba5764-buildin
+g\index.js   3.3kb
+  ...6640e307c794592d0e12ff425eddd43d6446fba5764-building\in
+dex.js.map  10.4kb
+
+Done in 9ms
+Bundling asset 
+ThirukkuralStack/UnsubscribePushFn/Code/Stage...
+
+  ...6b89c1f772721c3b57e00b7fdeee53369981d43a33bb267a-buildi
+ng\index.js  1.5kb
+  ...c1f772721c3b57e00b7fdeee53369981d43a33bb267a-building\i
+ndex.js.map  3.2kb
+
+Done in 7ms
+[WARNING] aws-cdk-lib.aws_cloudfront_origins.S3Origin is 
+deprecated.
+  Use `S3BucketOrigin` or `S3StaticWebsiteOrigin` instead.
+  This API will be removed in the next major release.
+[WARNING] aws-cdk-lib.aws_cloudfront_origins.S3Origin#bind 
+is deprecated.
+  Use `S3BucketOrigin` or `S3StaticWebsiteOrigin` instead.
+  This API will be removed in the next major release.
+Resources:
+  ThirukkuralTable00BC2045:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: kuralId
+          AttributeType: "N"
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: kuralId
+          KeyType: HASH
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralTable/Resource
+  UsersTable9725E9C8:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: email
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      GlobalSecondaryIndexes:
+        - IndexName: EmailIndex
+          KeySchema:
+            - AttributeName: email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/UsersTable/Resource
+  RateLimitTableFAD921A1:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/RateLimitTable/Resource
+  PushSubscriptionsTable14F60E9C:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: deviceId
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: deviceId
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/PushSubscriptionsTable/Resource
+  UserPool6BA7E5F2:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_phone_number
+            Priority: 1
+          - Name: verified_email
+            Priority: 2
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      AutoVerifiedAttributes:
+        - email
+      EmailVerificationMessage: The verification code to your new account is {####}
+      EmailVerificationSubject: Verify your new account
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          RequireUppercase: true
+      SmsVerificationMessage: The verification code to your new account is {####}
+      UsernameAttributes:
+        - email
+      VerificationMessageTemplate:
+        DefaultEmailOption: CONFIRM_WITH_CODE
+        EmailMessage: The verification code to your new account is {####}
+        EmailSubject: Verify your new account
+        SmsMessage: The verification code to your new account is {####}
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/UserPool/Resource
+  UserPoolUserPoolDomain9F01E991:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain:
+        Fn::Join:
+          - ""
+          - - thirukkural-app-
+            - Ref: AWS::AccountId
+      UserPoolId:
+        Ref: UserPool6BA7E5F2
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/UserPool/UserPoolDomain/Resource
+  UserPoolClient2F5918F7:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthScopes:
+        - email
+        - profile
+        - openid
+        - aws.cognito.signin.user.admin
+      CallbackURLs:
+        - http://localhost:4200/callback
+        - https://thirukkural.example.com/callback
+      GenerateSecret: false
+      LogoutURLs:
+        - http://localhost:4200/
+        - https://thirukkural.example.com/
+      SupportedIdentityProviders:
+        - Google
+      UserPoolId:
+        Ref: UserPool6BA7E5F2
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/UserPoolClient/Resource
+  UserProfileFnServiceRole1D99C252:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/UserProfileFn/ServiceRole/Resource
+  UserProfileFnServiceRoleDefaultPolicy8D767FA2:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:Query
+              - dynamodb:GetItem
+              - dynamodb:Scan
+              - dynamodb:ConditionCheckItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - UsersTable9725E9C8
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - UsersTable9725E9C8
+                        - Arn
+                    - /index/*
+        Version: "2012-10-17"
+      PolicyName: UserProfileFnServiceRoleDefaultPolicy8D767FA2
+      Roles:
+        - Ref: UserProfileFnServiceRole1D99C252
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/UserProfileFn/ServiceRole/DefaultPolicy/Resource
+  UserProfileFnF6B80E07:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-ap-south-1
+        S3Key: 585af6b928faba6449c5efd3ed9d4806eeb95da19f0bbd62f529220b0d8e728e.zip
+      Environment:
+        Variables:
+          KURAL_TABLE:
+            Ref: ThirukkuralTable00BC2045
+          USERS_TABLE:
+            Ref: UsersTable9725E9C8
+          RATE_LIMIT_TABLE:
+            Ref: RateLimitTableFAD921A1
+          PUSH_SUBSCRIPTIONS_TABLE:
+            Ref: PushSubscriptionsTable14F60E9C
+          SES_SENDER: noreply@example.com
+          VAPID_PUBLIC_KEY: ""
+          VAPID_PRIVATE_KEY: ""
+          VAPID_SUBJECT: mailto:example@example.com
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - UserProfileFnServiceRole1D99C252
+          - Arn
+      Runtime: nodejs20.x
+    DependsOn:
+      - UserProfileFnServiceRoleDefaultPolicy8D767FA2
+      - UserProfileFnServiceRole1D99C252
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/UserProfileFn/Resource
+      aws:asset:path: asset.585af6b928faba6449c5efd3ed9d4806eeb95da19f0bbd62f529220b0d8e728e
+      aws:asset:is-bundled: true
+      aws:asset:property: Code
+  SendDailyEmailFnServiceRole46FEE729:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/SendDailyEmailFn/ServiceRole/Resource
+  SendDailyEmailFnServiceRoleDefaultPolicy7981E143:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:Query
+              - dynamodb:GetItem
+              - dynamodb:Scan
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DescribeTable
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - ThirukkuralTable00BC2045
+                - Arn
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:Query
+              - dynamodb:GetItem
+              - dynamodb:Scan
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DescribeTable
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - UsersTable9725E9C8
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - UsersTable9725E9C8
+                        - Arn
+                    - /index/*
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:Query
+              - dynamodb:GetItem
+              - dynamodb:Scan
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DescribeTable
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - PushSubscriptionsTable14F60E9C
+                - Arn
+          - Action:
+              - ses:SendEmail
+              - ses:SendRawEmail
+            Effect: Allow
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: SendDailyEmailFnServiceRoleDefaultPolicy7981E143
+      Roles:
+        - Ref: SendDailyEmailFnServiceRole46FEE729
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/SendDailyEmailFn/ServiceRole/DefaultPolicy/Resource
+  SendDailyEmailFn91FF5CD4:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-ap-south-1
+        S3Key: e5e92457831c4fcda6d52a64663e646c900da812a4577edca9e914321b69df36.zip
+      Environment:
+        Variables:
+          KURAL_TABLE:
+            Ref: ThirukkuralTable00BC2045
+          USERS_TABLE:
+            Ref: UsersTable9725E9C8
+          RATE_LIMIT_TABLE:
+            Ref: RateLimitTableFAD921A1
+          PUSH_SUBSCRIPTIONS_TABLE:
+            Ref: PushSubscriptionsTable14F60E9C
+          SES_SENDER: noreply@example.com
+          VAPID_PUBLIC_KEY: ""
+          VAPID_PRIVATE_KEY: ""
+          VAPID_SUBJECT: mailto:example@example.com
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - SendDailyEmailFnServiceRole46FEE729
+          - Arn
+      Runtime: nodejs20.x
+      Timeout: 900
+    DependsOn:
+      - SendDailyEmailFnServiceRoleDefaultPolicy7981E143
+      - SendDailyEmailFnServiceRole46FEE729
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/SendDailyEmailFn/Resource
+      aws:asset:path: asset.e5e92457831c4fcda6d52a64663e646c900da812a4577edca9e914321b69df36
+      aws:asset:is-bundled: true
+      aws:asset:property: Code
+  SendSampleEmailFnServiceRoleC17450F7:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/SendSampleEmailFn/ServiceRole/Resource
+  SendSampleEmailFnServiceRoleDefaultPolicyB90AF7E4:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:Query
+              - dynamodb:GetItem
+              - dynamodb:Scan
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DescribeTable
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - ThirukkuralTable00BC2045
+                - Arn
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:Query
+              - dynamodb:GetItem
+              - dynamodb:Scan
+              - dynamodb:ConditionCheckItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - RateLimitTableFAD921A1
+                - Arn
+          - Action:
+              - ses:SendEmail
+              - ses:SendRawEmail
+            Effect: Allow
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: SendSampleEmailFnServiceRoleDefaultPolicyB90AF7E4
+      Roles:
+        - Ref: SendSampleEmailFnServiceRoleC17450F7
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/SendSampleEmailFn/ServiceRole/DefaultPolicy/Resource
+  SendSampleEmailFn53DB04B9:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-ap-south-1
+        S3Key: d91b9d2d811f1f08040da070a26c825d86000925c21d3e7df4a718446a241899.zip
+      Environment:
+        Variables:
+          KURAL_TABLE:
+            Ref: ThirukkuralTable00BC2045
+          USERS_TABLE:
+            Ref: UsersTable9725E9C8
+          RATE_LIMIT_TABLE:
+            Ref: RateLimitTableFAD921A1
+          PUSH_SUBSCRIPTIONS_TABLE:
+            Ref: PushSubscriptionsTable14F60E9C
+          SES_SENDER: noreply@example.com
+          VAPID_PUBLIC_KEY: ""
+          VAPID_PRIVATE_KEY: ""
+          VAPID_SUBJECT: mailto:example@example.com
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - SendSampleEmailFnServiceRoleC17450F7
+          - Arn
+      Runtime: nodejs20.x
+    DependsOn:
+      - SendSampleEmailFnServiceRoleDefaultPolicyB90AF7E4
+      - SendSampleEmailFnServiceRoleC17450F7
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/SendSampleEmailFn/Resource
+      aws:asset:path: asset.d91b9d2d811f1f08040da070a26c825d86000925c21d3e7df4a718446a241899
+      aws:asset:is-bundled: true
+      aws:asset:property: Code
+  SubscribePushFnServiceRoleC2BCEE2A:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/SubscribePushFn/ServiceRole/Resource
+  SubscribePushFnServiceRoleDefaultPolicyE0E8BCE7:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:Query
+              - dynamodb:GetItem
+              - dynamodb:Scan
+              - dynamodb:ConditionCheckItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - PushSubscriptionsTable14F60E9C
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: SubscribePushFnServiceRoleDefaultPolicyE0E8BCE7
+      Roles:
+        - Ref: SubscribePushFnServiceRoleC2BCEE2A
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/SubscribePushFn/ServiceRole/DefaultPolicy/Resource
+  SubscribePushFn874AF8DD:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-ap-south-1
+        S3Key: 9608a3c9121d77c3f9a32f9150274a218d17089ff398b89482835162a108588d.zip
+      Environment:
+        Variables:
+          KURAL_TABLE:
+            Ref: ThirukkuralTable00BC2045
+          USERS_TABLE:
+            Ref: UsersTable9725E9C8
+          RATE_LIMIT_TABLE:
+            Ref: RateLimitTableFAD921A1
+          PUSH_SUBSCRIPTIONS_TABLE:
+            Ref: PushSubscriptionsTable14F60E9C
+          SES_SENDER: noreply@example.com
+          VAPID_PUBLIC_KEY: ""
+          VAPID_PRIVATE_KEY: ""
+          VAPID_SUBJECT: mailto:example@example.com
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - SubscribePushFnServiceRoleC2BCEE2A
+          - Arn
+      Runtime: nodejs20.x
+    DependsOn:
+      - SubscribePushFnServiceRoleDefaultPolicyE0E8BCE7
+      - SubscribePushFnServiceRoleC2BCEE2A
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/SubscribePushFn/Resource
+      aws:asset:path: asset.9608a3c9121d77c3f9a32f9150274a218d17089ff398b89482835162a108588d
+      aws:asset:is-bundled: true
+      aws:asset:property: Code
+  ThirukkuralApi3BE4467D:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: Thirukkural Service
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Resource
+  ThirukkuralApiCloudWatchRoleF0AD4BF8:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/CloudWatchRole/Resource
+  ThirukkuralApiAccount4FCCF071:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn:
+        Fn::GetAtt:
+          - ThirukkuralApiCloudWatchRoleF0AD4BF8
+          - Arn
+    DependsOn:
+      - ThirukkuralApi3BE4467D
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Account
+  ThirukkuralApiDeploymentDCA2228Dab296be7fbc73b3a15314cf0a072703f:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      Description: Automatically created by the RestApi construct
+      RestApiId:
+        Ref: ThirukkuralApi3BE4467D
+    DependsOn:
+      - ThirukkuralApiOPTIONS82AD96F1
+      - ThirukkuralApiprofileGET45B11E1F
+      - ThirukkuralApiprofileOPTIONS27C099DB
+      - ThirukkuralApiprofilePUTF6679E05
+      - ThirukkuralApiprofile75E6D627
+      - ThirukkuralApisampleemailOPTIONS30392650
+      - ThirukkuralApisampleemailPOST3CA0E86C
+      - ThirukkuralApisampleemail3AF611FC
+      - ThirukkuralApisubscribedeviceIdDELETE064D42BA
+      - ThirukkuralApisubscribedeviceIdOPTIONS2E72F3B9
+      - ThirukkuralApisubscribedeviceId652E07E5
+      - ThirukkuralApisubscribeOPTIONS7C48570D
+      - ThirukkuralApisubscribePOST2122CF0C
+      - ThirukkuralApisubscribe7FFDB09E
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Deployment/Resource
+      aws:cdk:do-not-refactor: true
+  ThirukkuralApiDeploymentStageprodA9AE83AB:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId:
+        Ref: ThirukkuralApiDeploymentDCA2228Dab296be7fbc73b3a15314cf0a072703f
+      MethodSettings:
+        - DataTraceEnabled: false
+          HttpMethod: "*"
+          ResourcePath: /*
+          ThrottlingBurstLimit: 200
+          ThrottlingRateLimit: 100
+      RestApiId:
+        Ref: ThirukkuralApi3BE4467D
+      StageName: prod
+      TracingEnabled: true
+    DependsOn:
+      - ThirukkuralApiAccount4FCCF071
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/DeploymentStage.prod/Resource
+  ThirukkuralApiOPTIONS82AD96F1:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Fn::GetAtt:
+          - ThirukkuralApi3BE4467D
+          - RootResourceId
+      RestApiId:
+        Ref: ThirukkuralApi3BE4467D
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/OPTIONS/Resource
+  ThirukkuralApiprofile75E6D627:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - ThirukkuralApi3BE4467D
+          - RootResourceId
+      PathPart: profile
+      RestApiId:
+        Ref: ThirukkuralApi3BE4467D
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/profile/Resource
+  ThirukkuralApiprofileOPTIONS27C099DB:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: ThirukkuralApiprofile75E6D627
+      RestApiId:
+        Ref: ThirukkuralApi3BE4467D
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/profile/OPTIONS/Resource
+  ThirukkuralApiprofileGETApiPermissionThirukkuralStackThirukkuralApiF9A8E905GETprofileCD7BFD85:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UserProfileFnF6B80E07
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:ap-south-1:"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ThirukkuralApi3BE4467D
+            - /
+            - Ref: ThirukkuralApiDeploymentStageprodA9AE83AB
+            - /GET/profile
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/profile/GET/ApiPermission.ThirukkuralStackThirukkuralApiF9A8E905.GET..profile
+  ThirukkuralApiprofileGETApiPermissionTestThirukkuralStackThirukkuralApiF9A8E905GETprofileF7C9A10D:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UserProfileFnF6B80E07
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:ap-south-1:"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ThirukkuralApi3BE4467D
+            - /test-invoke-stage/GET/profile
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/profile/GET/ApiPermission.Test.ThirukkuralStackThirukkuralApiF9A8E905.GET..profile
+  ThirukkuralApiprofileGET45B11E1F:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId:
+        Ref: CognitoAuthorizerF3215DBC
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:ap-south-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - UserProfileFnF6B80E07
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: ThirukkuralApiprofile75E6D627
+      RestApiId:
+        Ref: ThirukkuralApi3BE4467D
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/profile/GET/Resource
+  ThirukkuralApiprofilePUTApiPermissionThirukkuralStackThirukkuralApiF9A8E905PUTprofile2A0B24F6:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UserProfileFnF6B80E07
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:ap-south-1:"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ThirukkuralApi3BE4467D
+            - /
+            - Ref: ThirukkuralApiDeploymentStageprodA9AE83AB
+            - /PUT/profile
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/profile/PUT/ApiPermission.ThirukkuralStackThirukkuralApiF9A8E905.PUT..profile
+  ThirukkuralApiprofilePUTApiPermissionTestThirukkuralStackThirukkuralApiF9A8E905PUTprofileDBB726F2:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UserProfileFnF6B80E07
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:ap-south-1:"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ThirukkuralApi3BE4467D
+            - /test-invoke-stage/PUT/profile
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/profile/PUT/ApiPermission.Test.ThirukkuralStackThirukkuralApiF9A8E905.PUT..profile
+  ThirukkuralApiprofilePUTF6679E05:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId:
+        Ref: CognitoAuthorizerF3215DBC
+      HttpMethod: PUT
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:ap-south-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - UserProfileFnF6B80E07
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: ThirukkuralApiprofile75E6D627
+      RestApiId:
+        Ref: ThirukkuralApi3BE4467D
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/profile/PUT/Resource
+  ThirukkuralApisampleemail3AF611FC:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - ThirukkuralApi3BE4467D
+          - RootResourceId
+      PathPart: sample-email
+      RestApiId:
+        Ref: ThirukkuralApi3BE4467D
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/sample-email/Resource
+  ThirukkuralApisampleemailOPTIONS30392650:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: ThirukkuralApisampleemail3AF611FC
+      RestApiId:
+        Ref: ThirukkuralApi3BE4467D
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/sample-email/OPTIONS/Resource
+  ThirukkuralApisampleemailPOSTApiPermissionThirukkuralStackThirukkuralApiF9A8E905POSTsampleemail44248075:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - SendSampleEmailFn53DB04B9
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:ap-south-1:"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ThirukkuralApi3BE4467D
+            - /
+            - Ref: ThirukkuralApiDeploymentStageprodA9AE83AB
+            - /POST/sample-email
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/sample-email/POST/ApiPermission.ThirukkuralStackThirukkuralApiF9A8E905.POST..sample-email
+  ThirukkuralApisampleemailPOSTApiPermissionTestThirukkuralStackThirukkuralApiF9A8E905POSTsampleemail93BF1950:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - SendSampleEmailFn53DB04B9
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:ap-south-1:"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ThirukkuralApi3BE4467D
+            - /test-invoke-stage/POST/sample-email
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/sample-email/POST/ApiPermission.Test.ThirukkuralStackThirukkuralApiF9A8E905.POST..sample-email
+  ThirukkuralApisampleemailPOST3CA0E86C:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:ap-south-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - SendSampleEmailFn53DB04B9
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: ThirukkuralApisampleemail3AF611FC
+      RestApiId:
+        Ref: ThirukkuralApi3BE4467D
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/sample-email/POST/Resource
+  ThirukkuralApisubscribe7FFDB09E:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - ThirukkuralApi3BE4467D
+          - RootResourceId
+      PathPart: subscribe
+      RestApiId:
+        Ref: ThirukkuralApi3BE4467D
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/subscribe/Resource
+  ThirukkuralApisubscribeOPTIONS7C48570D:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: ThirukkuralApisubscribe7FFDB09E
+      RestApiId:
+        Ref: ThirukkuralApi3BE4467D
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/subscribe/OPTIONS/Resource
+  ThirukkuralApisubscribePOSTApiPermissionThirukkuralStackThirukkuralApiF9A8E905POSTsubscribe9B10DDA1:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - SubscribePushFn874AF8DD
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:ap-south-1:"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ThirukkuralApi3BE4467D
+            - /
+            - Ref: ThirukkuralApiDeploymentStageprodA9AE83AB
+            - /POST/subscribe
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/subscribe/POST/ApiPermission.ThirukkuralStackThirukkuralApiF9A8E905.POST..subscribe
+  ThirukkuralApisubscribePOSTApiPermissionTestThirukkuralStackThirukkuralApiF9A8E905POSTsubscribeC2143EF3:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - SubscribePushFn874AF8DD
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:ap-south-1:"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ThirukkuralApi3BE4467D
+            - /test-invoke-stage/POST/subscribe
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/subscribe/POST/ApiPermission.Test.ThirukkuralStackThirukkuralApiF9A8E905.POST..subscribe
+  ThirukkuralApisubscribePOST2122CF0C:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:ap-south-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - SubscribePushFn874AF8DD
+                  - Arn
+              - /invocations
+      MethodResponses:
+        - StatusCode: "200"
+        - StatusCode: "400"
+        - StatusCode: "429"
+      ResourceId:
+        Ref: ThirukkuralApisubscribe7FFDB09E
+      RestApiId:
+        Ref: ThirukkuralApi3BE4467D
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/subscribe/POST/Resource
+  ThirukkuralApisubscribedeviceId652E07E5:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: ThirukkuralApisubscribe7FFDB09E
+      PathPart: "{deviceId}"
+      RestApiId:
+        Ref: ThirukkuralApi3BE4467D
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/subscribe/{deviceId}/Resource
+  ThirukkuralApisubscribedeviceIdOPTIONS2E72F3B9:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: ThirukkuralApisubscribedeviceId652E07E5
+      RestApiId:
+        Ref: ThirukkuralApi3BE4467D
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/subscribe/{deviceId}/OPTIONS/Resource
+  ThirukkuralApisubscribedeviceIdDELETEApiPermissionThirukkuralStackThirukkuralApiF9A8E905DELETEsubscribedeviceId6ACAD3FE:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UnsubscribePushFn6DC444A7
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:ap-south-1:"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ThirukkuralApi3BE4467D
+            - /
+            - Ref: ThirukkuralApiDeploymentStageprodA9AE83AB
+            - /DELETE/subscribe/*
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/subscribe/{deviceId}/DELETE/ApiPermission.ThirukkuralStackThirukkuralApiF9A8E905.DELETE..subscribe.{deviceId}
+  ThirukkuralApisubscribedeviceIdDELETEApiPermissionTestThirukkuralStackThirukkuralApiF9A8E905DELETEsubscribedeviceId033E53BF:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UnsubscribePushFn6DC444A7
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:ap-south-1:"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: ThirukkuralApi3BE4467D
+            - /test-invoke-stage/DELETE/subscribe/*
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/subscribe/{deviceId}/DELETE/ApiPermission.Test.ThirukkuralStackThirukkuralApiF9A8E905.DELETE..subscribe.{deviceId}
+  ThirukkuralApisubscribedeviceIdDELETE064D42BA:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: DELETE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:ap-south-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - UnsubscribePushFn6DC444A7
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: ThirukkuralApisubscribedeviceId652E07E5
+      RestApiId:
+        Ref: ThirukkuralApi3BE4467D
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/ThirukkuralApi/Default/subscribe/{deviceId}/DELETE/Resource
+  CognitoAuthorizerF3215DBC:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      IdentitySource: method.request.header.Authorization
+      Name: ThirukkuralStackCognitoAuthorizer3D875132
+      ProviderARNs:
+        - Fn::GetAtt:
+            - UserPool6BA7E5F2
+            - Arn
+      RestApiId:
+        Ref: ThirukkuralApi3BE4467D
+      Type: COGNITO_USER_POOLS
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/CognitoAuthorizer/Resource
+  UnsubscribePushFnServiceRoleDA5DABDE:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/UnsubscribePushFn/ServiceRole/Resource
+  UnsubscribePushFnServiceRoleDefaultPolicy1C6F7E69:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:Query
+              - dynamodb:GetItem
+              - dynamodb:Scan
+              - dynamodb:ConditionCheckItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - PushSubscriptionsTable14F60E9C
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: UnsubscribePushFnServiceRoleDefaultPolicy1C6F7E69
+      Roles:
+        - Ref: UnsubscribePushFnServiceRoleDA5DABDE
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/UnsubscribePushFn/ServiceRole/DefaultPolicy/Resource
+  UnsubscribePushFn6DC444A7:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-ap-south-1
+        S3Key: 30113bad54c9a6e5011feb0672912085db97bd7d32fa1b12670bbd1243593ceb.zip
+      Environment:
+        Variables:
+          KURAL_TABLE:
+            Ref: ThirukkuralTable00BC2045
+          USERS_TABLE:
+            Ref: UsersTable9725E9C8
+          RATE_LIMIT_TABLE:
+            Ref: RateLimitTableFAD921A1
+          PUSH_SUBSCRIPTIONS_TABLE:
+            Ref: PushSubscriptionsTable14F60E9C
+          SES_SENDER: noreply@example.com
+          VAPID_PUBLIC_KEY: ""
+          VAPID_PRIVATE_KEY: ""
+          VAPID_SUBJECT: mailto:example@example.com
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - UnsubscribePushFnServiceRoleDA5DABDE
+          - Arn
+      Runtime: nodejs20.x
+    DependsOn:
+      - UnsubscribePushFnServiceRoleDefaultPolicy1C6F7E69
+      - UnsubscribePushFnServiceRoleDA5DABDE
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/UnsubscribePushFn/Resource
+      aws:asset:path: asset.30113bad54c9a6e5011feb0672912085db97bd7d32fa1b12670bbd1243593ceb
+      aws:asset:is-bundled: true
+      aws:asset:property: Code
+  DailyKuralRule5008BBA7:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: cron(30 2 * * ? *)
+      State: ENABLED
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - SendDailyEmailFn91FF5CD4
+              - Arn
+          Id: Target0
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/DailyKuralRule/Resource
+  DailyKuralRuleAllowEventRuleThirukkuralStackSendDailyEmailFnC3D479D70D43ED9C:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - SendDailyEmailFn91FF5CD4
+          - Arn
+      Principal: events.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+          - DailyKuralRule5008BBA7
+          - Arn
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/DailyKuralRule/AllowEventRuleThirukkuralStackSendDailyEmailFnC3D479D7
+  WebsiteBucket75C24D94:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: aws-cdk:auto-delete-objects
+          Value: "true"
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/WebsiteBucket/Resource
+  WebsiteBucketPolicyE10E3262:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: WebsiteBucket75C24D94
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:PutBucketPolicy
+              - s3:GetBucket*
+              - s3:List*
+              - s3:DeleteObject*
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::GetAtt:
+                  - CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092
+                  - Arn
+            Resource:
+              - Fn::GetAtt:
+                  - WebsiteBucket75C24D94
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - WebsiteBucket75C24D94
+                        - Arn
+                    - /*
+          - Action: s3:GetObject
+            Effect: Allow
+            Principal:
+              CanonicalUser:
+                Fn::GetAtt:
+                  - WebsiteDistributionOrigin1S3Origin432B5882
+                  - S3CanonicalUserId
+            Resource:
+              Fn::Join:
+                - ""
+                - - Fn::GetAtt:
+                      - WebsiteBucket75C24D94
+                      - Arn
+                  - /*
+          - Action: s3:GetObject
+            Condition:
+              StringEquals:
+                AWS:SourceArn:
+                  Fn::Join:
+                    - ""
+                    - - "arn:aws:cloudfront::"
+                      - Ref: AWS::AccountId
+                      - :distribution/
+                      - Ref: WebsiteDistribution75DCDA0B
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Resource:
+              Fn::Join:
+                - ""
+                - - Fn::GetAtt:
+                      - WebsiteBucket75C24D94
+                      - Arn
+                  - /*
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/WebsiteBucket/Policy/Resource
+  WebsiteBucketAutoDeleteObjectsCustomResource8750E461:
+    Type: Custom::S3AutoDeleteObjects
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F
+          - Arn
+      BucketName:
+        Ref: WebsiteBucket75C24D94
+    DependsOn:
+      - WebsiteBucketPolicyE10E3262
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/WebsiteBucket/AutoDeleteObjectsCustomResource/Default
+  CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092:
+    Type: AWS::IAM::Role
+    Properties:
+74 feature flags are not configured. Run 'cdk flags 
+--unstable=flags' to learn more.
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+      ManagedPolicyArns:
+        - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role
+  CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-ap-south-1
+        S3Key: faa95a81ae7d7373f3e1f242268f904eb748d8d0fdd306e8a6fe515a1905a7d6.zip
+      Timeout: 900
+      MemorySize: 128
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092
+          - Arn
+      Runtime: nodejs22.x
+      Description:
+        Fn::Join:
+          - ""
+          - - "Lambda function for auto-deleting objects in "
+            - Ref: WebsiteBucket75C24D94
+            - " S3 bucket."
+    DependsOn:
+      - CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler
+      aws:asset:path: asset.faa95a81ae7d7373f3e1f242268f904eb748d8d0fdd306e8a6fe515a1905a7d6
+      aws:asset:property: Code
+  WebsiteOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: WebsiteOAC
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/WebsiteOAC
+  WebsiteDistributionOrigin1S3Origin432B5882:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: Identity for ThirukkuralStackWebsiteDistributionOrigin126AEC62E
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/WebsiteDistribution/Origin1/S3Origin/Resource
+  WebsiteDistribution75DCDA0B:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          CachedMethods:
+            - GET
+            - HEAD
+          Compress: true
+          TargetOriginId: ThirukkuralStackWebsiteDistributionOrigin126AEC62E
+          ViewerProtocolPolicy: redirect-to-https
+        DefaultRootObject: index.html
+        Enabled: true
+        HttpVersion: http2
+        IPV6Enabled: true
+        Origins:
+          - DomainName:
+              Fn::GetAtt:
+                - WebsiteBucket75C24D94
+                - RegionalDomainName
+            Id: ThirukkuralStackWebsiteDistributionOrigin126AEC62E
+            OriginAccessControlId:
+              Fn::GetAtt:
+                - WebsiteOAC
+                - Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/WebsiteDistribution/Resource
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/3VSwW7bMAz9lt4VrU1OPaYOCuywNXC3cyBLjMvEFgORSpAZ/vdBsp24QHvieyJFvUdqqZfLZ/34YC68sO64aLDS3bsYe1TmwrvOXb1pyVW6+2OqBlSx9xn0ylLtUUh3fxnClqhJuRuewIZag36eGk8mWjQIXuYFw0mvGtNWzuw8OTiw/p3Da/RWkLxC0+qupEFRjltq0F4THVCveLUzzCCs1ykoXunuJdojyIthUANMF0Y0hHufOZ/k6K7Y+5uK9BiEFpmRfK/MCWsjcDFX3ZXAsj5hlneHa2spelEbODV0bUfnM/Yups6eBlACUwwWsuBfIB/kUnJEU3Z8ZMTDXqZp8jrKBwX8ByELuLFewRm8sO7KOI4x5r02FN0+kJfs9S1gjUk3MBfkJVCjNsgSsIp5BvOCnw68oOTpFanPa+rzXcW8Td/f3eRtJf/o61T3FuUURRWRhdqvPX9KbQOd0UFIQ+tV+j/6wD/Oy0f99KxXDwdGXIToBVvQ5RD/A56z4pUHAwAA
+    Metadata:
+      aws:cdk:path: ThirukkuralStack/CDKMetadata/Default
+Outputs:
+  ThirukkuralApiEndpoint7B0E9B0E:
+    Value:
+      Fn::Join:
+        - ""
+        - - https://
+          - Ref: ThirukkuralApi3BE4467D
+          - .execute-api.ap-south-1.
+          - Ref: AWS::URLSuffix
+          - /
+          - Ref: ThirukkuralApiDeploymentStageprodA9AE83AB
+          - /
+  ApiUrl:
+    Value:
+      Fn::Join:
+        - ""
+        - - https://
+          - Ref: ThirukkuralApi3BE4467D
+          - .execute-api.ap-south-1.
+          - Ref: AWS::URLSuffix
+          - /
+          - Ref: ThirukkuralApiDeploymentStageprodA9AE83AB
+          - /
+  UserPoolId:
+    Value:
+      Ref: UserPool6BA7E5F2
+  UserPoolClientId:
+    Value:
+      Ref: UserPoolClient2F5918F7
+  UserPoolDomain:
+    Value:
+      Ref: UserPoolUserPoolDomain9F01E991
+  WebsiteUrl:
+    Value:
+      Fn::GetAtt:
+        - WebsiteDistribution75DCDA0B
+        - DomainName
+  WebsiteBucketName:
+    Value:
+      Ref: WebsiteBucket75C24D94
+  KuralTableName:
+    Value:
+      Ref: ThirukkuralTable00BC2045
+Parameters:
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/hnb659fds/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+
+
+NOTICES         (What's this? 
+https://github.com/aws/aws-cdk/wiki/CLI-Notices)
+
+34892	CDK CLI will collect telemetry data on command usage 
+starting at version 2.1100.0 (unless opted out)
+
+	Overview: We do not collect customer content and we 
+anonymize the
+	          telemetry we do collect. See the attached issue 
+for more
+	          information on what data is collected, why, and 
+how to
+	          opt-out. Telemetry will NOT be collected for any 
+CDK CLI
+	          version prior to version 2.1100.0 - regardless of
+	          opt-in/out. You can also preview the telemetry 
+we will start
+	          collecting by logging it to a local file, by 
+adding
+	          `--unstable=telemetry 
+--telemetry-file=my/local/file` to any
+	          `cdk` command.
+
+	Affected versions: cli: ^2.0.0
+
+	More information at: 
+https://github.com/aws/aws-cdk/issues/34892
+
+
+If you donΓÇÖt want to see a notice anymore, use "cdk 
+acknowledge <id>". For example, "cdk acknowledge 34892".
