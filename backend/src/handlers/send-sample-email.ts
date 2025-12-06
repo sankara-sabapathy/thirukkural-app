@@ -1,12 +1,12 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { PutCommand } from '@aws-sdk/lib-dynamodb';
-import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+
 import { docClient } from '../shared/dynamo';
 import { createResponse } from '../shared/utils';
 import { generateKuralEmail, Kural } from '../shared/email-templates';
 import { getRandomKural } from '../shared/kural-utils';
 
-const ses = new SESClient({});
+import { sendEmail } from '../shared/email-service';
 
 const RATE_LIMIT_SECONDS = 24 * 60 * 60; // 24 hours
 
@@ -78,20 +78,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
         const { subject, text, html } = generateKuralEmail(kuralData, true); // isSample = true
 
-        const sendCmd = new SendEmailCommand({
-            Destination: { ToAddresses: [email] },
-            Message: {
-                Body: {
-                    Text: { Data: text },
-                    Html: { Data: html }
-                },
-                Subject: { Data: subject },
-            },
-            Source: 'Thirukkural Daily <thirukkural-daily@krss.online>',
-            ReplyToAddresses: ['sabapathy.work@gmail.com'],
+        await sendEmail({
+            to: [email],
+            subject: subject,
+            text: text,
+            html: html
         });
-
-        await ses.send(sendCmd);
 
         return createResponse(200, { message: 'Sample email sent successfully!' });
 
