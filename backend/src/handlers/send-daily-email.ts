@@ -97,7 +97,13 @@ export const handler = async (): Promise<void> => {
                         badge: 'assets/icons/icon-72x72.png',
                         data: {
                             url: `/kural/${kuralData.kuralId}`,
-                            kuralId: kuralData.kuralId
+                            kuralId: kuralData.kuralId,
+                            onActionClick: {
+                                default: {
+                                    operation: 'navigateLastFocusedOrOpen',
+                                    url: `/kural/${kuralData.kuralId}`
+                                }
+                            }
                         }
                     }
                 });
