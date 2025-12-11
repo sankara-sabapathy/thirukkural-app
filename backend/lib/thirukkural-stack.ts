@@ -162,6 +162,7 @@ export class ThirukkuralStack extends cdk.Stack {
             EMAIL_SENDER_NAME: process.env.EMAIL_SENDER_NAME || 'Thirukkural Daily',
             EMAIL_SENDER_ADDRESS: process.env.EMAIL_SENDER_ADDRESS || 'noreply@example.com',
             EMAIL_REPLY_TO: process.env.EMAIL_REPLY_TO || 'noreply@example.com',
+            UNSUBSCRIBE_SECRET: process.env.UNSUBSCRIBE_SECRET || 'dev-secret',
         };
 
         // Sensitive push sender secrets - only for Lambdas that send notifications
@@ -205,11 +206,17 @@ export class ThirukkuralStack extends cdk.Stack {
             ...nodeJsProps,
         });
 
+        const unsubscribeEmailFn = new nodejs.NodejsFunction(this, 'UnsubscribeEmailFn', {
+            entry: path.join(__dirname, '../src/handlers/unsubscribe.ts'),
+            ...nodeJsProps,
+        });
+
         // Permissions
         kuralTable.grantReadData(sendEmailFn);
         kuralTable.grantReadData(sendSampleEmailFn);
         usersTable.grantReadWriteData(userProfileFn);
         usersTable.grantReadData(sendEmailFn);
+        usersTable.grantReadWriteData(unsubscribeEmailFn);
         rateLimitTable.grantReadWriteData(sendSampleEmailFn);
         pushSubscriptionsTable.grantReadWriteData(subscribePushFn);
         pushSubscriptionsTable.grantReadWriteData(sendEmailFn);
@@ -302,6 +309,15 @@ export class ThirukkuralStack extends cdk.Stack {
                 { statusCode: '200' },
                 { statusCode: '400' },
                 { statusCode: '429' },
+            ],
+        });
+
+        // Email Unsubscribe
+        const unsubscribeEmail = api.root.addResource('unsubscribe');
+        unsubscribeEmail.addMethod('POST', new apigateway.LambdaIntegration(unsubscribeEmailFn), {
+            methodResponses: [
+                { statusCode: '200' },
+                { statusCode: '400' },
             ],
         });
 

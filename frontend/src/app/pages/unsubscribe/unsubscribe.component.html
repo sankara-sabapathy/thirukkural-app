@@ -1,0 +1,66 @@
+<div class="unsubscribe-page">
+    <div class="container">
+        
+        <!-- Loading / Initial State -->
+        <div class="unsubscribe-card card fade-in" *ngIf="!isSuccess && !isError">
+            <h1 class="title">Unsubscribe</h1>
+            <p class="description">
+                We're sorry to see you go. If you unsubscribe, you will no longer receive the daily Thirukkural in your inbox.
+            </p>
+
+            <div class="feedback-section">
+                <label for="feedback">Before you go, would you mind telling us why? (Optional)</label>
+                <textarea 
+                    id="feedback" 
+                    [(ngModel)]="feedback" 
+                    placeholder="Too many emails? Not interested? Any feedback helps us improve."
+                    rows="3"
+                    class="form-input">
+                </textarea>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-danger" (click)="confirmUnsubscribe()" [disabled]="isSubmitting">
+                    <span *ngIf="!isSubmitting">Confirm Unsubscribe</span>
+                    <span *ngIf="isSubmitting">Processing...</span>
+                </button>
+                <button class="btn btn-outline" (click)="goHome()" [disabled]="isSubmitting">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Success State -->
+        <div class="unsubscribe-card card fade-in success" *ngIf="isSuccess">
+            <div class="icon-circle">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 6L9 17l-5-5"></path>
+                </svg>
+            </div>
+            <h2 class="title">Unsubscribed</h2>
+            <p class="description">
+                You have been successfully unsubscribed from Thirukkural Daily. You will no longer receive daily emails.
+            </p>
+            <div class="actions">
+                <button class="btn btn-primary" (click)="goHome()">Return to Home</button>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div class="unsubscribe-card card fade-in error" *ngIf="isError">
+            <div class="icon-circle error-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+            </div>
+            <h2 class="title">Something went wrong</h2>
+            <p class="description">
+                {{ errorMessage }}
+            </p>
+            <div class="actions">
+                <button class="btn btn-primary" (click)="goHome()">Return to Home</button>
+            </div>
+        </div>
+
+    </div>
+</div>

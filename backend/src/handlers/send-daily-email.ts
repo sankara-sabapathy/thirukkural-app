@@ -3,8 +3,8 @@ import { docClient } from '../shared/dynamo';
 import { generateKuralEmail, Kural } from '../shared/email-templates';
 import { getRandomKural } from '../shared/kural-utils';
 import { sendEmail } from '../shared/email-service';
+import { generateUnsubscribeToken } from '../shared/crypto-utils';
 import * as webpush from 'web-push';
-
 
 
 export const handler = async (): Promise<void> => {
@@ -40,8 +40,6 @@ export const handler = async (): Promise<void> => {
             sp: randomKural.sp
         };
 
-        const { subject, text, html } = generateKuralEmail(kuralData);
-
         // 3. Send email to each user with delay
         if (users.length > 0) {
             console.log(`Sending Kural ${kuralData.kuralId} to ${users.length} users via Email`);
@@ -50,6 +48,14 @@ export const handler = async (): Promise<void> => {
                 if (!email) continue;
 
                 try {
+                    // Generate unique secure unsubscribe link
+                    const token = generateUnsubscribeToken(email);
+                    // Use configured base domain or fallback
+                    const baseDomain = process.env.APP_DOMAIN || 'https://thirukkural.krss.online';
+                    const unsubscribeLink = `${baseDomain}/unsubscribe?token=${encodeURIComponent(token)}`;
+
+                    const { subject, text, html } = generateKuralEmail(kuralData, false, unsubscribeLink);
+
                     await sendEmail({
                         to: [email],
                         subject: subject,
