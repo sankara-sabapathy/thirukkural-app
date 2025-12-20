@@ -1,0 +1,101 @@
+.unsubscribe-page {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+}
+
+.unsubscribe-card {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 2.5rem;
+    text-align: center;
+    background: var(--surface-card);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+
+    .title {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+    }
+
+    .description {
+        color: var(--text-secondary);
+        margin-bottom: 2rem;
+        line-height: 1.6;
+    }
+
+    .feedback-section {
+        margin-bottom: 2rem;
+        text-align: left;
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            background: var(--surface-ground);
+            color: var(--text-primary);
+            resize: vertical;
+            font-family: inherit;
+
+            &:focus {
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
+            }
+        }
+    }
+
+    .actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+
+        .btn {
+            min-width: 140px;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            border: none;
+
+            &:hover:not(:disabled) {
+                background: #dc2626;
+            }
+
+            &:disabled {
+                opacity: 0.7;
+                cursor: not-allowed;
+            }
+        }
+    }
+
+    .icon-circle {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+
+        &.error-icon {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+    }
+}

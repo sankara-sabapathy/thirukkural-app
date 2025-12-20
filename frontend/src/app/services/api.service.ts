@@ -15,4 +15,9 @@ export class ApiService {
         const url = `${this.baseUrl}${environment.api.endpoints.sampleEmail}`;
         return this.http.post(url, { email });
     }
+
+    unsubscribe(token: string, feedback?: string): Observable<any> {
+        const url = `${this.baseUrl}/unsubscribe`;
+        return this.http.post(url, { token, feedback });
+    }
 }

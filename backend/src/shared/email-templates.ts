@@ -11,14 +11,14 @@ export interface Kural {
     sp?: string;
 }
 
-export const generateKuralEmail = (kural: Kural, isSample: boolean = false) => {
+export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsubscribeLink: string = '') => {
     const { kuralId, line1, line2, translation = '', explanation = '', couplet = '', transliteration = '', mk = '', mv = '', sp = '' } = kural;
 
     const subject = `Thirukkural #${kuralId}: ${translation.substring(0, 50)}...`;
 
     const unsubscribeText = isSample
         ? "This is a one-time sample email. You are not subscribed."
-        : 'To unsubscribe, reply "unsubscribe" or login to thirukkural.krss.online.';
+        : 'To unsubscribe, click the link below.';
 
     const footerText = isSample
         ? "You received this sample email because you requested it on our website."
@@ -26,9 +26,9 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false) => {
 
     const unsubscribeHtml = isSample
         ? `<p style="margin-bottom: 15px; color: #bdc3c7;">This is a sample email. No further emails will be sent unless you subscribe.</p>`
-        : `<p style="margin-bottom: 15px; color: #bdc3c7;">To unsubscribe, please reply to this email with "unsubscribe" (processing may take 48-72 hours) or <a href="https://thirukkural.krss.online" style="color: #3498db; text-decoration: none;">login to your account</a> to unsubscribe instantly.</p>`;
+        : `<p style="margin-bottom: 15px; color: #bdc3c7;">To unsubscribe, <a href="${unsubscribeLink}" style="color: #3498db; text-decoration: none;">click here</a>.</p>`;
 
-    const textBody = `Thirukkural Daily #${kuralId}\n\n${line1}\n${line2}\n\nTranslation: ${translation}\n\nExplanation: ${explanation}\n\n${unsubscribeText}`;
+    const textBody = `Thirukkural Daily #${kuralId}\n\n${line1}\n${line2}\n\nTranslation: ${translation}\n\nExplanation: ${explanation}\n\n${unsubscribeText}\n${isSample ? '' : unsubscribeLink}`;
 
     const htmlBody = `
     <!DOCTYPE html>

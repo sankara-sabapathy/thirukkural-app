@@ -55,6 +55,7 @@ jobs:
         EMAIL_SENDER_NAME: ${{ vars.EMAIL_SENDER_NAME }}
         EMAIL_SENDER_ADDRESS: ${{ secrets.EMAIL_SENDER_ADDRESS }}
         EMAIL_REPLY_TO: ${{ secrets.EMAIL_REPLY_TO }}
+        UNSUBSCRIBE_SECRET: ${{ secrets.UNSUBSCRIBE_SECRET }}
 
     # Seed Database step disabled - data already seeded
     # - name: Seed Database

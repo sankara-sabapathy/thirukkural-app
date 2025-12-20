@@ -297,6 +297,10 @@
         &.enabled {
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent-primary) 100%);
             border-color: transparent;
+
+            .toggle-slider {
+                transform: translateX(30px);
+            }
         }
 
         &.toggling {
@@ -327,10 +331,6 @@
         align-items: center;
         justify-content: center;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-
-        .toggle-switch.enabled & {
-            transform: translateX(30px);
-        }
     }
 
     .toggle-spinner {

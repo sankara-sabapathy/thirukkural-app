@@ -94,6 +94,10 @@ $env:GOOGLE_CLIENT_SECRET="your-google-client-secret"
 $env:VAPID_PUBLIC_KEY="BNxCpD0m...your-public-key..."
 $env:VAPID_PRIVATE_KEY="_HsT7zP9...your-private-key..."
 $env:VAPID_SUBJECT="mailto:your-email@example.com"
+$env:VAPID_PRIVATE_KEY="_HsT7zP9...your-private-key..."
+$env:VAPID_SUBJECT="mailto:your-email@example.com"
+# For Secure Unsubscribe
+$env:UNSUBSCRIBE_SECRET="your-random-hex-string"
 ```
 
 **Mac/Linux:**
@@ -105,6 +109,9 @@ export GOOGLE_CLIENT_SECRET="your-google-client-secret"
 export VAPID_PUBLIC_KEY="BNxCpD0m...your-public-key..."
 export VAPID_PRIVATE_KEY="_HsT7zP9...your-private-key..."
 export VAPID_SUBJECT="mailto:your-email@example.com"
+export VAPID_SUBJECT="mailto:your-email@example.com"
+# For Secure Unsubscribe
+export UNSUBSCRIBE_SECRET="your-random-hex-string"
 ```
 
 ### 4. Build Frontend
@@ -205,7 +212,27 @@ npx playwright show-report
 - Cross-browser testing (Chromium, Firefox, WebKit)
 - Mobile viewport testing (Pixel 5, iPhone 12)
 
-### Continuous Integration
+### Backend Testing (Vitest)
+The backend features an enterprise-grade test suite using **Vitest** for unit and infrastructure testing.
+
+Run backend tests:
+```bash
+cd backend
+npm test          # Watch mode
+npx vitest run    # Single run
+```
+
+Run tests with coverage:
+```bash
+npx vitest run --coverage
+```
+
+**Backend Test Coverage:**
+- **Infrastructure**: Verifies CDK Stack resources (DynamoDB, Lambda, API Gateway).
+- **Lambda Handlers**: Tests business logic for Subscriptions, Daily Emails, and Push Notifications.
+- **Shared Utilities**: Tests Email Service (SES/Brevo), Templates, and Helper functions.
+
+### Frontend Continuous Integration
 
 The project includes automated testing via GitHub Actions (`.github/workflows/test.yml`):
 - Runs on every push and pull request
@@ -299,6 +326,7 @@ These values should **NEVER** be committed to version control. Use `.env` files 
 | `VAPID_PUBLIC_KEY` | Web Push Public Key | Backend Deployment / CI Secrets |
 | `VAPID_PRIVATE_KEY` | Web Push Private Key | Backend Deployment / CI Secrets |
 | `VAPID_SUBJECT` | Web Push Subject (mailto:) | Backend Deployment / CI Secrets |
+| `UNSUBSCRIBE_SECRET` | Secret for HMAC token generation | Backend Deployment / CI Secrets |
 
 ### Public Configuration
 The following values are **safe to commit** in `environment.ts` / `environment.prod.ts` as they are exposed in the client-side bundle anyway:
