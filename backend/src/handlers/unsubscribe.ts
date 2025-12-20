@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { docClient } from '../shared/dynamo';
 import { createResponse } from '../shared/utils';
 import { verifyUnsubscribeToken } from '../shared/crypto-utils';
@@ -22,14 +22,28 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return createResponse(400, { message: 'Invalid or expired unsubscribe link' });
         }
 
-        // Update user preference in USERS_TABLE
+        // 1. Look up userId from email using GSI
+        const userResult = await docClient.send(new QueryCommand({
+            TableName: process.env.USERS_TABLE,
+            IndexName: 'EmailIndex',
+            KeyConditionExpression: 'email = :email',
+            ExpressionAttributeValues: {
+                ':email': email
+            }
+        }));
+
+        if (!userResult.Items || userResult.Items.length === 0) {
+            console.warn(`Unsubscribe requested for unknown email: ${email}`);
+            // If user doesn't exist, they won't get emails anyway. Return success.
+            return createResponse(200, { message: 'Unsubscribed successfully' });
+        }
+
+        const userId = userResult.Items[0].userId;
+
+        // 2. Update user preference in USERS_TABLE using the correct userId
         await docClient.send(new UpdateCommand({
             TableName: process.env.USERS_TABLE,
-            Key: { userId: email }, // Assuming userId is email, or we need to look up.
-            // Wait, send-daily-email uses Scan and email property.
-            // usersTable definition in stack: partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING }
-            // user-profile handler uses event.requestContext.authorizer.claims.email as userId ??
-            // Let's check user-profile.ts
+            Key: { userId: userId },
             UpdateExpression: 'SET receiveDailyEmail = :false, lastUnsubscribeDate = :now, unsubscribeFeedback = :feedback',
             ExpressionAttributeValues: {
                 ':false': false,
