@@ -212,7 +212,27 @@ npx playwright show-report
 - Cross-browser testing (Chromium, Firefox, WebKit)
 - Mobile viewport testing (Pixel 5, iPhone 12)
 
-### Continuous Integration
+### Backend Testing (Vitest)
+The backend features an enterprise-grade test suite using **Vitest** for unit and infrastructure testing.
+
+Run backend tests:
+```bash
+cd backend
+npm test          # Watch mode
+npx vitest run    # Single run
+```
+
+Run tests with coverage:
+```bash
+npx vitest run --coverage
+```
+
+**Backend Test Coverage:**
+- **Infrastructure**: Verifies CDK Stack resources (DynamoDB, Lambda, API Gateway).
+- **Lambda Handlers**: Tests business logic for Subscriptions, Daily Emails, and Push Notifications.
+- **Shared Utilities**: Tests Email Service (SES/Brevo), Templates, and Helper functions.
+
+### Frontend Continuous Integration
 
 The project includes automated testing via GitHub Actions (`.github/workflows/test.yml`):
 - Runs on every push and pull request
