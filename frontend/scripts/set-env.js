@@ -35,10 +35,23 @@ export const environment = {
 `;
 
 console.log(`Generating environment files...`);
+
+function writeFileSafe(filePath, content) {
+    try {
+        const dir = path.dirname(filePath);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        fs.writeFileSync(filePath, content);
+        console.log(`Updated ${filePath}`);
+    } catch (err) {
+        console.error(`Error writing to ${filePath}:`, err);
+        process.exit(1);
+    }
+}
+
 // Write to environment.ts
-fs.writeFileSync(targetPathDefault, envConfigFile);
-console.log(`Updated ${targetPathDefault}`);
+writeFileSafe(targetPathDefault, envConfigFile);
 
 // Write to environment.prod.ts
-fs.writeFileSync(targetPathProd, envConfigFile);
-console.log(`Updated ${targetPathProd}`);
+writeFileSafe(targetPathProd, envConfigFile);
