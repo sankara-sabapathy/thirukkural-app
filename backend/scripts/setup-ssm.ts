@@ -43,6 +43,7 @@ const CONFIG: StringMap = {
         vapid_subject: 'mailto:admin@YOUR_DOMAIN.com',
         vapid_public_key: 'YOUR_VAPID_PUBLIC_KEY',
         google_client_id: 'YOUR_GOOGLE_CLIENT_ID',
+        google_client_secret: 'YOUR_GOOGLE_CLIENT_SECRET', // Changed to String from SecureString for CloudFormation compatibility
     },
     // Stage-specific overrides/values
     stages: {
@@ -51,8 +52,7 @@ const CONFIG: StringMap = {
             email_sender_name: 'Thirukkural Daily (Dev)',
             email_sender_address: 'dev-noreply@YOUR_DOMAIN.com',
             email_reply_to: 'dev-support@YOUR_DOMAIN.com',
-            // Placeholder ARNs - User must MANUALLY update these in SSM or local .env before running if they want automation
-            // For Open Source safety, we strictly use placeholders here.
+            // Placeholder ARNs
             acm_certificate_arn_api: 'arn:aws:acm:us-east-1:YOUR_ACCOUNT_ID:certificate/YOUR_WILDCARD_OR_DEV_CERT_ID',
             acm_certificate_arn_cloudfront: 'arn:aws:acm:us-east-1:YOUR_ACCOUNT_ID:certificate/YOUR_WILDCARD_OR_DEV_CERT_ID',
         },
@@ -61,13 +61,12 @@ const CONFIG: StringMap = {
             email_sender_name: 'Thirukkural Daily',
             email_sender_address: 'noreply@YOUR_DOMAIN.com',
             email_reply_to: 'support@YOUR_DOMAIN.com',
-            // Placeholder ARNs - User must MANUALLY update these in SSM
+            // Placeholder ARNs
             acm_certificate_arn_api: 'arn:aws:acm:us-east-1:YOUR_ACCOUNT_ID:certificate/YOUR_PROD_CERT_ID',
             acm_certificate_arn_cloudfront: 'arn:aws:acm:us-east-1:YOUR_ACCOUNT_ID:certificate/YOUR_PROD_CERT_ID',
         }
     } as Record<string, Record<string, string>>,
     secrets: [
-        'google_client_secret',
         'vapid_private_key',
         'cloudflare_secret_key',
         'unsubscribe_secret',
