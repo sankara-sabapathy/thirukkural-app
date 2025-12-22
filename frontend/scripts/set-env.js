@@ -5,8 +5,13 @@ const dotenv = require('dotenv');
 // Load environment variables from .env file
 dotenv.config();
 
+// Default to prod, but allow override via arg
+const isDev = process.argv.includes('--dev');
+const targetFile = isDev ? 'environment.dev.ts' : 'environment.prod.ts';
+const targetPath = path.join(__dirname, `../src/environments/environment.${isDev ? 'dev' : 'prod'}.ts`);
+
 const envConfigFile = `export const environment = {
-    production: true,
+    production: ${!isDev},
     cognito: {
         userPoolId: '${process.env.COGNITO_USER_POOL_ID}',
         userPoolWebClientId: '${process.env.COGNITO_WEB_CLIENT_ID}',
@@ -26,8 +31,7 @@ const envConfigFile = `export const environment = {
 };
 `;
 
-const targetPath = path.join(__dirname, '../src/environments/environment.prod.ts');
-
+console.log(`Generating ${targetFile} ...`);
 fs.writeFile(targetPath, envConfigFile, function (err) {
     if (err) {
         console.log(err);
