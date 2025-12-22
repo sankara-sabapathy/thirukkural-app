@@ -13,7 +13,9 @@ new ThirukkuralStack(app, 'ThirukkuralStack', {
     stackName: stackName,
     env: {
         region: process.env.AWS_REGION || 'ap-south-1',
-        account: process.env.CDK_DEFAULT_ACCOUNT || process.env.AWS_ACCOUNT_ID
+        account: process.env.CDK_DEFAULT_ACCOUNT || process.env.AWS_ACCOUNT_ID || (() => {
+            throw new Error('AWS account ID is required. Set CDK_DEFAULT_ACCOUNT or AWS_ACCOUNT_ID environment variable.');
+        })()
     },
     stage: stage
 });

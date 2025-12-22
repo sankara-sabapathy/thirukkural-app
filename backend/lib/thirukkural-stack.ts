@@ -400,11 +400,10 @@ export class ThirukkuralStack extends cdk.Stack {
 
         // EventBridge Rule
         const rule = new events.Rule(this, 'DailyKuralRule', {
-
             schedule: events.Schedule.cron({ minute: '30', hour: '2' }),
+            enabled: isProd,
         });
 
-        // In Dev, we might want to disable the rule or ensure safe sending handled by Lambda logic
         rule.addTarget(new targets.LambdaFunction(sendEmailFn));
 
 
