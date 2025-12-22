@@ -313,31 +313,49 @@ Common issues and solutions encountered during deployment:
 
 When deploying this project or pushing to public repositories, be aware of the following:
 
-### Environment Variables (Secrets)
-These values should **NEVER** be committed to version control. Use `.env` files (gitignored) or CI/CD secrets.
+## 🔄 CI/CD & Multi-Stage Deployment
+This project supports dynamic deployment to multiple stages (e.g., `dev`, `prod`). Configuration is managed via **AWS Systems Manager (SSM) Parameter Store**.
 
-| Variable | Description | Location |
+### 1. Configure AWS SSM Parameters
+Before deploying, you must populate the SSM Parameter Store for each stage.
+**Naming Convention**: `/{stage}/thirukkural/{parameter_name}` (e.g., `/dev/thirukkural/base_domain`)
+
+#### Required Parameters Table
+| Parameter Name | Type | Value Description |
 | :--- | :--- | :--- |
-| `GOOGLE_CLIENT_ID` | Google OAuth Client ID | Backend Deployment / CI Secrets |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret | Backend Deployment / CI Secrets |
-| `SES_SENDER_EMAIL` | Verified SES Email Address | Backend Deployment / CI Secrets |
-| `AWS_ACCESS_KEY_ID` | AWS Credentials | CI Secrets (GitHub Actions) |
-| `AWS_SECRET_ACCESS_KEY` | AWS Credentials | CI Secrets (GitHub Actions) |
-| `VAPID_PUBLIC_KEY` | Web Push Public Key | Backend Deployment / CI Secrets |
-| `VAPID_PRIVATE_KEY` | Web Push Private Key | Backend Deployment / CI Secrets |
-| `VAPID_SUBJECT` | Web Push Subject (mailto:) | Backend Deployment / CI Secrets |
-| `UNSUBSCRIBE_SECRET` | Secret for HMAC token generation | Backend Deployment / CI Secrets |
+| `base_domain` | String | Your root domain (e.g., `example.com`) |
+| `email_provider` | String | `SES` or `BREVO` |
+| `email_sender` | String | Verified Sender Email Address |
+| `email_sender_name` | String | Display Name for Emails |
+| `email_sender_address` | String | Exact 'From' Address |
+| `email_reply_to` | String | Reply-To Address |
+| `acm_certificate_arn_api` | String | ARN of ACM Certificate (us-east-1) for API |
+| `acm_certificate_arn_cloudfront` | String | ARN of ACM Certificate (us-east-1) for CloudFront |
+| `vapid_public_key` | String | Your Generated VAPID Public Key |
+| `vapid_subject` | String | Mailto link (e.g., `mailto:admin@example.com`) |
+| `google_client_id` | `SecureString`* | Google OAuth Client ID |
+| `google_client_secret` | `SecureString`* | Google OAuth Client Secret |
+| `vapid_private_key` | `SecureString`* | Your Generated VAPID Private Key |
+| `cloudflare_secret_key` | `SecureString`* | Random string for API protection |
+| `unsubscribe_secret` | `SecureString`* | Random string for HMAC signing |
+| `brevo_api_key` | `SecureString`* | Brevo API Key (if using Brevo) |
 
-### Public Configuration
-The following values are **safe to commit** in `environment.ts` / `environment.prod.ts` as they are exposed in the client-side bundle anyway:
+*Use `SecureString` for sensitive secrets.*
 
-*   `userPoolId`
-*   `userPoolWebClientId`
-*   `domain` (Cognito Domain)
-*   `baseUrl` (API Gateway URL)
-*   `redirectSignIn` / `redirectSignOut` URLs
+### 2. Automated Setup Script
+We provide a script to help you populate these parameters:
+```bash
+cd backend
+# Edit the script with your values first! or use as template
+npm run setup-ssm
+```
 
-**Note**: Although safe to expose, these values are specific to your deployment. If you fork this repo, you must update them with your own AWS resource IDs.
+### 3. GitHub Actions Secrets
+You only need minimal secrets in GitHub Actions now:
+| Secret Name | Value Description |
+| :--- | :--- |
+| `AWS_ACCESS_KEY_ID` | Your AWS Access Key ID. |
+| `AWS_SECRET_ACCESS_KEY` | Your AWS Secret Access Key. |
 
 ## 🧹 Cleanup
 
