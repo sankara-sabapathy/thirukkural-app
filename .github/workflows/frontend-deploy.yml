@@ -33,7 +33,7 @@ jobs:
       run: npm ci
 
     - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v2
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -42,6 +42,8 @@ jobs:
     - name: Fetch Configuration
       id: config
       run: |
+        set -e -o pipefail
+        
         STAGE=${{ inputs.stage }}
         # Determine Stack Name: Prod uses legacy name 'ThirukkuralStack', others use 'ThirukkuralStack-{Stage}'
         STACK_NAME="ThirukkuralStack"
@@ -56,20 +58,44 @@ jobs:
         echo "Fetching outputs from Stack: $STACK_NAME"
         
         get_output() {
-          aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text
+          local val
+          val=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text)
+          if [ $? -ne 0 ]; then
+             echo "Error fetching output $1 from stack $STACK_NAME" >&2
+             exit 1
+          fi
+          echo "$val"
         }
         
+        # Fetch and Validate Stack Outputs
         API_URL=$(get_output 'ApiUrl')
         USER_POOL_ID=$(get_output 'UserPoolId')
         CLIENT_ID=$(get_output 'UserPoolClientId')
         USER_POOL_DOMAIN=$(get_output 'UserPoolDomain')
         BUCKET_NAME=$(get_output 'WebsiteBucketName')
         
+        # Validation
+        check_val() {
+          if [ -z "$2" ] || [ "$2" == "None" ]; then
+            echo "Error: Critical value $1 is missing or empty." >&2
+            exit 1
+          fi
+        }
+
+        check_val "API_URL" "$API_URL"
+        check_val "USER_POOL_ID" "$USER_POOL_ID"
+        check_val "CLIENT_ID" "$CLIENT_ID"
+        check_val "USER_POOL_DOMAIN" "$USER_POOL_DOMAIN"
+        check_val "BUCKET_NAME" "$BUCKET_NAME"
+
         echo "Retrieved Bucket: $BUCKET_NAME"
 
         # Fetch Base Domain and VAPID Key from SSM
         VAPID_KEY=$(aws ssm get-parameter --name "/$STAGE/thirukkural/vapid_public_key" --query "Parameter.Value" --output text)
         BASE_DOMAIN=$(aws ssm get-parameter --name "/$STAGE/thirukkural/base_domain" --query "Parameter.Value" --output text)
+        
+        check_val "VAPID_PUBLIC_KEY" "$VAPID_KEY"
+        check_val "BASE_DOMAIN" "$BASE_DOMAIN"
         
         echo "API_BASE_URL=$API_URL" >> $GITHUB_ENV
         echo "COGNITO_USER_POOL_ID=$USER_POOL_ID" >> $GITHUB_ENV
