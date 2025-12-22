@@ -125,7 +125,12 @@ export class ThirukkuralStack extends cdk.Stack {
         // SecureString (Client Secret) is tricky. CloudFormation natively supports resolving Secrets Manager or SSM SecureString (dynamic references).
 
         const googleClientId = getParam('google_client_id');
-        const googleClientSecret = cdk.SecretValue.ssmSecure(`${ssmPrefix}/google_client_secret`);
+        // Changed to standard String to avoid CloudFormation 'SSM Secure reference not supported' error
+        // User has updated SSM parameter type to String manually.
+        // We use SecretValue.unsafePlainText because UserPoolIdentityProviderGoogle expects a SecretValue,
+        // but we want to pass the resolved string from SSM.
+        const googleClientSecretString = ssm.StringParameter.valueForStringParameter(this, `${ssmPrefix}/google_client_secret`);
+        const googleClientSecret = cdk.SecretValue.unsafePlainText(googleClientSecretString);
 
         const googleProvider = new cognito.UserPoolIdentityProviderGoogle(this, 'GoogleIdP', {
             clientId: googleClientId,
