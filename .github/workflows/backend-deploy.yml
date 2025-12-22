@@ -16,6 +16,11 @@ on:
         required: true
         type: boolean
         default: false
+      setup_ssm:
+        description: 'Run SSM Setup Script (Safe: Will not overwrite existing secrets)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   deploy:
@@ -49,7 +54,13 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ap-south-1
-    
+
+    - name: Run SSM Setup
+      if: ${{ inputs.setup_ssm == true }}
+      run: npm run setup-ssm
+      env:
+        STAGE: ${{ inputs.stage }}
+
     - name: Bootstrap CDK
       run: npx cdk bootstrap --skip-if-bootstrapped
 

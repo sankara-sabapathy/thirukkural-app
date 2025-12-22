@@ -43,16 +43,17 @@ jobs:
       id: config
       run: |
         STAGE=${{ inputs.stage }}
+        # Determine Stack Name: Prod uses legacy name 'ThirukkuralStack', others use 'ThirukkuralStack-{Stage}'
         STACK_NAME="ThirukkuralStack"
-        if [ "$STAGE" == "dev" ]; then STACK_NAME="ThirukkuralStack-Dev"; fi
+        if [ "$STAGE" != "prod" ]; then 
+             # Capitalize first letter for stack name convention if needed, or matched CDK logic
+             # In CDK bin: `ThirukkuralStack-${stage.charAt(0).toUpperCase() + stage.slice(1)}`
+             # Bash capitalizer:
+             CAP_STAGE="$(tr '[:lower:]' '[:upper:]' <<< ${STAGE:0:1})${STAGE:1}"
+             STACK_NAME="ThirukkuralStack-$CAP_STAGE"
+        fi
         
         echo "Fetching outputs from Stack: $STACK_NAME"
-        
-        # 1. Fetch Stack Outputs
-        outputs=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs")
-        
-        # Parse outputs (jq would be nicer but basic grep/awk works if simple, or just use separate queries)
-        # Using specific queries for robust fetching
         
         get_output() {
           aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text
@@ -63,66 +64,60 @@ jobs:
         CLIENT_ID=$(get_output 'UserPoolClientId')
         USER_POOL_DOMAIN=$(get_output 'UserPoolDomain')
         BUCKET_NAME=$(get_output 'WebsiteBucketName')
-        DISTRIBUTION_ID=$(get_output 'DistributionId') # Note: Needs to be added to Outputs if not there. Just checked stack code - DistributionId NOT exported. Wait. stack code has WebsiteUrl (DistributionDomainName). 
-        # I need Distribution ID for invalidation. 
-        # Let's assume we can lookup distribution by Alias or just skip invalidation if ID missing (bad).
-        # Better: Update backend stack to export Distribution ID.
-        # Workaround: List distributions? No.
-        # Let's fetch VAPID Public Key from SSM
         
+        echo "Retrieved Bucket: $BUCKET_NAME"
+
+        # Fetch Base Domain and VAPID Key from SSM
         VAPID_KEY=$(aws ssm get-parameter --name "/$STAGE/thirukkural/vapid_public_key" --query "Parameter.Value" --output text)
+        BASE_DOMAIN=$(aws ssm get-parameter --name "/$STAGE/thirukkural/base_domain" --query "Parameter.Value" --output text)
         
-        # Export as Env Vars for next step
         echo "API_BASE_URL=$API_URL" >> $GITHUB_ENV
         echo "COGNITO_USER_POOL_ID=$USER_POOL_ID" >> $GITHUB_ENV
         echo "COGNITO_WEB_CLIENT_ID=$CLIENT_ID" >> $GITHUB_ENV
         echo "COGNITO_DOMAIN=$USER_POOL_DOMAIN" >> $GITHUB_ENV
         echo "VAPID_PUBLIC_KEY=$VAPID_KEY" >> $GITHUB_ENV
         echo "S3_BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+        echo "APP_BASE_DOMAIN=$BASE_DOMAIN" >> $GITHUB_ENV
         
-        # Construct Redirect URIs based on stage
+        # Construct Site Domain
         if [ "$STAGE" == "prod" ]; then
-             echo "COGNITO_REDIRECT_SIGNIN=https://thirukkural.krss.online/callback" >> $GITHUB_ENV
-             echo "COGNITO_REDIRECT_SIGNOUT=https://thirukkural.krss.online/" >> $GITHUB_ENV
+             SITE_DOMAIN="thirukkural.$BASE_DOMAIN"
         else
-             echo "COGNITO_REDIRECT_SIGNIN=https://dev-thirukkural.krss.online/callback" >> $GITHUB_ENV
-             echo "COGNITO_REDIRECT_SIGNOUT=https://dev-thirukkural.krss.online/" >> $GITHUB_ENV
+             SITE_DOMAIN="$STAGE-thirukkural.$BASE_DOMAIN"
         fi
+        
+        echo "SITE_DOMAIN=$SITE_DOMAIN" >> $GITHUB_ENV
+        
+        echo "COGNITO_REDIRECT_SIGNIN=https://$SITE_DOMAIN/callback" >> $GITHUB_ENV
+        echo "COGNITO_REDIRECT_SIGNOUT=https://$SITE_DOMAIN/" >> $GITHUB_ENV
 
     - name: Generate Environment File
       run: |
-        # Pass flag based on stage
-        FLAG="--prod"
-        if [ "${{ inputs.stage }}" == "dev" ]; then FLAG="--dev"; fi
-        
-        node scripts/set-env.js $FLAG
+        node scripts/set-env.js
 
     - name: Build
       run: |
-        CONFIG="production"
-        if [ "${{ inputs.stage }}" == "dev" ]; then CONFIG="development"; fi
+        # Map stage to Angular configuration
+        # Assuming 'production' config for prod, 'development' for dev/others? 
+        # Or maybe create 'uat' config in angular.json later.
+        CONFIG="production" 
+        if [ "${{ inputs.stage }}" != "prod" ]; then CONFIG="development"; fi
+        
         npm run build -- --configuration $CONFIG
 
     - name: Sync to S3
       run: aws s3 sync ./dist/frontend/browser s3://${{ env.S3_BUCKET_NAME }} --delete
 
     - name: Invalidate CloudFront
-      # We need distinct Secret for Distribution ID if not exported by stack.
-      # OR we can assume we only invalidate if we know the ID.
-      # To keep it simple for now, we will skip invalidation if no ID is found in secrets or outputs.
-      # Ideally, we update the stack to Output 'DistributionId'.
-      # For now, let's try to pass it via SSM too? No, SSM is static config using CDK.
-      # The Distribution ID is dynamic.
-      # FIX: I will add code to fetch Distribution ID via AWS CLI based on the alias (domain name).
       run: |
-        DOMAIN="thirukkural.krss.online"
-        if [ "${{ inputs.stage }}" == "dev" ]; then DOMAIN="dev-thirukkural.krss.online"; fi
+        DOMAIN="${{ env.SITE_DOMAIN }}"
+        echo "Invalidating for domain: $DOMAIN"
         
-        # Find distribution ID by alias
         DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Aliases.Items!=null] | [?contains(Aliases.Items, '$DOMAIN')].Id | [0]" --output text)
         
         if [ "$DIST_ID" != "None" ] && [ -n "$DIST_ID" ]; then
             aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
         else
             echo "Could not find Distribution ID for domain $DOMAIN. Skipping invalidation."
+            echo "NOTE: Check if your CloudFront distribution has the correct Alias/CNAME."
         fi
