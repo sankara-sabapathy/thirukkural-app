@@ -42,7 +42,6 @@ export class ThirukkuralStack extends cdk.Stack {
         const getSecretParamName = (name: string) => `${ssmPrefix}/${name}`;
 
         const baseDomain = getParam('base_domain');
-        const emailSender = getParam('email_sender');
         const emailSenderName = getParam('email_sender_name');
         const emailSenderAddress = getParam('email_sender_address');
         const emailReplyTo = getParam('email_reply_to');
@@ -198,7 +197,6 @@ export class ThirukkuralStack extends cdk.Stack {
             PUSH_SUBSCRIPTIONS_TABLE: pushSubscriptionsTable.tableName,
 
             // Config Parameters (Strings)
-            SES_SENDER: emailSender, // TODO: Check if code uses SES_SENDER_EMAIL or SES_SENDER
             EMAIL_SENDER_NAME: emailSenderName,
             EMAIL_SENDER_ADDRESS: emailSenderAddress,
             EMAIL_REPLY_TO: emailReplyTo,

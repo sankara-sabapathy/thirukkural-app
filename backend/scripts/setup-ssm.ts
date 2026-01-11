@@ -48,7 +48,6 @@ const CONFIG: StringMap = {
     // Stage-specific overrides/values
     stages: {
         dev: {
-            email_sender: 'dev-daily@YOUR_DOMAIN.com',
             email_sender_name: 'Thirukkural Daily (Dev)',
             email_sender_address: 'dev-noreply@YOUR_DOMAIN.com',
             email_reply_to: 'dev-support@YOUR_DOMAIN.com',
@@ -57,7 +56,6 @@ const CONFIG: StringMap = {
             acm_certificate_arn_cloudfront: 'arn:aws:acm:us-east-1:YOUR_ACCOUNT_ID:certificate/YOUR_WILDCARD_OR_DEV_CERT_ID',
         },
         prod: {
-            email_sender: 'daily@YOUR_DOMAIN.com',
             email_sender_name: 'Thirukkural Daily',
             email_sender_address: 'noreply@YOUR_DOMAIN.com',
             email_reply_to: 'support@YOUR_DOMAIN.com',

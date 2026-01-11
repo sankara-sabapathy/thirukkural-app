@@ -62,7 +62,7 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
     } else {
         // Default to SES
         // Default to SES
-        const senderEmail = process.env.SES_SENDER || process.env.EMAIL_SENDER_ADDRESS || 'noreply@example.com';
+        const senderEmail = process.env.EMAIL_SENDER_ADDRESS || 'noreply@example.com';
         const replyToEmail = options.replyTo || process.env.EMAIL_REPLY_TO || 'noreply@example.com';
 
         const sendCmd = new SendEmailCommand({
