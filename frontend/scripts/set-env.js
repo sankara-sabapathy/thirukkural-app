@@ -23,7 +23,7 @@ export const environment = {
         redirectSignOut: '${process.env.COGNITO_REDIRECT_SIGNOUT}',
     },
     api: {
-        baseUrl: '${process.env.API_BASE_URL}',
+        baseUrl: '${process.env.API_BASE_URL ? process.env.API_BASE_URL.replace(/\/$/, '') : ''}',
         endpoints: {
             profile: '/profile',
             sampleEmail: '/sample-email',
