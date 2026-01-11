@@ -51,7 +51,7 @@ export const handler = async (): Promise<void> => {
                     // Generate unique secure unsubscribe link
                     const token = generateUnsubscribeToken(email);
                     // Use configured base domain or fallback
-                    const baseDomain = process.env.APP_DOMAIN || 'https://thirukkural.krss.online';
+                    const baseDomain = process.env.APP_DOMAIN || 'https://test.site';
                     const unsubscribeLink = `${baseDomain}/unsubscribe?token=${encodeURIComponent(token)}`;
 
                     const { subject, text, html } = generateKuralEmail(kuralData, false, unsubscribeLink);
