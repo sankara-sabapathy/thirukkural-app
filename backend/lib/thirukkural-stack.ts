@@ -54,11 +54,9 @@ export class ThirukkuralStack extends cdk.Stack {
         // Derived Domains
         // Prod: api.krss.online, thirukkural.krss.online
         // Others: {stage}-api.krss.online, {stage}-thirukkural.krss.online
-        const domainPrefix = isProd ? '' : `${stage}-`;
-
         // Dynamic Domains
-        const apiDomainName = `${domainPrefix}api.${baseDomain}`;
-        const siteDomainName = `${domainPrefix}thirukkural.${baseDomain}`;
+        const apiDomainName = isProd ? `api.${baseDomain}` : `${stage}-api.${baseDomain}`;
+        const siteDomainName = isProd ? baseDomain : `${stage}.${baseDomain}`;
 
         // Let's use specific domain logic based on stage to be safe, assuming baseDomain is 'krss.online'
         // If baseDomain is flexible, we might need to pass full domains in SSM. 
