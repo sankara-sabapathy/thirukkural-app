@@ -107,9 +107,9 @@ jobs:
         
         # Construct Site Domain
         if [ "$STAGE" == "prod" ]; then
-             SITE_DOMAIN="thirukkural.$BASE_DOMAIN"
+             SITE_DOMAIN="$BASE_DOMAIN"
         else
-             SITE_DOMAIN="$STAGE-thirukkural.$BASE_DOMAIN"
+             SITE_DOMAIN="$STAGE.$BASE_DOMAIN"
         fi
         
         echo "SITE_DOMAIN=$SITE_DOMAIN" >> $GITHUB_ENV
