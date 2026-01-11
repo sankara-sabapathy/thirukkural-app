@@ -21,6 +21,11 @@ on:
         required: false
         type: boolean
         default: false
+      seed_db:
+        description: 'Seed Database'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   deploy:
@@ -67,3 +72,32 @@ jobs:
     - name: Deploy CDK Stack
       run: npx cdk deploy --require-approval never -c stage=${{ inputs.stage }}
       # No env vars needed! CDK fetches from SSM.
+
+    - name: Seed Database
+      if: ${{ inputs.seed_db == true }}
+      run: |
+        set -e
+        STAGE=${{ inputs.stage }}
+        # Determine Stack Name logic (copied from frontend pipeline or simplified)
+        STACK_NAME="ThirukkuralStack"
+        if [ "$STAGE" != "prod" ]; then 
+             # Simple bash capitalization for Dev/Uat etc.
+             CAP_STAGE="$(tr '[:lower:]' '[:upper:]' <<< ${STAGE:0:1})${STAGE:1}"
+             STACK_NAME="ThirukkuralStack-$CAP_STAGE"
+        fi
+        
+        echo "Fetching Table Name from Stack: $STACK_NAME"
+        
+        TABLE_NAME=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='KuralTableName'].OutputValue" --output text)
+        
+        if [ -z "$TABLE_NAME" ] || [ "$TABLE_NAME" == "None" ]; then
+            echo "Error: Could not fetch KuralTableName from stack."
+            exit 1
+        fi
+        
+        echo "Seeding table: $TABLE_NAME"
+        
+        export KURAL_TABLE=$TABLE_NAME
+        export AWS_REGION=ap-south-1
+        
+        npm run seed
