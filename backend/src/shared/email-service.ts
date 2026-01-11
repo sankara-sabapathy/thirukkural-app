@@ -1,5 +1,5 @@
-
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import { getSecret } from './secrets';
 
 const ses = new SESClient({});
 
@@ -17,7 +17,8 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
     console.log(`Sending email using provider: ${provider}`);
 
     if (provider === 'BREVO') {
-        const apiKey = process.env.BREVO_API_KEY;
+        // Fetch API Key using shared utility
+        const apiKey = await getSecret('PARAM_BREVO_API_KEY');
         const senderName = process.env.EMAIL_SENDER_NAME || 'Thirukkural Daily';
         const senderEmail = process.env.EMAIL_SENDER_ADDRESS || 'noreply@example.com';
         const replyToEmail = options.replyTo || process.env.EMAIL_REPLY_TO || 'noreply@example.com';

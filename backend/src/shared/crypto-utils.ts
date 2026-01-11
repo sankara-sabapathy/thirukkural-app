@@ -1,7 +1,8 @@
 import { createHmac } from 'crypto';
+import { getSecret } from './secrets';
 
-export const generateUnsubscribeToken = (email: string): string => {
-    const secret = process.env.UNSUBSCRIBE_SECRET;
+export const generateUnsubscribeToken = async (email: string): Promise<string> => {
+    const secret = await getSecret('PARAM_UNSUBSCRIBE_SECRET');
     if (!secret) {
         throw new Error('UNSUBSCRIBE_SECRET is not defined');
     }
@@ -15,8 +16,8 @@ export const generateUnsubscribeToken = (email: string): string => {
     return Buffer.from(`${data}:${signature}`).toString('base64');
 };
 
-export const verifyUnsubscribeToken = (token: string): string | null => {
-    const secret = process.env.UNSUBSCRIBE_SECRET;
+export const verifyUnsubscribeToken = async (token: string): Promise<string | null> => {
+    const secret = await getSecret('PARAM_UNSUBSCRIBE_SECRET');
     if (!secret) {
         console.error('UNSUBSCRIBE_SECRET is not defined');
         return null; // Fail safe

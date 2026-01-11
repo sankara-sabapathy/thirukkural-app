@@ -16,7 +16,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return createResponse(400, { message: 'Token required' });
         }
 
-        const email = verifyUnsubscribeToken(token);
+        const email = await verifyUnsubscribeToken(token);
 
         if (!email) {
             return createResponse(400, { message: 'Invalid or expired unsubscribe link' });
