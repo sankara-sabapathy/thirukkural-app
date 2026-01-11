@@ -84,9 +84,10 @@ const calculateTTL = (): number => {
 };
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    const origin = event.headers.origin || event.headers.Origin || '';
+    const origin = event.headers?.origin || event.headers?.Origin || '';
 
-    // Validate origin
+    // Validate origin - optional strict check, but createResponse handles it too.
+    // We kept the strict check here for safety, but allowed origins are now updated in utils.
     if (!ALLOWED_ORIGINS.includes(origin) && origin !== '') {
         console.warn(`Rejected request from unauthorized origin: ${origin}`);
         return createResponse(403, { message: 'Forbidden: Origin not allowed' }, origin);

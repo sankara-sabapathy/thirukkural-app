@@ -11,15 +11,16 @@ import { sendEmail } from '../shared/email-service';
 const RATE_LIMIT_SECONDS = 24 * 60 * 60; // 24 hours
 
 export const handler: APIGatewayProxyHandler = async (event) => {
+    const origin = event.headers?.origin || event.headers?.Origin;
     try {
         if (!event.body) {
-            return createResponse(400, { message: 'Missing request body' });
+            return createResponse(400, { message: 'Missing request body' }, origin);
         }
 
         const { email } = JSON.parse(event.body);
 
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            return createResponse(400, { message: 'Invalid email address' });
+            return createResponse(400, { message: 'Invalid email address' }, origin);
         }
 
         // 1. Check Rate Limit
@@ -49,7 +50,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             }));
         } catch (err: any) {
             if (err.name === 'ConditionalCheckFailedException') {
-                return createResponse(429, { message: 'You can only send one sample email every 24 hours.' });
+                if (err.name === 'ConditionalCheckFailedException') {
+                    return createResponse(429, { message: 'You can only send one sample email every 24 hours.' }, origin);
+                }
             }
             throw err;
         }
@@ -59,7 +62,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
         if (!randomKural) {
             console.error('Failed to fetch random Kural from database');
-            return createResponse(500, { message: 'Internal Server Error' });
+            return createResponse(500, { message: 'Internal Server Error' }, origin);
         }
 
         // 3. Send Sample Email
@@ -85,10 +88,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             html: html
         });
 
-        return createResponse(200, { message: 'Sample email sent successfully!' });
+        return createResponse(200, { message: 'Sample email sent successfully!' }, origin);
 
     } catch (err) {
         console.error('Error sending sample email:', err);
-        return createResponse(500, { message: 'Internal Server Error' });
+        return createResponse(500, { message: 'Internal Server Error' }, origin);
     }
 };
