@@ -154,7 +154,11 @@ jobs:
       run: npm run build -- --configuration development
 
     - name: Sync to S3
-      run: aws s3 sync ./dist/frontend/browser s3://${{ env.S3_BUCKET_NAME }} --delete
+      run: |
+        aws s3 sync ./dist/frontend/browser s3://${{ env.S3_BUCKET_NAME }} --delete
+        # Explicitly set content type for Service Worker files
+        aws s3 cp ./dist/frontend/browser/ngsw-worker.js s3://${{ env.S3_BUCKET_NAME }}/ngsw-worker.js --content-type "application/javascript" --metadata-directive REPLACE
+        aws s3 cp ./dist/frontend/browser/ngsw.json s3://${{ env.S3_BUCKET_NAME }}/ngsw.json --content-type "application/json" --metadata-directive REPLACE
 
     - name: Invalidate CloudFront
       run: |
