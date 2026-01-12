@@ -21,7 +21,7 @@ export const environment = {
     cognito: {
         userPoolId: '${process.env.COGNITO_USER_POOL_ID}',
         userPoolWebClientId: '${process.env.COGNITO_WEB_CLIENT_ID}',
-        domain: '${process.env.COGNITO_DOMAIN}',
+        domain: '${process.env.COGNITO_DOMAIN ? process.env.COGNITO_DOMAIN.replace(/^https?:\/\//, '') : ''}',
         redirectSignIn: '${process.env.COGNITO_REDIRECT_SIGNIN}',
         redirectSignOut: '${process.env.COGNITO_REDIRECT_SIGNOUT}',
     },

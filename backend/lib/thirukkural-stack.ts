@@ -456,7 +456,7 @@ export class ThirukkuralStack extends cdk.Stack {
         new cdk.CfnOutput(this, 'ApiUrl', { value: `https://${apiDomainName}` }); // IMPORTANT: For Cloudflare CNAME
         new cdk.CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
         new cdk.CfnOutput(this, 'UserPoolClientId', { value: userPoolClient.userPoolClientId });
-        new cdk.CfnOutput(this, 'UserPoolDomain', { value: userPoolDomain.domainName });
+        new cdk.CfnOutput(this, 'UserPoolDomain', { value: userPoolDomain.baseUrl() });
         new cdk.CfnOutput(this, 'WebsiteUrl', { value: distribution.distributionDomainName }); // IMPORTANT: For Cloudflare CNAME
         new cdk.CfnOutput(this, 'WebsiteBucketName', { value: websiteBucket.bucketName });
         new cdk.CfnOutput(this, 'KuralTableName', { value: kuralTable.tableName });
