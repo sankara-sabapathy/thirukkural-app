@@ -3,6 +3,7 @@ import { mockClient } from 'aws-sdk-client-mock';
 import { DynamoDBDocumentClient, ScanCommand, UpdateCommand, DeleteCommand, DeleteCommandInput } from '@aws-sdk/lib-dynamodb';
 import * as webpush from 'web-push';
 import { handler } from '../send-daily-email';
+import * as secrets from '../../shared/secrets';
 
 // Mock dependencies
 const ddbMock = mockClient(DynamoDBDocumentClient);
@@ -19,6 +20,9 @@ vi.mock('../../shared/crypto-utils', () => ({
 vi.mock('web-push', () => ({
     sendNotification: vi.fn(),
     setVapidDetails: vi.fn(),
+}));
+vi.mock('../../shared/secrets', () => ({
+    getSecret: vi.fn(),
 }));
 
 import { getRandomKural } from '../../shared/kural-utils';
@@ -45,10 +49,13 @@ describe('Send Daily Email Handler', () => {
             USERS_TABLE: 'UsersTable',
             PUSH_SUBSCRIPTIONS_TABLE: 'PushTable',
             VAPID_PUBLIC_KEY: 'pub',
-            VAPID_PRIVATE_KEY: 'priv',
+            // VAPID_PRIVATE_KEY is now a secret
             VAPID_SUBJECT: 'sub',
             APP_DOMAIN: 'https://test.com'
         };
+
+        // Default mock for getSecret
+        vi.mocked(secrets.getSecret).mockResolvedValue('priv');
 
         (getRandomKural as any).mockResolvedValue(mockKural);
 
@@ -95,6 +102,7 @@ describe('Send Daily Email Handler', () => {
 
         await handler();
 
+        expect(secrets.getSecret).toHaveBeenCalledWith('PARAM_VAPID_PRIVATE_KEY');
         expect(webpush.setVapidDetails).toHaveBeenCalledWith('sub', 'pub', 'priv');
         expect(webpush.sendNotification).toHaveBeenCalledTimes(1);
         expect(webpush.sendNotification).toHaveBeenCalledWith(

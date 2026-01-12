@@ -14,7 +14,7 @@ describe('ThirukkuralStack Infrastructure Tests', () => {
             stage: 'dev'
         });
         template = Template.fromStack(stack);
-    });
+    }, 60000); // Increase timeout for CDK bundling
 
     test('DynamoDB Tables Created with Correct Properties', () => {
         // Verify Users Table
