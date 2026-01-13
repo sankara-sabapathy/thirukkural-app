@@ -30,7 +30,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     userId,
                     email,
                     isPaid: false, // Default to free
-                    receiveDailyEmail: true, // Default to true
+                    receiveDailyEmail: false, // Default to false
                     createdAt: new Date().toISOString(),
                 };
                 await docClient.send(new PutCommand({
