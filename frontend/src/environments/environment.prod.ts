@@ -4,11 +4,11 @@ export const environment = {
         userPoolId: 'ap-south-1_g6cAch9nf',
         userPoolWebClientId: '5bjct26m4mgt914kp0rmjfaad4',
         domain: 'thirukkural-app-612850243659.auth.ap-south-1.amazoncognito.com',
-        redirectSignIn: 'https://thirukkural.krss.online/callback',
-        redirectSignOut: 'https://thirukkural.krss.online/',
+        redirectSignIn: 'https://thirukkural.site/callback',
+        redirectSignOut: 'https://thirukkural.site/',
     },
     api: {
-        baseUrl: 'https://api.krss.online',
+        baseUrl: 'https://api.thirukkural.site',
         endpoints: {
             profile: '/profile',
             sampleEmail: '/sample-email',

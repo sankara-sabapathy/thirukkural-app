@@ -10,10 +10,11 @@ describe('ThirukkuralStack Infrastructure Tests', () => {
     beforeAll(() => {
         app = new cdk.App();
         stack = new ThirukkuralStack(app, 'MyTestStack', {
-            env: { account: '123456789012', region: 'us-east-1' }
+            env: { account: '123456789012', region: 'us-east-1' },
+            stage: 'dev'
         });
         template = Template.fromStack(stack);
-    });
+    }, 60000); // Increase timeout for CDK bundling
 
     test('DynamoDB Tables Created with Correct Properties', () => {
         // Verify Users Table
@@ -48,7 +49,7 @@ describe('ThirukkuralStack Infrastructure Tests', () => {
     test('API Gateway Created', () => {
         template.resourceCountIs('AWS::ApiGateway::RestApi', 1);
         template.hasResourceProperties('AWS::ApiGateway::Stage', {
-            StageName: 'prod',
+            StageName: 'dev',
             TracingEnabled: true
         });
     });
@@ -56,7 +57,7 @@ describe('ThirukkuralStack Infrastructure Tests', () => {
     test('EventBridge Rule for Daily Emails', () => {
         template.hasResourceProperties('AWS::Events::Rule', {
             ScheduleExpression: 'cron(30 2 * * ? *)', // 2:30 AM UTC
-            State: 'ENABLED'
+            State: 'DISABLED'
         });
     });
 });

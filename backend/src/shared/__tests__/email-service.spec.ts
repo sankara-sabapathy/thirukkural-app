@@ -2,12 +2,18 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mockClient } from 'aws-sdk-client-mock';
 import { SESClient, SendEmailCommand, SendEmailCommandInput } from '@aws-sdk/client-ses';
 import { sendEmail, EmailOptions } from '../email-service';
+import * as secrets from '../secrets';
 
 const sesMock = mockClient(SESClient);
 
 // Mock global fetch for Brevo
 const fetchMock = vi.fn();
 global.fetch = fetchMock;
+
+// Mock secrets module
+vi.mock('../secrets', () => ({
+    getSecret: vi.fn(),
+}));
 
 describe('Email Service', () => {
     const defaultOptions: EmailOptions = {
@@ -22,6 +28,7 @@ describe('Email Service', () => {
     beforeEach(() => {
         sesMock.reset();
         fetchMock.mockReset();
+        vi.resetAllMocks(); // Reset mocks including getSecret
         process.env = { ...originalEnv }; // Reset env vars
     });
 
@@ -32,7 +39,7 @@ describe('Email Service', () => {
     describe('AWS SES Provider', () => {
         it('should send email using SES when provider is not specified', async () => {
             delete process.env.EMAIL_PROVIDER;
-            process.env.SES_SENDER = 'sender@example.com';
+            process.env.EMAIL_SENDER_ADDRESS = 'sender@example.com';
 
             sesMock.on(SendEmailCommand).resolves({});
 
@@ -47,8 +54,8 @@ describe('Email Service', () => {
 
         it('should use default sender if SES_SENDER is not set', async () => {
             delete process.env.EMAIL_PROVIDER;
-            delete process.env.SES_SENDER;
             delete process.env.EMAIL_SENDER_ADDRESS;
+            // Removed obsolete deletions
 
             sesMock.on(SendEmailCommand).resolves({});
 
@@ -62,7 +69,8 @@ describe('Email Service', () => {
     describe('Brevo Provider', () => {
         beforeEach(() => {
             process.env.EMAIL_PROVIDER = 'BREVO';
-            process.env.BREVO_API_KEY = 'test-api-key';
+            // process.env.BREVO_API_KEY = 'test-api-key'; // Not used directly anymore
+            vi.mocked(secrets.getSecret).mockResolvedValue('test-api-key');
         });
 
         it('should send email using Brevo API', async () => {
@@ -74,6 +82,7 @@ describe('Email Service', () => {
 
             await sendEmail(defaultOptions);
 
+            expect(secrets.getSecret).toHaveBeenCalledWith('PARAM_BREVO_API_KEY');
             expect(fetchMock).toHaveBeenCalledTimes(1);
             expect(fetchMock).toHaveBeenCalledWith('https://api.brevo.com/v3/smtp/email', expect.objectContaining({
                 method: 'POST',
@@ -88,7 +97,9 @@ describe('Email Service', () => {
         });
 
         it('should throw error if BREVO_API_KEY is missing', async () => {
-            delete process.env.BREVO_API_KEY;
+            // delete process.env.BREVO_API_KEY;
+            vi.mocked(secrets.getSecret).mockResolvedValue(undefined); // Simulate missing secret
+
             await expect(sendEmail(defaultOptions)).rejects.toThrow('BREVO_API_KEY is not configured');
         });
 
@@ -104,3 +115,4 @@ describe('Email Service', () => {
         });
     });
 });
+

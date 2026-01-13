@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "npm run config && ng serve --ssl",
     "config": "node scripts/set-env.js",
     "build": "npm run config && ng build",
     "watch": "ng build --watch --configuration development",
@@ -57,5 +57,8 @@
     "jsdom": "^27.1.0",
     "typescript": "~5.9.2",
     "vitest": "^4.0.8"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.55.1"
   }
 }

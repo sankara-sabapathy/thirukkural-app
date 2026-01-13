@@ -1,27 +1,40 @@
 import { generateUnsubscribeToken, verifyUnsubscribeToken } from './crypto-utils';
-import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import * as secrets from './secrets';
+
+// Mock secrets module
+vi.mock('./secrets', () => ({
+    getSecret: vi.fn(),
+}));
 
 describe('Crypto Utils', () => {
-    beforeAll(() => {
-        process.env.UNSUBSCRIBE_SECRET = 'test-secret';
+
+    beforeEach(() => {
+        vi.resetAllMocks();
+        // Default mock behavior
+        vi.mocked(secrets.getSecret).mockResolvedValue('test-secret');
     });
 
-    it('should generate a token', () => {
-        const token = generateUnsubscribeToken('test@example.com');
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    it('should generate a token', async () => {
+        const token = await generateUnsubscribeToken('test@example.com');
         expect(token).toBeDefined();
         expect(typeof token).toBe('string');
     });
 
-    it('should verify a valid token', () => {
+    it('should verify a valid token', async () => {
         const email = 'test@example.com';
-        const token = generateUnsubscribeToken(email);
-        const verifiedEmail = verifyUnsubscribeToken(token);
+        const token = await generateUnsubscribeToken(email);
+        const verifiedEmail = await verifyUnsubscribeToken(token);
         expect(verifiedEmail).toBe(email);
     });
 
-    it('should return null for invalid signature', () => {
+    it('should return null for invalid signature', async () => {
         const email = 'test@example.com';
-        const token = generateUnsubscribeToken(email);
+        const token = await generateUnsubscribeToken(email);
 
         // Tamper with the token (base64 decode, change signature, encode)
         const decoded = Buffer.from(token, 'base64').toString('utf-8');
@@ -29,11 +42,11 @@ describe('Crypto Utils', () => {
         parts[parts.length - 1] = 'invalid_sig';
         const tamperedToken = Buffer.from(parts.join(':')).toString('base64');
 
-        const result = verifyUnsubscribeToken(tamperedToken);
+        const result = await verifyUnsubscribeToken(tamperedToken);
         expect(result).toBeNull();
     });
 
-    it('should return null for expired token', () => {
+    it('should return null for expired token', async () => {
         const email = 'expired@example.com';
 
         // Mock Date.now to return future time
@@ -41,14 +54,12 @@ describe('Crypto Utils', () => {
         const now = 1000000000000;
         vi.setSystemTime(now);
 
-        const token = generateUnsubscribeToken(email);
+        const token = await generateUnsubscribeToken(email);
 
         // Advance time by 24h + 1ms
         vi.setSystemTime(now + 24 * 60 * 60 * 1000 + 1);
 
-        const result = verifyUnsubscribeToken(token);
+        const result = await verifyUnsubscribeToken(token);
         expect(result).toBeNull();
-
-        vi.useRealTimers();
     });
 });

@@ -6,13 +6,14 @@ import { createResponse } from '../shared/utils';
 const TABLE_NAME = process.env.USERS_TABLE;
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+    const origin = event.headers?.origin || event.headers?.Origin;
     try {
         // Get userId from Cognito Authorizer
         const userId = event.requestContext.authorizer?.claims?.sub;
         const email = event.requestContext.authorizer?.claims?.email;
 
         if (!userId) {
-            return createResponse(401, { message: 'Unauthorized' });
+            return createResponse(401, { message: 'Unauthorized' }, origin);
         }
 
         const method = event.httpMethod;
@@ -29,17 +30,17 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     userId,
                     email,
                     isPaid: false, // Default to free
-                    receiveDailyEmail: true, // Default to true
+                    receiveDailyEmail: false, // Default to false
                     createdAt: new Date().toISOString(),
                 };
                 await docClient.send(new PutCommand({
                     TableName: TABLE_NAME,
                     Item: newProfile,
                 }));
-                return createResponse(200, newProfile);
+                return createResponse(200, newProfile, origin);
             }
 
-            return createResponse(200, result.Item);
+            return createResponse(200, result.Item, origin);
         }
 
         if (method === 'PUT') {
@@ -63,7 +64,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             }
 
             if (updateExp.length === 0) {
-                return createResponse(400, { message: 'No valid fields to update' });
+                return createResponse(400, { message: 'No valid fields to update' }, origin);
             }
 
             expAttrNames['#updatedAt'] = 'updatedAt';
@@ -86,13 +87,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 ReturnValues: 'ALL_NEW',
             }));
 
-            return createResponse(200, result.Attributes);
+            return createResponse(200, result.Attributes, origin);
         }
 
-        return createResponse(405, { message: 'Method not allowed' });
+        return createResponse(405, { message: 'Method not allowed' }, origin);
 
     } catch (err) {
         console.error('User profile error:', err);
-        return createResponse(500, { message: 'Internal server error' });
+        return createResponse(500, { message: 'Internal server error' }, origin);
     }
 };

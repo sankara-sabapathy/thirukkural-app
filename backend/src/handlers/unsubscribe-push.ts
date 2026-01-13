@@ -1,24 +1,17 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { createResponse } from '../shared/utils';
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = process.env.PUSH_SUBSCRIPTIONS_TABLE || '';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-        'Access-Control-Allow-Methods': 'DELETE,OPTIONS'
-    };
+    const origin = event.headers?.origin || event.headers?.Origin;
 
     if (!TABLE_NAME) {
-        return {
-            statusCode: 500,
-            headers: corsHeaders,
-            body: JSON.stringify({ message: 'Table name not configured' })
-        };
+        return createResponse(500, { message: 'Table name not configured' }, origin);
     }
 
     try {
@@ -26,11 +19,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const deviceId = event.pathParameters?.deviceId;
 
         if (!deviceId) {
-            return {
-                statusCode: 400,
-                headers: corsHeaders,
-                body: JSON.stringify({ message: 'Missing deviceId parameter' })
-            };
+            return createResponse(400, { message: 'Missing deviceId parameter' }, origin);
         }
 
         // Delete the subscription from DynamoDB
@@ -43,17 +32,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         console.log(`Unsubscribed device: ${deviceId}`);
 
-        return {
-            statusCode: 200,
-            headers: corsHeaders,
-            body: JSON.stringify({ message: 'Unsubscribed successfully' })
-        };
+        return createResponse(200, { message: 'Unsubscribed successfully' }, origin);
     } catch (error) {
         console.error('Error unsubscribing:', error);
-        return {
-            statusCode: 500,
-            headers: corsHeaders,
-            body: JSON.stringify({ message: 'Internal server error' })
-        };
+        return createResponse(500, { message: 'Internal server error' }, origin);
     }
 };

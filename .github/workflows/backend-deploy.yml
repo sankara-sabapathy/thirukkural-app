@@ -1,11 +1,31 @@
 name: Deploy Backend
 
 on:
-  push:
-    branches: [ master ]
-    paths:
-      - 'backend/**'
   workflow_dispatch:
+    inputs:
+      stage:
+        description: 'Deployment Stage (dev | prod)'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - prod
+      confirm_prod:
+        description: 'Check to confirm PROD deployment'
+        required: true
+        type: boolean
+        default: false
+      setup_ssm:
+        description: 'Run SSM Setup Script (Safe: Will not overwrite existing secrets)'
+        required: false
+        type: boolean
+        default: false
+      seed_db:
+        description: 'Seed Database'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   deploy:
@@ -16,6 +36,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
+    - name: Safety Check
+      if: ${{ inputs.stage == 'prod' && inputs.confirm_prod != true }}
+      run: |
+        echo "Error: You must check 'confirm_prod' to deploy to Production."
+        exit 1
 
     - name: Setup Node.js
       uses: actions/setup-node@v3
@@ -28,39 +54,52 @@ jobs:
       run: npm ci
 
     - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v2
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ap-south-1
-    
+
+    - name: Run SSM Setup
+      if: ${{ inputs.setup_ssm == true }}
+      run: npm run setup-ssm
+      env:
+        STAGE: ${{ inputs.stage }}
+
     - name: Bootstrap CDK
+      if: ${{ inputs.setup_ssm != true }}
       run: npx cdk bootstrap --skip-if-bootstrapped
 
     - name: Deploy CDK Stack
-      run: npx cdk deploy --require-approval never
-      env:
-        GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-        GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-        SES_SENDER_EMAIL: ${{ vars.SES_SENDER_EMAIL }}
-        CLOUDFLARE_SECRET_KEY: ${{ secrets.CLOUDFLARE_SECRET_KEY }}
-        BASE_DOMAIN: ${{ vars.BASE_DOMAIN }}
-        ACM_CERTIFICATE_ARN_API: ${{ vars.ACM_CERTIFICATE_ARN_API }}
-        ACM_CERTIFICATE_ARN_CLOUDFRONT: ${{ vars.ACM_CERTIFICATE_ARN_CLOUDFRONT }}
-        VAPID_PUBLIC_KEY: ${{ vars.VAPID_PUBLIC_KEY }}
-        VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
-        VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}
-        EMAIL_PROVIDER: ${{ vars.EMAIL_PROVIDER }}
-        BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
-        EMAIL_SENDER_NAME: ${{ vars.EMAIL_SENDER_NAME }}
-        EMAIL_SENDER_ADDRESS: ${{ secrets.EMAIL_SENDER_ADDRESS }}
-        EMAIL_REPLY_TO: ${{ secrets.EMAIL_REPLY_TO }}
-        UNSUBSCRIBE_SECRET: ${{ secrets.UNSUBSCRIBE_SECRET }}
+      if: ${{ inputs.setup_ssm != true }}
+      run: npx cdk deploy --require-approval never -c stage=${{ inputs.stage }}
+      # No env vars needed! CDK fetches from SSM.
 
-    # Seed Database step disabled - data already seeded
-    # - name: Seed Database
-    #   run: |
-    #     TABLE_NAME=$(aws cloudformation describe-stacks --stack-name ThirukkuralStack --query "Stacks[0].Outputs[?OutputKey=='KuralTableName'].OutputValue" --output text)
-    #     echo "Seeding table: $TABLE_NAME"
-    #     export KURAL_TABLE=$TABLE_NAME
-    #     npx ts-node scripts/seed.ts
+    - name: Seed Database
+      if: ${{ inputs.seed_db == true && inputs.setup_ssm != true }}
+      run: |
+        set -e
+        STAGE=${{ inputs.stage }}
+        # Determine Stack Name logic (copied from frontend pipeline or simplified)
+        STACK_NAME="ThirukkuralStack"
+        if [ "$STAGE" != "prod" ]; then 
+             # Simple bash capitalization for Dev/Uat etc.
+             CAP_STAGE="$(tr '[:lower:]' '[:upper:]' <<< ${STAGE:0:1})${STAGE:1}"
+             STACK_NAME="ThirukkuralStack-$CAP_STAGE"
+        fi
+        
+        echo "Fetching Table Name from Stack: $STACK_NAME"
+        
+        TABLE_NAME=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='KuralTableName'].OutputValue" --output text)
+        
+        if [ -z "$TABLE_NAME" ] || [ "$TABLE_NAME" == "None" ]; then
+            echo "Error: Could not fetch KuralTableName from stack."
+            exit 1
+        fi
+        
+        echo "Seeding table: $TABLE_NAME"
+        
+        export KURAL_TABLE=$TABLE_NAME
+        export AWS_REGION=ap-south-1
+        
+        npm run seed

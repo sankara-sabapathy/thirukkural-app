@@ -1,7 +1,9 @@
 import { APIGatewayProxyResult } from 'aws-lambda';
 
 export const ALLOWED_ORIGINS = [
-    'https://thirukkural.krss.online',
+    'https://thirukkural.site',
+    'https://www.thirukkural.site',
+    'https://dev.thirukkural.site',
     'http://localhost:4200',
 ];
 

@@ -30,7 +30,7 @@
         {
             "name": "api-performance",
             "urls": [
-                "https://api.krss.online/**"
+                "https://api.thirukkural.site/**"
             ],
             "cacheConfig": {
                 "strategy": "performance",

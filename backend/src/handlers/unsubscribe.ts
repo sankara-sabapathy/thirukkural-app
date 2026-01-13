@@ -5,6 +5,7 @@ import { createResponse } from '../shared/utils';
 import { verifyUnsubscribeToken } from '../shared/crypto-utils';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+    const origin = event.headers?.origin || event.headers?.Origin;
     try {
         const body = JSON.parse(event.body ?? '{}');
         const token = body.token;
@@ -13,13 +14,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         console.log('Unsubscribe request:', { token, feedback });
 
         if (!token) {
-            return createResponse(400, { message: 'Token required' });
+            return createResponse(400, { message: 'Token required' }, origin);
         }
 
-        const email = verifyUnsubscribeToken(token);
+        const email = await verifyUnsubscribeToken(token);
 
         if (!email) {
-            return createResponse(400, { message: 'Invalid or expired unsubscribe link' });
+            return createResponse(400, { message: 'Invalid or expired unsubscribe link' }, origin);
         }
 
         // 1. Look up userId from email using GSI
@@ -35,7 +36,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         if (!userResult.Items || userResult.Items.length === 0) {
             console.warn(`Unsubscribe requested for unknown email: ${email}`);
             // If user doesn't exist, they won't get emails anyway. Return success.
-            return createResponse(200, { message: 'Unsubscribed successfully' });
+            return createResponse(200, { message: 'Unsubscribed successfully' }, origin);
         }
 
         const userId = userResult.Items[0].userId;
@@ -53,9 +54,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }));
 
         console.log(`Unsubscribed successfully: ${email}`);
-        return createResponse(200, { message: 'Unsubscribed successfully' });
+        return createResponse(200, { message: 'Unsubscribed successfully' }, origin);
     } catch (err) {
         console.error('Unsubscribe error:', err);
-        return createResponse(500, { message: 'Internal server error' });
+        return createResponse(500, { message: 'Internal server error' }, origin);
     }
 };

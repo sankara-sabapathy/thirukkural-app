@@ -4,6 +4,7 @@ import { generateKuralEmail, Kural } from '../shared/email-templates';
 import { getRandomKural } from '../shared/kural-utils';
 import { sendEmail } from '../shared/email-service';
 import { generateUnsubscribeToken } from '../shared/crypto-utils';
+import { getSecret } from '../shared/secrets';
 import * as webpush from 'web-push';
 
 
@@ -49,9 +50,9 @@ export const handler = async (): Promise<void> => {
 
                 try {
                     // Generate unique secure unsubscribe link
-                    const token = generateUnsubscribeToken(email);
+                    const token = await generateUnsubscribeToken(email);
                     // Use configured base domain or fallback
-                    const baseDomain = process.env.APP_DOMAIN || 'https://thirukkural.krss.online';
+                    const baseDomain = process.env.APP_DOMAIN || 'https://thirukkural.site';
                     const unsubscribeLink = `${baseDomain}/unsubscribe?token=${encodeURIComponent(token)}`;
 
                     const { subject, text, html } = generateKuralEmail(kuralData, false, unsubscribeLink);
@@ -75,7 +76,11 @@ export const handler = async (): Promise<void> => {
 
         // 4. Send Push Notifications
         const pushTable = process.env.PUSH_SUBSCRIPTIONS_TABLE;
-        if (pushTable && process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+
+        // Fetch VAPID Private Key using shared utility
+        const vapidPrivateKey = await getSecret('PARAM_VAPID_PRIVATE_KEY');
+
+        if (pushTable && process.env.VAPID_PUBLIC_KEY && vapidPrivateKey) {
             console.log('Starting Push Notifications...');
 
             const pushSubsResult = await docClient.send(new ScanCommand({
@@ -92,7 +97,7 @@ export const handler = async (): Promise<void> => {
                 webpush.setVapidDetails(
                     process.env.VAPID_SUBJECT || 'mailto:example@example.com',
                     process.env.VAPID_PUBLIC_KEY,
-                    process.env.VAPID_PRIVATE_KEY
+                    vapidPrivateKey
                 );
 
                 const payload = JSON.stringify({

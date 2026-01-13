@@ -14,50 +14,69 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import { S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as path from 'path';
 
+export interface ThirukkuralStackProps extends cdk.StackProps {
+    readonly stage: string;
+}
+
 export class ThirukkuralStack extends cdk.Stack {
-    constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+    constructor(scope: Construct, id: string, props: ThirukkuralStackProps) {
         super(scope, id, props);
 
-        // --- Environment Configuration & Validation ---
-        const googleClientId = process.env.GOOGLE_CLIENT_ID;
-        const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-        const sesSenderEmail = process.env.SES_SENDER_EMAIL || 'noreply@example.com';
-        const baseDomain = process.env.BASE_DOMAIN || 'example.com'; // e.g., krss.online
-        const cloudflareSecretKey = process.env.CLOUDFLARE_SECRET_KEY;
-        const apiCertArn = process.env.ACM_CERTIFICATE_ARN_API;
-        const cloudfrontCertArn = process.env.ACM_CERTIFICATE_ARN_CLOUDFRONT;
-        const vapidPublicKey = process.env.VAPID_PUBLIC_KEY || '';
-        const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || '';
-        const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:example@example.com';
+        const stage = props.stage;
+        const isProd = stage === 'prod';
+        const removalPolicy = isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY;
+
+        // --- Configuration (SSM & Secrets Manager) ---
+        const ssmPrefix = `/${stage}/thirukkural`;
+
+        // Helper to get string from SSM (NOT secret)
+        const getParam = (name: string) =>
+            ssm.StringParameter.valueForStringParameter(this, `${ssmPrefix}/${name}`);
+
+        // Helper to get secret ARN or Value Logic
+        // Note: For secure strings, we pass the parameter NAME to Lambda, 
+        // and Lambda fetches it at runtime to avoid exposing it in CloudFormation templates.
+        const getSecretParamName = (name: string) => `${ssmPrefix}/${name}`;
+
+        const baseDomain = getParam('base_domain');
+        const emailSenderName = getParam('email_sender_name');
+        const emailSenderAddress = getParam('email_sender_address');
+        const emailReplyTo = getParam('email_reply_to');
+        const emailProvider = getParam('email_provider');
+        const acmCertArnApi = getParam('acm_certificate_arn_api');
+        const acmCertArnCloudfront = getParam('acm_certificate_arn_cloudfront');
+        const vapidPublicKey = getParam('vapid_public_key');
+        const vapidSubject = getParam('vapid_subject');
 
         // Derived Domains
-        const apiDomainName = `api.${baseDomain}`;
-        const appDomainName = `thirukkural.${baseDomain}`;
+        // Prod: api.krss.online, thirukkural.krss.online
+        // Others: {stage}-api.krss.online, {stage}-thirukkural.krss.online
+        // Dynamic Domains
+        const apiDomainName = isProd ? `api.${baseDomain}` : `${stage}-api.${baseDomain}`;
+        const siteDomainName = isProd ? baseDomain : `${stage}.${baseDomain}`;
 
-        // Validate critical secrets for production-like deployments
-        if (!googleClientId || !googleClientSecret) {
-            console.warn('WARNING: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not provided. Cognito Google IdP will not be created.');
-        }
-        if (!cloudflareSecretKey) {
-            console.warn('WARNING: CLOUDFLARE_SECRET_KEY not provided. API Gateway will be open to public access.');
-        }
+        // Let's use specific domain logic based on stage to be safe, assuming baseDomain is 'krss.online'
+        // If baseDomain is flexible, we might need to pass full domains in SSM. 
+        // For now, constructing it is standard.
 
         // DynamoDB tables
         const kuralTable = new dynamodb.Table(this, 'ThirukkuralTable', {
+
             partitionKey: { name: 'kuralId', type: dynamodb.AttributeType.NUMBER },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: cdk.RemovalPolicy.DESTROY,
+            removalPolicy,
         });
 
         const usersTable = new dynamodb.Table(this, 'UsersTable', {
+
             partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: cdk.RemovalPolicy.DESTROY,
+            removalPolicy,
         });
 
-        // GSI for email lookups if needed (e.g. for admin tools or debugging)
         usersTable.addGlobalSecondaryIndex({
             indexName: 'EmailIndex',
             partitionKey: { name: 'email', type: dynamodb.AttributeType.STRING },
@@ -65,24 +84,27 @@ export class ThirukkuralStack extends cdk.Stack {
         });
 
         const rateLimitTable = new dynamodb.Table(this, 'RateLimitTable', {
+
             partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
             timeToLiveAttribute: 'ttl',
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: cdk.RemovalPolicy.DESTROY,
+            removalPolicy,
         });
 
         const pushSubscriptionsTable = new dynamodb.Table(this, 'PushSubscriptionsTable', {
+
             partitionKey: { name: 'deviceId', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: cdk.RemovalPolicy.DESTROY,
+            removalPolicy,
             timeToLiveAttribute: 'ttl',
         });
 
-        // Cognito User Pool with Google IdP
+        // Cognito User Pool
         const userPool = new cognito.UserPool(this, 'UserPool', {
+
             selfSignUpEnabled: true,
             signInAliases: { email: true },
-            removalPolicy: cdk.RemovalPolicy.DESTROY,
+            removalPolicy,
             passwordPolicy: {
                 minLength: 8,
                 requireLowercase: true,
@@ -93,25 +115,36 @@ export class ThirukkuralStack extends cdk.Stack {
             autoVerify: { email: true },
         });
 
-        // Google Identity Provider setup
-        let googleProvider: cognito.UserPoolIdentityProviderGoogle | undefined;
-        if (googleClientId && googleClientSecret) {
-            googleProvider = new cognito.UserPoolIdentityProviderGoogle(this, 'GoogleIdP', {
-                clientId: googleClientId,
-                clientSecretValue: cdk.SecretValue.unsafePlainText(googleClientSecret),
-                userPool,
-                scopes: ['profile', 'email', 'openid'],
-                attributeMapping: {
-                    email: cognito.ProviderAttribute.GOOGLE_EMAIL,
-                    givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
-                    familyName: cognito.ProviderAttribute.GOOGLE_FAMILY_NAME,
-                    profilePicture: cognito.ProviderAttribute.GOOGLE_PICTURE,
-                },
-            });
-        }
+        // Google Identity Provider
+        // We fetching Client ID/Secret from SSM/SecretsManager
+        // Note: For CloudFormation to configure IdP, it needs the actual value at deploy time.
+        // Standard SSM String (Client ID) is fine. 
+        // SecureString (Client Secret) is tricky. CloudFormation natively supports resolving Secrets Manager or SSM SecureString (dynamic references).
+
+        const googleClientId = getParam('google_client_id');
+        // Changed to standard String to avoid CloudFormation 'SSM Secure reference not supported' error
+        // User has updated SSM parameter type to String manually.
+        // We use SecretValue.unsafePlainText because UserPoolIdentityProviderGoogle expects a SecretValue,
+        // but we want to pass the resolved string from SSM.
+        const googleClientSecretString = ssm.StringParameter.valueForStringParameter(this, `${ssmPrefix}/google_client_secret`);
+        const googleClientSecret = cdk.SecretValue.unsafePlainText(googleClientSecretString);
+
+        const googleProvider = new cognito.UserPoolIdentityProviderGoogle(this, 'GoogleIdP', {
+            clientId: googleClientId,
+            clientSecretValue: googleClientSecret,
+            userPool,
+            scopes: ['profile', 'email', 'openid'],
+            attributeMapping: {
+                email: cognito.ProviderAttribute.GOOGLE_EMAIL,
+                givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
+                familyName: cognito.ProviderAttribute.GOOGLE_FAMILY_NAME,
+                profilePicture: cognito.ProviderAttribute.GOOGLE_PICTURE,
+            },
+        });
 
         const userPoolClient = new cognito.UserPoolClient(this, 'UserPoolClient', {
             userPool,
+            userPoolClientName: isProd ? undefined : `thirukkural-client-${stage}`,
             generateSecret: false, // SPA client
             supportedIdentityProviders: [
                 cognito.UserPoolClientIdentityProvider.GOOGLE,
@@ -124,50 +157,57 @@ export class ThirukkuralStack extends cdk.Stack {
                     cognito.OAuthScope.EMAIL,
                     cognito.OAuthScope.PROFILE,
                     cognito.OAuthScope.OPENID,
-                    cognito.OAuthScope.COGNITO_ADMIN // Required for fetchUserAttributes
+                    cognito.OAuthScope.COGNITO_ADMIN
                 ],
                 callbackUrls: [
                     'http://localhost:4200/callback',
-                    `https://${appDomainName}/callback`
+                    `https://${siteDomainName}/callback`
                 ],
                 logoutUrls: [
                     'http://localhost:4200/',
-                    `https://${appDomainName}/`
+                    `https://${siteDomainName}/`
                 ],
             }
         });
 
-        // Add dependency to ensure Google provider is created before the client
-        if (googleProvider) {
-            userPoolClient.node.addDependency(googleProvider);
-        }
+        userPoolClient.node.addDependency(googleProvider);
+
+        // Domain Prefix Logic:
+        // Prod: thirukkural-app-{account} (Legacy)
+        // Others: thirukkural-{stage}-{account}
+        const userPoolDomainPrefix = isProd
+            ? 'thirukkural-app-' + this.account
+            : `thirukkural-${stage}-${this.account}`;
 
         const userPoolDomain = userPool.addDomain('UserPoolDomain', {
             cognitoDomain: {
-                domainPrefix: 'thirukkural-app-' + this.account, // Unique domain
+                domainPrefix: userPoolDomainPrefix,
             },
         });
 
         // Lambda functions
+        // Pass PARAMETER NAMES for secrets so Lambda can fetch them.
         const commonEnv = {
+            STAGE: stage,
             KURAL_TABLE: kuralTable.tableName,
             USERS_TABLE: usersTable.tableName,
             RATE_LIMIT_TABLE: rateLimitTable.tableName,
             PUSH_SUBSCRIPTIONS_TABLE: pushSubscriptionsTable.tableName,
-            SES_SENDER: sesSenderEmail,
+
+            // Config Parameters (Strings)
+            EMAIL_SENDER_NAME: emailSenderName,
+            EMAIL_SENDER_ADDRESS: emailSenderAddress,
+            EMAIL_REPLY_TO: emailReplyTo,
+            EMAIL_PROVIDER: emailProvider,
             VAPID_PUBLIC_KEY: vapidPublicKey,
             VAPID_SUBJECT: vapidSubject,
-            EMAIL_PROVIDER: process.env.EMAIL_PROVIDER || 'SES',
-            BREVO_API_KEY: process.env.BREVO_API_KEY || '',
-            EMAIL_SENDER_NAME: process.env.EMAIL_SENDER_NAME || 'Thirukkural Daily',
-            EMAIL_SENDER_ADDRESS: process.env.EMAIL_SENDER_ADDRESS || 'noreply@example.com',
-            EMAIL_REPLY_TO: process.env.EMAIL_REPLY_TO || 'noreply@example.com',
-            UNSUBSCRIBE_SECRET: process.env.UNSUBSCRIBE_SECRET || 'dev-secret',
-        };
 
-        // Sensitive push sender secrets - only for Lambdas that send notifications
-        const pushSenderEnv = {
-            VAPID_PRIVATE_KEY: vapidPrivateKey,
+            // Parameter Paths for Runtime Fetching (Secrets)
+            PARAM_GOOGLE_CLIENT_SECRET: getSecretParamName('google_client_secret'),
+            PARAM_VAPID_PRIVATE_KEY: getSecretParamName('vapid_private_key'),
+            PARAM_CLOUDFLARE_SECRET_KEY: getSecretParamName('cloudflare_secret_key'),
+            PARAM_UNSUBSCRIBE_SECRET: getSecretParamName('unsubscribe_secret'),
+            PARAM_BREVO_API_KEY: getSecretParamName('brevo_api_key'),
         };
 
         const nodeJsProps: nodejs.NodejsFunctionProps = {
@@ -180,15 +220,15 @@ export class ThirukkuralStack extends cdk.Stack {
         };
 
         const userProfileFn = new nodejs.NodejsFunction(this, 'UserProfileFn', {
-            entry: path.join(__dirname, '../src/handlers/user-profile.ts'), // Corrected path
+            entry: path.join(__dirname, '../src/handlers/user-profile.ts'),
             ...nodeJsProps,
         });
 
         const sendEmailFn = new nodejs.NodejsFunction(this, 'SendDailyEmailFn', {
             entry: path.join(__dirname, '../src/handlers/send-daily-email.ts'),
-            timeout: cdk.Duration.minutes(15), // Increased to 15 mins to allow 1s delay per user (max ~900 users)
+            timeout: cdk.Duration.minutes(15),
             runtime: lambda.Runtime.NODEJS_20_X,
-            environment: { ...commonEnv, ...pushSenderEnv },
+            environment: commonEnv,
             bundling: {
                 minify: true,
                 sourceMap: true,
@@ -211,6 +251,11 @@ export class ThirukkuralStack extends cdk.Stack {
             ...nodeJsProps,
         });
 
+        const unsubscribePushFn = new nodejs.NodejsFunction(this, 'UnsubscribePushFn', {
+            entry: path.join(__dirname, '../src/handlers/unsubscribe-push.ts'),
+            ...nodeJsProps,
+        });
+
         // Permissions
         kuralTable.grantReadData(sendEmailFn);
         kuralTable.grantReadData(sendSampleEmailFn);
@@ -220,22 +265,36 @@ export class ThirukkuralStack extends cdk.Stack {
         rateLimitTable.grantReadWriteData(sendSampleEmailFn);
         pushSubscriptionsTable.grantReadWriteData(subscribePushFn);
         pushSubscriptionsTable.grantReadWriteData(sendEmailFn);
+        pushSubscriptionsTable.grantReadWriteData(unsubscribePushFn);
+
+        // Grant SSM Read Permissions to Lambdas
+        const ssmPolicy = new iam.PolicyStatement({
+            actions: ['ssm:GetParameter', 'ssm:GetParameters'],
+            resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter${ssmPrefix}/*`],
+        });
+
+        const lambdas = [
+            userProfileFn, sendEmailFn, sendSampleEmailFn,
+            subscribePushFn, unsubscribeEmailFn, unsubscribePushFn
+        ];
+
+        lambdas.forEach(fn => fn.addToRolePolicy(ssmPolicy));
 
         const sesPolicy = new iam.PolicyStatement({
             actions: ['ses:SendEmail', 'ses:SendRawEmail'],
-            resources: ['*'], // Restrict this in production to specific identities
+            resources: ['*'],
         });
 
         sendEmailFn.addToRolePolicy(sesPolicy);
         sendSampleEmailFn.addToRolePolicy(sesPolicy);
 
-        // API Gateway with Stricter Throttling (Free Layer 1 Defense)
+        // API Gateway
         const api = new apigateway.RestApi(this, 'ThirukkuralApi', {
-            restApiName: 'Thirukkural Service',
+            restApiName: `Thirukkural Service (${stage})`,
             deployOptions: {
-                stageName: 'prod',
-                throttlingRateLimit: 100, // 100 requests per second (reasonable for small app)
-                throttlingBurstLimit: 200, // Allow bursts of 200 requests
+                stageName: stage,
+                throttlingRateLimit: isProd ? 100 : 10,
+                throttlingBurstLimit: isProd ? 200 : 20,
                 tracingEnabled: true,
             },
             defaultCorsPreflightOptions: {
@@ -243,48 +302,65 @@ export class ThirukkuralStack extends cdk.Stack {
                 allowMethods: apigateway.Cors.ALL_METHODS,
                 allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key', 'X-Amz-Security-Token'],
             },
-            // --- Cloudflare Security Integration ---
-            // This policy ensures only requests coming from Cloudflare (with the secret header) are accepted.
-            // UNCOMMENT the policy below AFTER you have configured Cloudflare Transform Rules.
-            policy: cloudflareSecretKey ? new iam.PolicyDocument({
-                statements: [
-                    new iam.PolicyStatement({
-                        effect: iam.Effect.ALLOW,
-                        principals: [new iam.AnyPrincipal()],
-                        actions: ['execute-api:Invoke'],
-                        resources: ['execute-api:/*'],
-                    }),
-                    new iam.PolicyStatement({
-                        effect: iam.Effect.DENY,
-                        principals: [new iam.AnyPrincipal()],
-                        actions: ['execute-api:Invoke'],
-                        resources: ['execute-api:/*'],
-                        conditions: {
-                            StringNotEquals: {
-                                'aws:Referer': cloudflareSecretKey
-                            }
-                        }
-                    })
-                ]
-            }) : undefined
         });
 
-        // --- Custom Domain for API (Required for Cloudflare) ---
-        // 1. Create a Certificate in ACM (us-east-1 or region) for api.krss.online
-        // 2. Uncomment the code below
-        if (apiCertArn) {
-            const apiDomain = new apigateway.DomainName(this, 'ApiDomain', {
-                domainName: apiDomainName,
-                certificate: acm.Certificate.fromCertificateArn(this, 'ApiCertificate', apiCertArn),
-                endpointType: apigateway.EndpointType.REGIONAL, // Regional is better for Cloudflare
-            });
+        // Cloudflare Protection Policy (Dynamic)
+        // Since we are now fetching the secret at runtime in Lambda validation layer (if we move logic there)
+        // OR we can still use the Authorizer approach.
+        // For the Resource Policy on API Gateway, we NEED the value at deployment time to write the policy.
+        // CloudFormation Dynamic References to SecureString are supported in some properties, 
+        // but IAM Policies can be tricky with Dynamic References.
+        // HOWEVER, standard practice for simple WAF-like check:
+        // Use a Custom Authorizer Lambda if we want strictly runtime check.
+        // OR risk creating the policy with a resolve.
+        // `cdk.SecretValue.ssmSecure` produces a token like `{{resolve:ssm-secure:...}}`.
+        // API Gateway Policy supports this.
 
-            // Map the domain to this API
-            new apigateway.BasePathMapping(this, 'ApiMapping', {
-                domainName: apiDomain,
-                restApi: api,
-            });
-        }
+        const cfSecret = cdk.SecretValue.ssmSecure(`${ssmPrefix}/cloudflare_secret_key`);
+
+        api.root.addResource('policy-check').addMethod('GET', new apigateway.MockIntegration({
+            integrationResponses: [{ statusCode: '200' }],
+            requestTemplates: { 'application/json': '{"statusCode": 200}' },
+        }));
+        // Note: The original policy was conditional on 'cloudflareSecretKey'. 
+        // We will assume it exists for enterprise deployment.
+        // NOTE: IAM Policy Conditions with `aws:Referer` vs resolve:ssm-secure might expose the secret in the policy document if viewed in console.
+        // But usually acceptable for this token.
+
+        const policy = new iam.PolicyDocument({
+            statements: [
+                new iam.PolicyStatement({
+                    effect: iam.Effect.ALLOW,
+                    principals: [new iam.AnyPrincipal()],
+                    actions: ['execute-api:Invoke'],
+                    resources: ['execute-api:/*'],
+                }),
+                new iam.PolicyStatement({
+                    effect: iam.Effect.DENY,
+                    principals: [new iam.AnyPrincipal()],
+                    actions: ['execute-api:Invoke'],
+                    resources: ['execute-api:/*'],
+                    conditions: {
+                        StringNotEquals: {
+                            'aws:Referer': cfSecret.toString()
+                        }
+                    }
+                })
+            ]
+        });
+        // api.policy = policy; // TODO: Uncomment when ready to enforce
+
+        // Custom Domain
+        const apiDomain = new apigateway.DomainName(this, 'ApiDomain', {
+            domainName: apiDomainName,
+            certificate: acm.Certificate.fromCertificateArn(this, 'ApiCertificate', acmCertArnApi),
+            endpointType: apigateway.EndpointType.REGIONAL,
+        });
+
+        new apigateway.BasePathMapping(this, 'ApiMapping', {
+            domainName: apiDomain,
+            restApi: api,
+        });
 
         const authorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'CognitoAuthorizer', {
             cognitoUserPools: [userPool],
@@ -312,7 +388,6 @@ export class ThirukkuralStack extends cdk.Stack {
             ],
         });
 
-        // Email Unsubscribe
         const unsubscribeEmail = api.root.addResource('unsubscribe');
         unsubscribeEmail.addMethod('POST', new apigateway.LambdaIntegration(unsubscribeEmailFn), {
             methodResponses: [
@@ -321,39 +396,28 @@ export class ThirukkuralStack extends cdk.Stack {
             ],
         });
 
-        // Unsubscribe push notification endpoint
-        const unsubscribePushFn = new nodejs.NodejsFunction(this, 'UnsubscribePushFn', {
-            entry: path.join(__dirname, '../src/handlers/unsubscribe-push.ts'),
-            ...nodeJsProps,
-        });
-        pushSubscriptionsTable.grantReadWriteData(unsubscribePushFn);
-
         const subscribeWithDeviceId = subscribe.addResource('{deviceId}');
         subscribeWithDeviceId.addMethod('DELETE', new apigateway.LambdaIntegration(unsubscribePushFn));
 
-
-        // EventBridge daily trigger
-        // 8 AM IST = 2:30 AM UTC
+        // EventBridge Rule
         const rule = new events.Rule(this, 'DailyKuralRule', {
             schedule: events.Schedule.cron({ minute: '30', hour: '2' }),
+            enabled: isProd,
         });
+
         rule.addTarget(new targets.LambdaFunction(sendEmailFn));
 
-        // --- Frontend Hosting (S3 + CloudFront) ---
 
+        // --- Frontend Hosting (S3 + CloudFront) ---
         const websiteBucket = new s3.Bucket(this, 'WebsiteBucket', {
-            removalPolicy: cdk.RemovalPolicy.DESTROY,
+            bucketName: isProd ? undefined : `thirukkural-app-${stage}-${this.account}`,
+            removalPolicy: cdk.RemovalPolicy.DESTROY, // Frontend content is reproducible
             autoDeleteObjects: true,
-            blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL, // Secure: No public access
+            blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
             encryption: s3.BucketEncryption.S3_MANAGED,
         });
 
-        // Custom Domain Configuration (Uncomment and update after creating ACM Certificate)
-
-        // 1. Request a certificate in us-east-1 for thirukkural.krss.online
-        // 2. Validate it (DNS validation recommended)
-        // 3. Paste the ARN below
-        const distributionProps: cloudfront.DistributionProps = {
+        const distribution = new cloudfront.Distribution(this, 'WebsiteDistribution', {
             defaultBehavior: {
                 origin: S3BucketOrigin.withOriginAccessControl(websiteBucket),
                 viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -361,11 +425,13 @@ export class ThirukkuralStack extends cdk.Stack {
                 cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
             },
             defaultRootObject: 'index.html',
+            domainNames: [siteDomainName],
+            certificate: acm.Certificate.fromCertificateArn(this, 'SiteCertificate', acmCertArnCloudfront),
             errorResponses: [
                 {
                     httpStatus: 404,
                     responseHttpStatus: 200,
-                    responsePagePath: '/index.html', // SPA Routing
+                    responsePagePath: '/index.html',
                 },
                 {
                     httpStatus: 403,
@@ -373,18 +439,8 @@ export class ThirukkuralStack extends cdk.Stack {
                     responsePagePath: '/index.html',
                 },
             ],
-        };
+        });
 
-        if (cloudfrontCertArn) {
-            Object.assign(distributionProps, {
-                domainNames: [appDomainName],
-                certificate: acm.Certificate.fromCertificateArn(this, 'SiteCertificate', cloudfrontCertArn),
-            });
-        }
-
-        const distribution = new cloudfront.Distribution(this, 'WebsiteDistribution', distributionProps);
-
-        // Bucket Policy to allow CloudFront OAC
         websiteBucket.addToResourcePolicy(new iam.PolicyStatement({
             actions: ['s3:GetObject'],
             resources: [websiteBucket.arnForObjects('*')],
@@ -397,12 +453,12 @@ export class ThirukkuralStack extends cdk.Stack {
         }));
 
         // Outputs
-        new cdk.CfnOutput(this, 'ApiUrl', { value: api.url });
+        new cdk.CfnOutput(this, 'ApiUrl', { value: `https://${apiDomainName}` }); // IMPORTANT: For Cloudflare CNAME
         new cdk.CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
         new cdk.CfnOutput(this, 'UserPoolClientId', { value: userPoolClient.userPoolClientId });
-        new cdk.CfnOutput(this, 'UserPoolDomain', { value: userPoolDomain.domainName });
-        new cdk.CfnOutput(this, 'WebsiteUrl', { value: distribution.distributionDomainName });
-        new cdk.CfnOutput(this, 'WebsiteBucketName', { value: websiteBucket.bucketName }); // Export bucket name for frontend deploy
+        new cdk.CfnOutput(this, 'UserPoolDomain', { value: userPoolDomain.baseUrl() });
+        new cdk.CfnOutput(this, 'WebsiteUrl', { value: distribution.distributionDomainName }); // IMPORTANT: For Cloudflare CNAME
+        new cdk.CfnOutput(this, 'WebsiteBucketName', { value: websiteBucket.bucketName });
         new cdk.CfnOutput(this, 'KuralTableName', { value: kuralTable.tableName });
     }
 }
