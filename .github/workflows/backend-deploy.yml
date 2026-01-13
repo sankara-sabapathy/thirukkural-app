@@ -67,14 +67,16 @@ jobs:
         STAGE: ${{ inputs.stage }}
 
     - name: Bootstrap CDK
+      if: ${{ inputs.setup_ssm != true }}
       run: npx cdk bootstrap --skip-if-bootstrapped
 
     - name: Deploy CDK Stack
+      if: ${{ inputs.setup_ssm != true }}
       run: npx cdk deploy --require-approval never -c stage=${{ inputs.stage }}
       # No env vars needed! CDK fetches from SSM.
 
     - name: Seed Database
-      if: ${{ inputs.seed_db == true }}
+      if: ${{ inputs.seed_db == true && inputs.setup_ssm != true }}
       run: |
         set -e
         STAGE=${{ inputs.stage }}
