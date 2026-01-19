@@ -10,36 +10,47 @@
             /* Fallback fonts */
             body { font-family: 'Open Sans', Helvetica, Arial, sans-serif; }
             .tamil-font { font-family: 'Mukta Malar', 'Noto Serif Tamil', sans-serif; }
+            .kural-line {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 100%;
+                display: block;
+            }
         </style>
     </head>
     <body style="margin: 0; padding: 0; background-color: #f4f4f4; color: #333333;">
         <div style="max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-top: 20px; margin-bottom: 20px; font-family: 'Open Sans', Helvetica, Arial, sans-serif;">
             
             <!-- Header -->
-            <div style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); padding: 40px 30px; text-align: center; color: #ffffff; position: relative;">
-                <h1 style="margin: 0; font-size: 32px; font-weight: 700; letter-spacing: 1px; font-family: 'Times New Roman', serif;">Thirukkural Daily</h1>
-                <p style="margin: 10px 0 0; opacity: 0.9; font-size: 14px; letter-spacing: 1px; text-transform: uppercase;">
+            <div style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); padding: 30px 30px; text-align: center; color: #ffffff; position: relative;">
+                <a href="https://thirukkural.site" style="text-decoration: none; display: inline-block; margin-bottom: 10px;">
+                    <img src="https://thirukkural.site/assets/icons/icon-192x192.png" alt="Thirukkural Daily" style="width: 48px; height: 48px; border-radius: 8px;">
+                </a>
+                <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 1px; font-family: 'Times New Roman', serif;">Thirukkural Daily</h1>
+                <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px; letter-spacing: 1px; text-transform: uppercase;">
                     <a href="https://thirukkural.site" style="color: #ffffff; text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.5);">thirukkural.site</a>
                 </p>
-                
-                
-                <div style="margin-top: 25px; display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 10px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9;">
-                   <span style="background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px;">அறத்துப்பால்</span>
-                   <span style="background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px;">பாயிரவியல்</span>
-                   <span style="background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px;">கடவுள் வாழ்த்து</span>
-                </div>
-                
             </div>
 
             <!-- Kural Section -->
-            <div style="padding: 50px 30px; text-align: center; background-color: #ffffff;">
+            <div style="padding: 40px 10px; text-align: center; background-color: #ffffff;">
+                
+                
+                <div style="margin-bottom: 25px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8; color: #7f8c8d;">
+                   <span style="background: #f0f2f5; padding: 4px 10px; border-radius: 20px;">அறத்துப்பால்</span>
+                   <span style="background: #f0f2f5; padding: 4px 10px; border-radius: 20px;">பாயிரவியல்</span>
+                   <span style="background: #f0f2f5; padding: 4px 10px; border-radius: 20px;">கடவுள் வாழ்த்து</span>
+                </div>
+                
+
                 <span style="display: inline-block; background-color: #fff0ef; color: #e74c3c; padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 700; margin-bottom: 20px; letter-spacing: 0.5px;">KURAL #1</span>
                 
-                <a href="https://thirukkural.site/kural/1" style="text-decoration: none; display: block; color: inherit;">
-                    <div class="tamil-font" style="font-size: 24px; font-weight: bold; line-height: 1.8; color: #2c3e50; margin-bottom: 10px;">
+                <a href="https://thirukkural.site/kural/1" style="text-decoration: none; display: block; color: inherit; width: 100%;">
+                    <div class="tamil-font" style="font-size: 20px; font-weight: bold; line-height: 2.0; color: #2c3e50; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; display: block;">
                         அகர முதல எழுத்தெல்லாம் ஆதி
                     </div>
-                    <div class="tamil-font" style="font-size: 24px; font-weight: bold; line-height: 1.8; color: #2c3e50; margin-bottom: 20px;">
+                    <div class="tamil-font" style="font-size: 20px; font-weight: bold; line-height: 2.0; color: #2c3e50; margin-bottom: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; display: block;">
                         பகவன் முதற்றே உலகு.
                     </div>
                 </a>

@@ -73,6 +73,9 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
     const lightBg = '#f8f9fa';
     const white = '#ffffff';
 
+    // Helper to check if string has content
+    const hasContent = (str: string | undefined | null) => str && str.trim().length > 0;
+
     const htmlBody = `
     <!DOCTYPE html>
     <html>
@@ -85,36 +88,47 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
             /* Fallback fonts */
             body { font-family: 'Open Sans', Helvetica, Arial, sans-serif; }
             .tamil-font { font-family: 'Mukta Malar', 'Noto Serif Tamil', sans-serif; }
+            .kural-line {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 100%;
+                display: block;
+            }
         </style>
     </head>
     <body style="margin: 0; padding: 0; background-color: #f4f4f4; color: #333333;">
         <div style="max-width: 650px; margin: 0 auto; background-color: ${white}; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-top: 20px; margin-bottom: 20px; font-family: 'Open Sans', Helvetica, Arial, sans-serif;">
             
             <!-- Header -->
-            <div style="background: linear-gradient(135deg, ${secondaryColor} 0%, #34495e 100%); padding: 40px 30px; text-align: center; color: ${white}; position: relative;">
-                <h1 style="margin: 0; font-size: 32px; font-weight: 700; letter-spacing: 1px; font-family: 'Times New Roman', serif;">Thirukkural Daily</h1>
-                <p style="margin: 10px 0 0; opacity: 0.9; font-size: 14px; letter-spacing: 1px; text-transform: uppercase;">
+            <div style="background: linear-gradient(135deg, ${secondaryColor} 0%, #34495e 100%); padding: 30px 30px; text-align: center; color: ${white}; position: relative;">
+                <a href="https://thirukkural.site" style="text-decoration: none; display: inline-block; margin-bottom: 10px;">
+                    <img src="https://thirukkural.site/assets/icons/icon-192x192.png" alt="Thirukkural Daily" style="width: 48px; height: 48px; border-radius: 8px;">
+                </a>
+                <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 1px; font-family: 'Times New Roman', serif;">Thirukkural Daily</h1>
+                <p style="margin: 5px 0 0; opacity: 0.9; font-size: 14px; letter-spacing: 1px; text-transform: uppercase;">
                     <a href="https://thirukkural.site" style="color: #ffffff; text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.5);">thirukkural.site</a>
                 </p>
-                
-                ${(pal || iyal || adikaram) ? `
-                <div style="margin-top: 25px; display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 10px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9;">
-                   ${pal ? `<span style="background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px;">${pal}</span>` : ''}
-                   ${iyal ? `<span style="background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px;">${iyal}</span>` : ''}
-                   ${adikaram ? `<span style="background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px;">${adikaram}</span>` : ''}
-                </div>
-                ` : ''}
             </div>
 
             <!-- Kural Section -->
-            <div style="padding: 50px 30px; text-align: center; background-color: ${white};">
+            <div style="padding: 40px 10px; text-align: center; background-color: ${white};">
+                
+                ${(hasContent(pal) || hasContent(iyal) || hasContent(adikaram)) ? `
+                <div style="margin-bottom: 25px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8; color: #7f8c8d;">
+                   ${hasContent(pal) ? `<span style="background: #f0f2f5; padding: 4px 10px; border-radius: 20px;">${pal}</span>` : ''}
+                   ${hasContent(iyal) ? `<span style="background: #f0f2f5; padding: 4px 10px; border-radius: 20px;">${iyal}</span>` : ''}
+                   ${hasContent(adikaram) ? `<span style="background: #f0f2f5; padding: 4px 10px; border-radius: 20px;">${adikaram}</span>` : ''}
+                </div>
+                ` : ''}
+
                 <span style="display: inline-block; background-color: #fff0ef; color: ${primaryColor}; padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 700; margin-bottom: 20px; letter-spacing: 0.5px;">KURAL #${kuralId}</span>
                 
-                <a href="${kuralLink}" style="text-decoration: none; display: block; color: inherit;">
-                    <div class="tamil-font" style="font-size: 24px; font-weight: bold; line-height: 1.8; color: ${secondaryColor}; margin-bottom: 10px;">
+                <a href="${kuralLink}" style="text-decoration: none; display: block; color: inherit; width: 100%;">
+                    <div class="tamil-font" style="font-size: 20px; font-weight: bold; line-height: 2.0; color: ${secondaryColor}; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; display: block;">
                         ${line1}
                     </div>
-                    <div class="tamil-font" style="font-size: 24px; font-weight: bold; line-height: 1.8; color: ${secondaryColor}; margin-bottom: 20px;">
+                    <div class="tamil-font" style="font-size: 20px; font-weight: bold; line-height: 2.0; color: ${secondaryColor}; margin-bottom: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; display: block;">
                         ${line2}
                     </div>
                 </a>
@@ -132,43 +146,43 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
             <div style="padding: 40px 30px;">
                 <h3 style="margin-top: 0; color: ${secondaryColor}; font-size: 18px; margin-bottom: 30px; text-align: center; font-weight: 700; border-bottom: 2px solid #eee; padding-bottom: 15px;">Commentaries</h3>
                 
-                ${explanation ? `
+                ${hasContent(explanation) ? `
                 <div style="margin-bottom: 25px;">
                     <strong style="color: ${primaryColor}; display: block; margin-bottom: 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">General Explanation</strong>
                     <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #444;">${explanation}</p>
                 </div>` : ''}
 
-                ${mvText ? `
+                ${hasContent(mvText) ? `
                 <div style="margin-bottom: 25px; border-top: 1px dashed #eee; padding-top: 20px;">
                     <strong style="color: #2980b9; display: block; margin-bottom: 8px; font-size: 14px; font-family: 'Mukta Malar', sans-serif;">மு. வரதராசனார்</strong>
                     <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #444; font-family: 'Mukta Malar', sans-serif;">${mvText}</p>
                 </div>` : ''}
 
-                ${mkText ? `
+                ${hasContent(mkText) ? `
                 <div style="margin-bottom: 25px; border-top: 1px dashed #eee; padding-top: 20px;">
                     <strong style="color: #2980b9; display: block; margin-bottom: 8px; font-size: 14px; font-family: 'Mukta Malar', sans-serif;">கலைஞர் மு. கருணாநிதி</strong>
                     <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #444; font-family: 'Mukta Malar', sans-serif;">${mkText}</p>
                 </div>` : ''}
 
-                ${spText ? `
+                ${hasContent(spText) ? `
                 <div style="margin-bottom: 25px; border-top: 1px dashed #eee; padding-top: 20px;">
                     <strong style="color: #2980b9; display: block; margin-bottom: 8px; font-size: 14px; font-family: 'Mukta Malar', sans-serif;">சாலமன் பாப்பையா</strong>
                     <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #444; font-family: 'Mukta Malar', sans-serif;">${spText}</p>
                 </div>` : ''}
 
-                ${parimelaText ? `
+                ${hasContent(parimelaText) ? `
                 <div style="margin-bottom: 25px; border-top: 1px dashed #eee; padding-top: 20px;">
                     <strong style="color: #2980b9; display: block; margin-bottom: 8px; font-size: 14px; font-family: 'Mukta Malar', sans-serif;">பரிமேலழகர்</strong>
                      <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #444; font-family: 'Mukta Malar', sans-serif;">${parimelaText}</p>
                 </div>` : ''}
 
-                ${manikudavarText ? `
+                ${hasContent(manikudavarText) ? `
                 <div style="margin-bottom: 25px; border-top: 1px dashed #eee; padding-top: 20px;">
                     <strong style="color: #2980b9; display: block; margin-bottom: 8px; font-size: 14px; font-family: 'Mukta Malar', sans-serif;">மணக்குடவர்</strong>
                      <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #444; font-family: 'Mukta Malar', sans-serif;">${manikudavarText}</p>
                 </div>` : ''}
 
-                 ${vMunusamiText ? `
+                 ${hasContent(vMunusamiText) ? `
                 <div style="margin-bottom: 25px; border-top: 1px dashed #eee; padding-top: 20px;">
                     <strong style="color: #2980b9; display: block; margin-bottom: 8px; font-size: 14px; font-family: 'Mukta Malar', sans-serif;">திருக்குறளார் வீ. முனிசாமி</strong>
                      <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #444; font-family: 'Mukta Malar', sans-serif;">${vMunusamiText}</p>
