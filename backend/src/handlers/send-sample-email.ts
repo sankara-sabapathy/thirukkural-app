@@ -76,7 +76,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             transliteration: randomKural.transliteration,
             mk: randomKural.mk,
             mv: randomKural.mv,
-            sp: randomKural.sp
+            sp: randomKural.sp,
+            pal: randomKural.pal,
+            iyal: randomKural.iyal,
+            adikaram: randomKural.adikaram,
+            parimela: randomKural.parimela,
+            manikudavar: randomKural.manikudavar,
+            v_munusami: randomKural.v_munusami,
+            mu_varatha: randomKural.mu_varatha,
+            mu_karu: randomKural.mu_karu,
+            salaman: randomKural.salaman
         };
 
         const { subject, text, html } = generateKuralEmail(kuralData, true); // isSample = true
