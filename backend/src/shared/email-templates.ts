@@ -89,11 +89,12 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
             body { font-family: 'Open Sans', Helvetica, Arial, sans-serif; }
             .tamil-font { font-family: 'Mukta Malar', 'Noto Serif Tamil', sans-serif; }
             .kural-line {
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: 100%;
                 display: block;
+                font-size: 20px;
+                font-weight: bold;
+                line-height: 1.6;
+                color: ${secondaryColor};
+                margin-bottom: 8px;
             }
         </style>
     </head>
@@ -125,22 +126,23 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
                 <span style="display: inline-block; background-color: #fff0ef; color: ${primaryColor}; padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 700; margin-bottom: 20px; letter-spacing: 0.5px;">KURAL #${kuralId}</span>
                 
                 <a href="${kuralLink}" style="text-decoration: none; display: block; color: inherit; width: 100%;">
-                    <div class="tamil-font" style="font-size: 20px; font-weight: bold; line-height: 2.0; color: ${secondaryColor}; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; display: block;">
+                    <div class="tamil-font kural-line">
                         ${line1}
                     </div>
-                    <div class="tamil-font" style="font-size: 20px; font-weight: bold; line-height: 2.0; color: ${secondaryColor}; margin-bottom: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; display: block;">
+                    <div class="tamil-font kural-line" style="margin-bottom: 20px;">
                         ${line2}
                     </div>
                 </a>
             </div>
 
             <!-- Translation Section -->
+            ${hasContent(translation) ? `
             <div style="padding: 30px 40px; background-color: ${lightBg}; border-top: 1px solid #eeeeee;">
                 <h3 style="margin-top: 0; color: ${secondaryColor}; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; font-weight: 700;">English Translation</h3>
                 <p style="font-size: 18px; line-height: 1.6; color: #555555; margin-bottom: 0; font-family: 'Times New Roman', serif; font-style: italic;">
                     "${translation}"
                 </p>
-            </div>
+            </div>` : ''}
 
             <!-- Explanations Section -->
             <div style="padding: 40px 30px;">
