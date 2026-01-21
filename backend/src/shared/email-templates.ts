@@ -46,9 +46,15 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
     const mvText = mv || (mu_varatha && mu_varatha[1]) || '';
     const mkText = mk || (mu_karu && mu_karu[1]) || '';
     const spText = sp || (salaman && salaman[1]) || '';
-    const parimelaText = parimela && parimela[1] ? parimela[1] : '';
-    const manikudavarText = manikudavar && manikudavar[1] ? manikudavar[1] : '';
-    const vMunusamiText = v_munusami && v_munusami[1] ? v_munusami[1] : '';
+    // Helper to extract text from array format [Title, Content, ...MoreContent]
+    const getCommentary = (arr?: string[]) => {
+        if (!arr || !Array.isArray(arr) || arr.length < 2) return '';
+        return arr.slice(1).join('<br/><br/>');
+    };
+
+    const parimelaText = getCommentary(parimela);
+    const manikudavarText = getCommentary(manikudavar);
+    const vMunusamiText = getCommentary(v_munusami);
 
     const subject = `Thirukkural #${kuralId}: ${translation.substring(0, 50)}...`;
 

@@ -22,7 +22,10 @@ describe('Send Sample Email Handler', () => {
         line1: 'l1',
         line2: 'l2',
         translation: 'Test Translation',
-        mk: 'mk', mv: 'mv', sp: 'sp'
+        mk: 'mk', mv: 'mv', sp: 'sp',
+        parimela: ['Title', 'Pari Content'],
+        manikudavar: ['Title', 'Mana Content'],
+        v_munusami: ['Title', 'Munu Content']
     };
 
     beforeEach(() => {
@@ -60,6 +63,12 @@ describe('Send Sample Email Handler', () => {
         expect(putCall).toBeDefined();
         const item = (putCall?.args[0].input as any).Item;
         expect(item.count).toBe(1);
+
+        // Verify email content has commentaries
+        const emailCall = (sendEmail as any).mock.calls[0][0];
+        expect(emailCall.html).toContain('Pari Content');
+        expect(emailCall.html).toContain('Mana Content');
+        expect(emailCall.html).toContain('Munu Content');
     });
 
     it('should limit to 1 in prod', async () => {
