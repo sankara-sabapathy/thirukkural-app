@@ -27,6 +27,7 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
         line1,
         line2,
         translation,
+        transliteration,
         explanation = '',
         pal = '',
         iyal = '',
@@ -139,6 +140,12 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
                         ${line2}
                     </div>
                 </a>
+
+                ${hasContent(transliteration) ? `
+                <div style="margin-top: 15px; color: #666; font-style: italic; font-size: 14px; line-height: 1.6;">
+                     ${transliteration?.replace(/\n/g, '<br/>')}
+                </div>
+                ` : ''}
             </div>
 
             <!-- Translation Section -->

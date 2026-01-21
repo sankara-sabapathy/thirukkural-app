@@ -2,7 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
 
 import { docClient } from '../shared/dynamo';
-import { createResponse } from '../shared/utils';
+import { createResponse, safeJsonParse } from '../shared/utils';
 import { generateKuralEmail, Kural } from '../shared/email-templates';
 import { getRandomKural } from '../shared/kural-utils';
 
@@ -96,19 +96,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             translation: randomKural.translation,
             explanation: randomKural.explanation || randomKural.mv || randomKural.sp,
             couplet: randomKural.couplet,
-            transliteration: randomKural.transliteration,
+            transliteration: (randomKural.line1_tl && randomKural.line2_tl)
+                ? `${randomKural.line1_tl}\n${randomKural.line2_tl}`
+                : randomKural.transliteration,
             mk: randomKural.mk,
             mv: randomKural.mv,
             sp: randomKural.sp,
             pal: randomKural.pal,
             iyal: randomKural.iyal,
             adikaram: randomKural.adikaram,
-            parimela: randomKural.parimela,
-            manikudavar: randomKural.manikudavar,
-            v_munusami: randomKural.v_munusami,
-            mu_varatha: randomKural.mu_varatha,
-            mu_karu: randomKural.mu_karu,
-            salaman: randomKural.salaman
+            parimela: safeJsonParse(randomKural.parimela),
+            manikudavar: safeJsonParse(randomKural.manikudavar),
+            v_munusami: safeJsonParse(randomKural.v_munusami),
+            mu_varatha: safeJsonParse(randomKural.mu_varatha),
+            mu_karu: safeJsonParse(randomKural.mu_karu),
+            salaman: safeJsonParse(randomKural.salaman)
         };
 
         const { subject, text, html } = generateKuralEmail(kuralData, true); // isSample = true

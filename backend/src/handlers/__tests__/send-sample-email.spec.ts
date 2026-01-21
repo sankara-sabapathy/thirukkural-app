@@ -21,11 +21,13 @@ describe('Send Sample Email Handler', () => {
         kuralId: 1,
         line1: 'l1',
         line2: 'l2',
+        line1_tl: 'l1 transliteration',
+        line2_tl: 'l2 transliteration',
         translation: 'Test Translation',
         mk: 'mk', mv: 'mv', sp: 'sp',
-        parimela: ['Title', 'Pari Content'],
-        manikudavar: ['Title', 'Mana Content'],
-        v_munusami: ['Title', 'Munu Content']
+        parimela: JSON.stringify(['Title', 'Pari Content']),
+        manikudavar: JSON.stringify(['Title', 'Mana Content']),
+        v_munusami: JSON.stringify(['Title', 'Munu Content'])
     };
 
     beforeEach(() => {
@@ -69,6 +71,7 @@ describe('Send Sample Email Handler', () => {
         expect(emailCall.html).toContain('Pari Content');
         expect(emailCall.html).toContain('Mana Content');
         expect(emailCall.html).toContain('Munu Content');
+        expect(emailCall.html).toContain('l1 transliteration');
     });
 
     it('should limit to 1 in prod', async () => {

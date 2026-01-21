@@ -20,3 +20,18 @@ export const createResponse = (statusCode: number, body: any, origin?: string): 
         body: JSON.stringify(body),
     };
 };
+
+/**
+ * Safely parses a JSON string or returns the value if it's already an object/array.
+ * Returns the original value or undefined if parsing fails.
+ */
+export const safeJsonParse = (value: any): any => {
+    if (typeof value !== 'string') {
+        return value;
+    }
+    try {
+        return JSON.parse(value);
+    } catch {
+        return value; // Return as is if parsing fails (e.g., normal string)
+    }
+};
