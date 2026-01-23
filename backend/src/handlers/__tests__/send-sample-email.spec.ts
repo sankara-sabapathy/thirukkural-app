@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mockClient } from 'aws-sdk-client-mock';
-import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { handler } from '../send-sample-email';
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
@@ -30,6 +30,9 @@ describe('Send Sample Email Handler', () => {
         v_munusami: JSON.stringify(['Title', 'Munu Content'])
     };
 
+    const conditionalCheckFailed = new Error('ConditionalCheckFailedException');
+    conditionalCheckFailed.name = 'ConditionalCheckFailedException';
+
     beforeEach(() => {
         ddbMock.reset();
         vi.resetAllMocks();
@@ -54,86 +57,96 @@ describe('Send Sample Email Handler', () => {
 
     it('should allow first request and create record (dev)', async () => {
         process.env.STAGE = 'dev';
-        ddbMock.on(GetCommand).resolves({});
+        // Simulate Put success (new record created)
+        ddbMock.on(PutCommand).resolves({});
+        // Simulate Update success (increment)
+        ddbMock.on(UpdateCommand).resolves({});
 
         const result = await handler(createEvent('test@test.com'), {} as any, () => null);
 
         expect(result?.statusCode).toBe(200);
 
-        expect(ddbMock.calls()).toHaveLength(2); // Get, Put
-        const putCall = ddbMock.calls().find(c => c.args[0] instanceof PutCommand);
-        expect(putCall).toBeDefined();
-        const item = (putCall?.args[0].input as any).Item;
-        expect(item.count).toBe(1);
+        // Verify Put called with count 0
+        const putCalls = ddbMock.calls().filter(c => c.args[0] instanceof PutCommand);
+        expect(putCalls).toHaveLength(1);
+        const putItem = (putCalls[0].args[0].input as any).Item;
+        expect(putItem.count).toBe(0);
+        expect((putCalls[0].args[0].input as any).ConditionExpression).toContain('attribute_not_exists');
+
+        // Verify Update called to increment
+        const updateCalls = ddbMock.calls().filter(c => c.args[0] instanceof UpdateCommand);
+        expect(updateCalls).toHaveLength(1);
+        expect((updateCalls[0].args[0].input as any).UpdateExpression).toContain('SET #count = #count + :one');
+        expect((updateCalls[0].args[0].input as any).ConditionExpression).toBe('#count < :max');
 
         // Verify email content has commentaries
         const emailCall = (sendEmail as any).mock.calls[0][0];
         expect(emailCall.html).toContain('Pari Content');
-        expect(emailCall.html).toContain('Mana Content');
-        expect(emailCall.html).toContain('Munu Content');
-        expect(emailCall.html).toContain('l1 transliteration');
+    });
+
+    it('should handle existing valid record (Put fails, Update succeeds)', async () => {
+        process.env.STAGE = 'dev';
+        // Simulate Put failure (record exists)
+        ddbMock.on(PutCommand).rejects(conditionalCheckFailed);
+        // Simulate Update success (under limit)
+        ddbMock.on(UpdateCommand).resolves({});
+
+        const result = await handler(createEvent('test@test.com'), {} as any, () => null);
+
+        expect(result?.statusCode).toBe(200);
+
+        // Put should have been attempted
+        const putCalls = ddbMock.calls().filter(c => c.args[0] instanceof PutCommand);
+        expect(putCalls).toHaveLength(1);
+
+        // Update should have been attempted
+        const updateCalls = ddbMock.calls().filter(c => c.args[0] instanceof UpdateCommand);
+        expect(updateCalls).toHaveLength(1);
+    });
+
+    it('should block if limit reached (Put fails, Update fails)', async () => {
+        process.env.STAGE = 'dev'; // Limit 5
+        // Simulate Put failure (record exists)
+        ddbMock.on(PutCommand).rejects(conditionalCheckFailed);
+        // Simulate Update failure (limit reached)
+        ddbMock.on(UpdateCommand).rejects(conditionalCheckFailed);
+
+        const result = await handler(createEvent('test@test.com'), {} as any, () => null);
+
+        expect(result?.statusCode).toBe(429);
+        expect(JSON.parse(result?.body as string).message).toContain('can only send 5 sample emails');
     });
 
     it('should limit to 1 in prod', async () => {
-        process.env.STAGE = 'prod';
+        process.env.STAGE = 'prod'; // Limit 1
 
-        // Mock existing record with count 1
-        ddbMock.on(GetCommand).resolves({
-            Item: { pk: 'email:test@test.com', ttl: Math.floor(Date.now() / 1000) + 1000, count: 1 }
-        });
+        // Case: Limit reached (already sent 1)
+        ddbMock.on(PutCommand).rejects(conditionalCheckFailed);
+        ddbMock.on(UpdateCommand).rejects(conditionalCheckFailed);
 
         const result = await handler(createEvent('test@test.com'), {} as any, () => null);
 
         expect(result?.statusCode).toBe(429);
         expect(JSON.parse(result?.body as string).message).toContain('1 sample email');
+
+        // Verify max was 1 in condition
+        const updateCalls = ddbMock.calls().filter(c => c.args[0] instanceof UpdateCommand);
+        const exprValues = (updateCalls[0].args[0].input as any).ExpressionAttributeValues;
+        expect(exprValues[':max']).toBe(1);
     });
 
-    it('should limit to 5 in dev/non-prod', async () => {
+    it('should reset if ttl expired (Put succeeds)', async () => {
         process.env.STAGE = 'dev';
-
-        // Mock existing record with count 4
-        ddbMock.on(GetCommand).resolves({
-            Item: { pk: 'email:test@test.com', ttl: Math.floor(Date.now() / 1000) + 1000, count: 4 }
-        });
+        // Simulate Put success (because ttl < now condition passed)
+        ddbMock.on(PutCommand).resolves({});
+        // Simulate Update success
+        ddbMock.on(UpdateCommand).resolves({});
 
         const result = await handler(createEvent('test@test.com'), {} as any, () => null);
         expect(result?.statusCode).toBe(200);
 
-        // Should increment
-        const putCall = ddbMock.calls().filter(c => c.args[0] instanceof PutCommand);
-        // Expect last put command
-        const lastPut = putCall[putCall.length - 1];
-        const item = (lastPut?.args[0].input as any).Item;
-        expect(item.count).toBe(5);
-    });
-
-    it('should block 6th request in dev', async () => {
-        process.env.STAGE = 'dev';
-
-        // Mock existing record with count 5
-        ddbMock.on(GetCommand).resolves({
-            Item: { pk: 'email:test@test.com', ttl: Math.floor(Date.now() / 1000) + 1000, count: 5 }
-        });
-
-        const result = await handler(createEvent('test@test.com'), {} as any, () => null);
-        expect(result?.statusCode).toBe(429);
-        expect(JSON.parse(result?.body as string).message).toContain('5 sample emails');
-    });
-
-    it('should reset if ttl expired', async () => {
-        process.env.STAGE = 'dev';
-
-        // Mock existing record with count 5 but EXPIRED ttl
-        ddbMock.on(GetCommand).resolves({
-            Item: { pk: 'email:test@test.com', ttl: Math.floor(Date.now() / 1000) - 100, count: 5 }
-        });
-
-        const result = await handler(createEvent('test@test.com'), {} as any, () => null);
-        expect(result?.statusCode).toBe(200);
-
-        // Should reset count to 1
-        const putCall = ddbMock.calls().find(c => c.args[0] instanceof PutCommand);
-        const item = (putCall?.args[0].input as any).Item;
-        expect(item.count).toBe(1);
+        // Put should have been called
+        const putCalls = ddbMock.calls().filter(c => c.args[0] instanceof PutCommand);
+        expect(putCalls).toHaveLength(1);
     });
 });

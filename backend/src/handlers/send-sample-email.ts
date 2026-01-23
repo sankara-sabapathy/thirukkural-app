@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 
 import { docClient } from '../shared/dynamo';
 import { createResponse, safeJsonParse } from '../shared/utils';
@@ -37,46 +37,44 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const ttl = now + RATE_LIMIT_SECONDS;
 
         try {
-            const { Item } = await docClient.send(new GetCommand({
-                TableName: rateLimitTable,
-                Key: { pk: rateLimitKey }
-            }));
-
-            // Check if record exists and is valid (not expired)
-            // Note: DynamoDB TTL deletes items eventually, but we should also check ttl logic here for precision
-            if (Item && Item.ttl > now) {
-                const currentCount = Item.count || 1; // Default to 1 if count is missing (backward compatibility)
-                if (currentCount >= maxEmails) {
-                    return createResponse(429, { message: `You can only send ${maxEmails} sample emails every 24 hours.` }, origin);
-                }
-
-                // Increment count, keep existing TTL
-                await docClient.send(new PutCommand({
-                    TableName: rateLimitTable,
-                    Item: {
-                        pk: rateLimitKey,
-                        ttl: Item.ttl,
-                        count: currentCount + 1
-                    }
-                }));
-
-            } else {
-                // Record doesn't exist or is expired - Create new window
+            // A. Initial Window Creation / Reset (if missing or expired)
+            try {
                 await docClient.send(new PutCommand({
                     TableName: rateLimitTable,
                     Item: {
                         pk: rateLimitKey,
                         ttl: ttl,
-                        count: 1
+                        count: 0
                     },
-                    // We don't need ConditionExpression anymore as we are handling logic explicitly
+                    ConditionExpression: 'attribute_not_exists(pk) OR #ttl < :now',
+                    ExpressionAttributeNames: { '#ttl': 'ttl' },
+                    ExpressionAttributeValues: { ':now': now }
                 }));
+            } catch (err: any) {
+                if (err.name !== 'ConditionalCheckFailedException') {
+                    throw err;
+                }
+                // If condition failed, it means a valid window already exists. Proceed to increment.
             }
+
+            // B. Atomic Increment & Check
+            await docClient.send(new UpdateCommand({
+                TableName: rateLimitTable,
+                Key: { pk: rateLimitKey },
+                UpdateExpression: 'SET #count = #count + :one',
+                ConditionExpression: '#count < :max',
+                ExpressionAttributeNames: { '#count': 'count' },
+                ExpressionAttributeValues: {
+                    ':one': 1,
+                    ':max': maxEmails
+                }
+            }));
 
         } catch (err: any) {
             console.error('Rate limit check error:', err);
-            // If something goes wrong with DynamoDB, we probably should fail safe or block?
-            // For now, let's rethrow to trigger 500
+            if (err.name === 'ConditionalCheckFailedException') {
+                return createResponse(429, { message: `You can only send ${maxEmails} sample emails every 24 hours.` }, origin);
+            }
             throw err;
         }
 

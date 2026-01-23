@@ -29,7 +29,7 @@ export const handler = async (): Promise<void> => {
         }
 
         // Construct rich email content using shared template
-        // Construct rich email content using shared template
+
         const kuralData: Kural = {
             kuralId: randomKural.kuralId,
             line1: randomKural.line1,
