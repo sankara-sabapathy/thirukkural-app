@@ -417,12 +417,29 @@ export class ThirukkuralStack extends cdk.Stack {
             encryption: s3.BucketEncryption.S3_MANAGED,
         });
 
+        const functionAssociations: cloudfront.FunctionAssociation[] = [];
+
+        if (!isProd) {
+            const basicAuthFn = new cloudfront.Function(this, 'BasicAuthFn', {
+                code: cloudfront.FunctionCode.fromFile({
+                    filePath: path.join(__dirname, '../src/cloudfront/basic-auth.js'),
+                }),
+                runtime: cloudfront.FunctionRuntime.JS_2_0,
+            });
+
+            functionAssociations.push({
+                function: basicAuthFn,
+                eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+            });
+        }
+
         const distribution = new cloudfront.Distribution(this, 'WebsiteDistribution', {
             defaultBehavior: {
                 origin: S3BucketOrigin.withOriginAccessControl(websiteBucket),
                 viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
                 cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
+                functionAssociations: functionAssociations,
             },
             defaultRootObject: 'index.html',
             domainNames: [siteDomainName],

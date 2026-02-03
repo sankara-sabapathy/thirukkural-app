@@ -1,8 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { PutCommand } from '@aws-sdk/lib-dynamodb';
+import { PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 
 import { docClient } from '../shared/dynamo';
-import { createResponse } from '../shared/utils';
+import { createResponse, safeJsonParse } from '../shared/utils';
 import { generateKuralEmail, Kural } from '../shared/email-templates';
 import { getRandomKural } from '../shared/kural-utils';
 
@@ -25,34 +25,55 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
         // 1. Check Rate Limit
         const rateLimitTable = process.env.RATE_LIMIT_TABLE;
+        const stage = process.env.STAGE;
+
         if (!rateLimitTable) {
             throw new Error('RATE_LIMIT_TABLE environment variable not set');
         }
 
+        const maxEmails = stage === 'prod' ? 1 : 5;
         const rateLimitKey = `email:${email}`;
         const now = Math.floor(Date.now() / 1000);
-
-        // Check if user is rate limited
-        // We can use a conditional put, but checking first allows for a specific error message
-        // However, conditional put is atomic and better for race conditions.
-        // Let's try to put with condition attribute_not_exists(pk)
-
         const ttl = now + RATE_LIMIT_SECONDS;
 
         try {
-            await docClient.send(new PutCommand({
-                TableName: rateLimitTable,
-                Item: {
-                    pk: rateLimitKey,
-                    ttl: ttl
-                },
-                ConditionExpression: 'attribute_not_exists(pk)',
-            }));
-        } catch (err: any) {
-            if (err.name === 'ConditionalCheckFailedException') {
-                if (err.name === 'ConditionalCheckFailedException') {
-                    return createResponse(429, { message: 'You can only send one sample email every 24 hours.' }, origin);
+            // A. Initial Window Creation / Reset (if missing or expired)
+            try {
+                await docClient.send(new PutCommand({
+                    TableName: rateLimitTable,
+                    Item: {
+                        pk: rateLimitKey,
+                        ttl: ttl,
+                        count: 0
+                    },
+                    ConditionExpression: 'attribute_not_exists(pk) OR #ttl < :now',
+                    ExpressionAttributeNames: { '#ttl': 'ttl' },
+                    ExpressionAttributeValues: { ':now': now }
+                }));
+            } catch (err: any) {
+                if (err.name !== 'ConditionalCheckFailedException') {
+                    throw err;
                 }
+                // If condition failed, it means a valid window already exists. Proceed to increment.
+            }
+
+            // B. Atomic Increment & Check
+            await docClient.send(new UpdateCommand({
+                TableName: rateLimitTable,
+                Key: { pk: rateLimitKey },
+                UpdateExpression: 'SET #count = #count + :one',
+                ConditionExpression: '#count < :max',
+                ExpressionAttributeNames: { '#count': 'count' },
+                ExpressionAttributeValues: {
+                    ':one': 1,
+                    ':max': maxEmails
+                }
+            }));
+
+        } catch (err: any) {
+            console.error('Rate limit check error:', err);
+            if (err.name === 'ConditionalCheckFailedException') {
+                return createResponse(429, { message: `You can only send ${maxEmails} sample emails every 24 hours.` }, origin);
             }
             throw err;
         }
@@ -73,10 +94,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             translation: randomKural.translation,
             explanation: randomKural.explanation || randomKural.mv || randomKural.sp,
             couplet: randomKural.couplet,
-            transliteration: randomKural.transliteration,
+            transliteration: (randomKural.line1_tl && randomKural.line2_tl)
+                ? `${randomKural.line1_tl}\n${randomKural.line2_tl}`
+                : randomKural.transliteration,
             mk: randomKural.mk,
             mv: randomKural.mv,
-            sp: randomKural.sp
+            sp: randomKural.sp,
+            pal: randomKural.pal,
+            iyal: randomKural.iyal,
+            adikaram: randomKural.adikaram,
+            parimela: safeJsonParse(randomKural.parimela),
+            manikudavar: safeJsonParse(randomKural.manikudavar),
+            v_munusami: safeJsonParse(randomKural.v_munusami),
+            mu_varatha: safeJsonParse(randomKural.mu_varatha),
+            mu_karu: safeJsonParse(randomKural.mu_karu),
+            salaman: safeJsonParse(randomKural.salaman)
         };
 
         const { subject, text, html } = generateKuralEmail(kuralData, true); // isSample = true
