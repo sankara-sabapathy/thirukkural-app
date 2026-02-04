@@ -2,8 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PaymentService } from '../../services/payment.service';
 import { HttpClient } from '@angular/common/http';
-import { AuthService } from '../../services/auth.service'; // Assuming auth service exists
+import { PaymentService } from '../../services/payment.service';
+import { HttpClient } from '@angular/common/http';
+import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 @Component({
     selector: 'app-pricing',
@@ -45,11 +48,7 @@ export class PricingComponent implements OnInit {
         try {
             const order = await this.paymentService.createOrder(amount, this.currency);
             this.paymentService.openCheckout({
-                key: 'YOUR_RAZORPAY_KEY_ID', // TODO: Fetch from config/env or backend? Backend doesn't return key usually. 
-                // We need the key on frontend. 
-                // Plan said: "Frontend: Will receive the public key".
-                // Use environment.razorpayKey or fetch from backend /config endpoint.
-                // For now, I'll assume environment variable or a placeholder I need to fill.
+                key: environment.razorpay.keyId,
                 amount: order.amount,
                 currency: order.currency,
                 order_id: order.id,
@@ -94,8 +93,9 @@ export class PricingComponent implements OnInit {
 
         try {
             const sub = await this.paymentService.createSubscription(planId);
+            const sub = await this.paymentService.createSubscription(planId);
             this.paymentService.openCheckout({
-                key: 'YOUR_RAZORPAY_KEY_ID',
+                key: environment.razorpay.keyId,
                 subscription_id: sub.id,
                 name: 'Thirukkural Plus',
                 description: `${planType} Subscription`,
