@@ -19,12 +19,18 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const method = event.httpMethod;
 
         if (method === 'GET') {
-            const result = await docClient.send(new GetCommand({
+            console.log('Fetching profile for userId:', userId, 'Table:', TABLE_NAME);
+            const params = {
                 TableName: TABLE_NAME,
                 Key: { userId },
-            }));
+            };
+            console.log('DynamoDB Get Params:', JSON.stringify(params));
+
+            const result = await docClient.send(new GetCommand(params));
+            console.log('DynamoDB Get Result:', result);
 
             if (!result.Item) {
+                console.log('User not found, creating default profile...');
                 // If user doesn't exist in DB but is authenticated, create a default profile
                 const newProfile = {
                     userId,
@@ -37,10 +43,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     currency: 'INR',
                     createdAt: new Date().toISOString(),
                 };
+
                 await docClient.send(new PutCommand({
                     TableName: TABLE_NAME,
                     Item: newProfile,
                 }));
+                console.log('Default profile created');
                 return createResponse(200, newProfile, origin);
             }
 

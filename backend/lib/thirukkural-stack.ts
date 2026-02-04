@@ -224,7 +224,8 @@ export class ThirukkuralStack extends cdk.Stack {
 
         const userProfileFn = new nodejs.NodejsFunction(this, 'UserProfileFn', {
             entry: path.join(__dirname, '../src/handlers/user-profile.ts'),
-            timeout: cdk.Duration.seconds(30),
+            timeout: cdk.Duration.seconds(60),
+            memorySize: 256,
             ...nodeJsProps,
         });
 
@@ -262,7 +263,8 @@ export class ThirukkuralStack extends cdk.Stack {
 
         const razorpayFn = new nodejs.NodejsFunction(this, 'RazorpayFn', {
             entry: path.join(__dirname, '../src/handlers/razorpay-handler.ts'),
-            timeout: cdk.Duration.seconds(30),
+            timeout: cdk.Duration.seconds(60),
+            memorySize: 256,
             ...nodeJsProps,
         });
 
