@@ -224,3 +224,4 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         return createResponse(500, { message: err.message }, origin);
     }
 };
+

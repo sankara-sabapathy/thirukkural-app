@@ -44,6 +44,11 @@ export class ProfileComponent implements OnInit {
             },
             error: (err) => {
                 console.error('Failed to fetch profile', err);
+                if (err.status === 504) {
+                    alert('Server timeout. Please try again in 30 seconds (Cold Start).');
+                } else {
+                    alert('Failed to load profile. Please verify your internet connection.');
+                }
                 this.loading = false;
             }
         });
