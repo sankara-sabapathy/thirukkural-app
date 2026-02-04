@@ -190,40 +190,37 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 }));
             }
 
-        }));
-    }
-
             return createResponse(200, { status: 'ok' });
-}
+        }
 
-// 4. Verify Payment Signature (Frontend Callback)
-if (path.endsWith('/verify') && method === 'POST') {
-    const body = safeJsonParse(event.body);
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
+        // 4. Verify Payment Signature (Frontend Callback)
+        if (path.endsWith('/verify') && method === 'POST') {
+            const body = safeJsonParse(event.body);
+            const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-        return createResponse(400, { message: 'Missing required parameters' }, origin);
-    }
+            if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+                return createResponse(400, { message: 'Missing required parameters' }, origin);
+            }
 
-    const keySecret = await getSecret('PARAM_RAZORPAY_KEY_SECRET');
-    if (!keySecret) throw new Error('Razorpay secret missing');
+            const keySecret = await getSecret('PARAM_RAZORPAY_KEY_SECRET');
+            if (!keySecret) throw new Error('Razorpay secret missing');
 
-    const generated_signature = crypto
-        .createHmac('sha256', keySecret)
-        .update(razorpay_order_id + "|" + razorpay_payment_id)
-        .digest('hex');
+            const generated_signature = crypto
+                .createHmac('sha256', keySecret)
+                .update(razorpay_order_id + "|" + razorpay_payment_id)
+                .digest('hex');
 
-    if (generated_signature === razorpay_signature) {
-        return createResponse(200, { status: 'valid' }, origin);
-    } else {
-        return createResponse(400, { message: 'Invalid signature' }, origin);
-    }
-}
+            if (generated_signature === razorpay_signature) {
+                return createResponse(200, { status: 'valid' }, origin);
+            } else {
+                return createResponse(400, { message: 'Invalid signature' }, origin);
+            }
+        }
 
-return createResponse(404, { message: 'Not Found' }, origin);
+        return createResponse(404, { message: 'Not Found' }, origin);
 
     } catch (err: any) {
-    console.error('Razorpay Handler Error:', err);
-    return createResponse(500, { message: err.message }, origin);
-}
+        console.error('Razorpay Handler Error:', err);
+        return createResponse(500, { message: err.message }, origin);
+    }
 };
