@@ -37,8 +37,8 @@ export const PRICING_CONFIG = {
         currency: 'INR',
         creditCost: 1.0, // 1 Credit = 1 INR
         plans: {
-            monthly: { amount: 15, razorpayPlanId: 'plan_monthly_inr' }, // Replace with real ID via Env/SSM 
-            yearly: { amount: 150, razorpayPlanId: 'plan_yearly_inr' }
+            monthly: { amount: 15, razorpayPlanId: 'plan_SCB8cdaYV5UXEP' },
+            yearly: { amount: 150, razorpayPlanId: 'plan_SCB8dBVUs1Jmmw' }
         }
     },
     ROW: {

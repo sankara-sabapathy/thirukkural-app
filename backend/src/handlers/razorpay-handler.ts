@@ -60,7 +60,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             const options = {
                 amount: amountSmallest,
                 currency: currency,
-                receipt: `rcpt_${userId}_${Date.now()}`,
+                // Razorpay receipt length max 40 chars.
+                // "rcpt_" (5) + userId (36) + "_" (1) + timestamp (13) = 55 chars (Too long).
+                // "rcpt_" (5) + shortUser (8) + "_" (1) + timestamp (13) = 27 chars (Safe).
+                receipt: `rcpt_${userId.substring(0, 8)}_${Date.now()}`,
                 notes: {
                     userId: userId,
                     type: 'CREDIT_PACK'

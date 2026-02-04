@@ -89,7 +89,7 @@ export class PricingComponent implements OnInit {
         // Config logic duplicated here or fetched?
         // Hardcoding for MVP as per types.ts logic
         const planId = this.currency === 'INR'
-            ? (planType === 'monthly' ? 'plan_monthly_inr' : 'plan_yearly_inr')
+            ? (planType === 'monthly' ? 'plan_SCB8cdaYV5UXEP' : 'plan_SCB8dBVUs1Jmmw')
             : (planType === 'monthly' ? 'plan_monthly_usd' : 'plan_yearly_usd');
 
         try {
