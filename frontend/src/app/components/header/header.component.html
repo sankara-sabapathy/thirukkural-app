@@ -9,6 +9,7 @@
     <div class="nav-links">
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">Home</a>
       <a routerLink="/kurals" routerLinkActive="active" class="nav-link">Library</a>
+      <a routerLink="/pricing" routerLinkActive="active" class="nav-link">Pricing</a>
       <a routerLink="/about" routerLinkActive="active" class="nav-link">About</a>
       <a routerLink="/contact" routerLinkActive="active" class="nav-link">Contact</a>
     </div>
@@ -30,7 +31,8 @@
       </button>
       <ng-container *ngIf="user$ | async as user; else loginBtn">
         <div class="user-menu">
-          <div class="user-avatar">{{ user.attributes.email[0].toUpperCase() }}</div>
+          <div class="user-avatar" routerLink="/profile" style="cursor: pointer;">{{
+            user.attributes.email[0].toUpperCase() }}</div>
           <button mat-button class="btn-logout" (click)="logout()">Sign Out</button>
         </div>
       </ng-container>
@@ -85,6 +87,14 @@
           </svg>
           Library
         </a>
+        <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path
+              d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"
+              stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+          Pricing
+        </a>
         <a routerLink="/about" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM10 11v4M10 7h.01" stroke="currentColor" stroke-width="1.5"
@@ -119,7 +129,7 @@
           Install App
         </button>
         <ng-container *ngIf="user$ | async as user; else mobileLoginBtn">
-          <div class="mobile-user-info">
+          <div class="mobile-user-info" routerLink="/profile" (click)="closeMobileMenu()">
             <div class="user-avatar">{{ user.attributes.email[0].toUpperCase() }}</div>
             <span class="user-email">{{ user.attributes.email }}</span>
           </div>
