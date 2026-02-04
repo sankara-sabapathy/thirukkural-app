@@ -2,7 +2,7 @@
 export const environment = {
     // We set production: true to ensure Angular enables production mode (optimizations)
     // regardless of the specific stage (dev, uat, prod) being deployed.
-    production: true, 
+    production: true,
     cognito: {
         userPoolId: 'ap-south-1_g6cAch9nf',
         userPoolWebClientId: '5bjct26m4mgt914kp0rmjfaad4',
@@ -17,6 +17,9 @@ export const environment = {
             sampleEmail: '/sample-email',
             subscribe: '/subscribe'
         }
+    },
+    razorpay: {
+        keyId: 'rzp_test_SC6SfzckFW4xe0'
     },
     vapidPublicKey: 'undefined'
 };
