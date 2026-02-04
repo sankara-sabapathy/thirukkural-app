@@ -2,8 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PaymentService } from '../../services/payment.service';
 import { HttpClient } from '@angular/common/http';
-import { PaymentService } from '../../services/payment.service';
-import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
@@ -92,7 +90,6 @@ export class PricingComponent implements OnInit {
             : (planType === 'monthly' ? 'plan_monthly_usd' : 'plan_yearly_usd');
 
         try {
-            const sub = await this.paymentService.createSubscription(planId);
             const sub = await this.paymentService.createSubscription(planId);
             this.paymentService.openCheckout({
                 key: environment.razorpay.keyId,
