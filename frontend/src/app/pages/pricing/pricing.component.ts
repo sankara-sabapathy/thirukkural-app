@@ -1,0 +1,122 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { PaymentService } from '../../services/payment.service';
+import { HttpClient } from '@angular/common/http';
+import { AuthService } from '../../services/auth.service'; // Assuming auth service exists
+import { Router } from '@angular/router';
+
+@Component({
+    selector: 'app-pricing',
+    standalone: true,
+    imports: [CommonModule],
+    templateUrl: './pricing.component.html',
+    styleUrls: ['./pricing.component.css']
+})
+export class PricingComponent implements OnInit {
+    currency: 'INR' | 'USD' = 'INR';
+    isLoggedIn = false;
+    isLoading = false;
+
+    constructor(
+        private paymentService: PaymentService,
+        private authService: AuthService,
+        private router: Router
+    ) { }
+
+    ngOnInit() {
+        this.authService.isAuthenticated$.subscribe(auth => {
+            this.isLoggedIn = auth;
+            // If logged in, maybe fetch user pref for currency?
+            // For now, default to INR or detect locally.
+        });
+    }
+
+    toggleCurrency(curr: 'INR' | 'USD') {
+        this.currency = curr;
+    }
+
+    async buyCredits(amount: number) {
+        if (!this.isLoggedIn) {
+            this.router.navigate(['/login'], { queryParams: { returnUrl: '/pricing' } });
+            return;
+        }
+
+        this.isLoading = true;
+        try {
+            const order = await this.paymentService.createOrder(amount, this.currency);
+            this.paymentService.openCheckout({
+                key: 'YOUR_RAZORPAY_KEY_ID', // TODO: Fetch from config/env or backend? Backend doesn't return key usually. 
+                // We need the key on frontend. 
+                // Plan said: "Frontend: Will receive the public key".
+                // Use environment.razorpayKey or fetch from backend /config endpoint.
+                // For now, I'll assume environment variable or a placeholder I need to fill.
+                amount: order.amount,
+                currency: order.currency,
+                order_id: order.id,
+                name: 'Thirukkural Daily',
+                description: 'Credit Pack',
+                handler: async (response: any) => {
+                    try {
+                        await this.paymentService.verifyPayment(response);
+                        alert('Payment Successful! Credits will be added shortly.');
+                        this.isLoading = false;
+                        this.router.navigate(['/profile']);
+                    } catch (e) {
+                        console.error('Verification failed', e);
+                        alert('Payment verification failed.');
+                        this.isLoading = false;
+                    }
+                },
+                theme: {
+                    color: '#1868db'
+                }
+            });
+        } catch (e) {
+            console.error(e);
+            alert('Failed to initiate payment');
+            this.isLoading = false;
+        }
+    }
+
+    async subscribe(planType: 'monthly' | 'yearly') {
+        if (!this.isLoggedIn) {
+            this.router.navigate(['/login'], { queryParams: { returnUrl: '/pricing' } });
+            return;
+        }
+
+        this.isLoading = true;
+        // Map planType + currency to Plan ID
+        // Config logic duplicated here or fetched?
+        // Hardcoding for MVP as per types.ts logic
+        const planId = this.currency === 'INR'
+            ? (planType === 'monthly' ? 'plan_monthly_inr' : 'plan_yearly_inr')
+            : (planType === 'monthly' ? 'plan_monthly_usd' : 'plan_yearly_usd');
+
+        try {
+            const sub = await this.paymentService.createSubscription(planId);
+            this.paymentService.openCheckout({
+                key: 'YOUR_RAZORPAY_KEY_ID',
+                subscription_id: sub.id,
+                name: 'Thirukkural Plus',
+                description: `${planType} Subscription`,
+                handler: async (response: any) => {
+                    try {
+                        await this.paymentService.verifyPayment(response);
+                        alert('Subscription Successful!');
+                        this.isLoading = false;
+                        this.router.navigate(['/profile']);
+                    } catch (e) {
+                        console.error('Verification failed', e);
+                        alert('Subscription verification failed.');
+                        this.isLoading = false;
+                    }
+                },
+                theme: { color: '#1868db' }
+            });
+        } catch (e) {
+            console.error(e);
+            alert('Failed to initiate subscription');
+            this.isLoading = false;
+        }
+    }
+}

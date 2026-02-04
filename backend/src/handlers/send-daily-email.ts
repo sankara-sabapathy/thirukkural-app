@@ -6,6 +6,7 @@ import { getRandomKural } from '../shared/kural-utils';
 import { sendEmail } from '../shared/email-service';
 import { generateUnsubscribeToken } from '../shared/crypto-utils';
 import { getSecret } from '../shared/secrets';
+import { generateSystemEmail } from '../shared/email-templates';
 import * as webpush from 'web-push';
 
 
@@ -61,26 +62,85 @@ export const handler = async (): Promise<void> => {
                 const email = user.email;
                 if (!email) continue;
 
-                try {
-                    // Generate unique secure unsubscribe link
-                    const token = await generateUnsubscribeToken(email);
-                    // Use configured base domain or fallback
-                    const baseDomain = process.env.APP_DOMAIN || 'https://thirukkural.site';
-                    const unsubscribeLink = `${baseDomain}/unsubscribe?token=${encodeURIComponent(token)}`;
+                const userId = user.userId;
+                // Payment Logic Check
+                // 1. Check Subscription
+                const hasActiveSub = user.subscriptionStatus === 'active';
+                // TODO: Check expiry date if 'active' doesn't auto-expire? 
+                // Assuming status is source of truth kept up-to-date by webhooks/cron.
 
-                    const { subject, text, html } = generateKuralEmail(kuralData, false, unsubscribeLink);
+                // 2. Check Credits
+                const credits = user.credits !== undefined ? user.credits : 0;
+                const COST = 0.5;
+                const LOW_CREDIT_THRESHOLD = 5.0; // Alert when dropping below 5
 
-                    await sendEmail({
-                        to: [email],
-                        subject: subject,
-                        text: text,
-                        html: html
-                    });
-                    console.log(`Sent email to ${email}`);
-                    // Wait 1 second to respect limits (SES sandbox or API rate limits)
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                } catch (e) {
-                    console.error(`Failed email for ${email}`, e);
+                let shouldSend = false;
+                let deductCredits = false;
+
+                if (hasActiveSub) {
+                    shouldSend = true;
+                } else if (credits >= COST) {
+                    shouldSend = true;
+                    deductCredits = true;
+                } else {
+                    console.log(`Skipping user ${email} (No sub, Insufficient credits: ${credits})`);
+                    shouldSend = false;
+                    // TODO: Maybe send ONE 'Out of credits' email?
+                }
+
+                if (shouldSend) {
+                    try {
+                        // Generate unique secure unsubscribe link
+                        const token = await generateUnsubscribeToken(email);
+                        // Use configured base domain or fallback
+                        const baseDomain = process.env.APP_DOMAIN || 'https://thirukkural.site';
+                        const unsubscribeLink = `${baseDomain}/unsubscribe?token=${encodeURIComponent(token)}`;
+
+                        const { subject, text, html } = generateKuralEmail(kuralData, false, unsubscribeLink);
+
+                        await sendEmail({
+                            to: [email],
+                            subject: subject,
+                            text: text,
+                            html: html
+                        });
+                        console.log(`Sent email to ${email}`);
+
+                        // Logic: Deduct Credits
+                        if (deductCredits) {
+                            const newCredits = credits - COST;
+                            await docClient.send(new UpdateCommand({
+                                TableName: process.env.USERS_TABLE,
+                                Key: { userId },
+                                UpdateExpression: 'SET credits = :val, updatedAt = :now',
+                                ExpressionAttributeValues: {
+                                    ':val': newCredits,
+                                    ':now': new Date().toISOString()
+                                }
+                            }));
+
+                            // Logic: Low Credit Alert
+                            // Check if we crossed threshold downwards
+                            if (credits >= LOW_CREDIT_THRESHOLD && newCredits < LOW_CREDIT_THRESHOLD) {
+                                console.log(`Triggering Low Credit Alert for ${email}`);
+                                const alertEmail = generateSystemEmail({
+                                    type: 'LOW_CREDITS',
+                                    data: { credits: newCredits }
+                                });
+                                await sendEmail({
+                                    to: [email],
+                                    subject: alertEmail.subject,
+                                    text: alertEmail.text,
+                                    html: alertEmail.html
+                                });
+                            }
+                        }
+
+                        // Wait 1 second to respect limits (SES sandbox or API rate limits)
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    } catch (e) {
+                        console.error(`Failed email for ${email}`, e);
+                    }
                 }
             }
         } else {

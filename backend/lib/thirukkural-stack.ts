@@ -208,6 +208,9 @@ export class ThirukkuralStack extends cdk.Stack {
             PARAM_CLOUDFLARE_SECRET_KEY: getSecretParamName('cloudflare_secret_key'),
             PARAM_UNSUBSCRIBE_SECRET: getSecretParamName('unsubscribe_secret'),
             PARAM_BREVO_API_KEY: getSecretParamName('brevo_api_key'),
+            PARAM_RAZORPAY_KEY_ID: getSecretParamName('razorpay_key_id'),
+            PARAM_RAZORPAY_KEY_SECRET: getSecretParamName('razorpay_key_secret'),
+            PARAM_RAZORPAY_WEBHOOK_SECRET: getSecretParamName('razorpay_webhook_secret'),
         };
 
         const nodeJsProps: nodejs.NodejsFunctionProps = {
@@ -256,6 +259,11 @@ export class ThirukkuralStack extends cdk.Stack {
             ...nodeJsProps,
         });
 
+        const razorpayFn = new nodejs.NodejsFunction(this, 'RazorpayFn', {
+            entry: path.join(__dirname, '../src/handlers/razorpay-handler.ts'),
+            ...nodeJsProps,
+        });
+
         // Permissions
         kuralTable.grantReadData(sendEmailFn);
         kuralTable.grantReadData(sendSampleEmailFn);
@@ -266,6 +274,9 @@ export class ThirukkuralStack extends cdk.Stack {
         pushSubscriptionsTable.grantReadWriteData(subscribePushFn);
         pushSubscriptionsTable.grantReadWriteData(sendEmailFn);
         pushSubscriptionsTable.grantReadWriteData(unsubscribePushFn);
+
+        // Grant Payment Lambda access to Users Table
+        usersTable.grantReadWriteData(razorpayFn);
 
         // Grant SSM Read Permissions to Lambdas
         const ssmPolicy = new iam.PolicyStatement({
@@ -279,6 +290,8 @@ export class ThirukkuralStack extends cdk.Stack {
         ];
 
         lambdas.forEach(fn => fn.addToRolePolicy(ssmPolicy));
+
+        razorpayFn.addToRolePolicy(ssmPolicy);
 
         const sesPolicy = new iam.PolicyStatement({
             actions: ['ses:SendEmail', 'ses:SendRawEmail'],
@@ -398,6 +411,31 @@ export class ThirukkuralStack extends cdk.Stack {
 
         const subscribeWithDeviceId = subscribe.addResource('{deviceId}');
         subscribeWithDeviceId.addMethod('DELETE', new apigateway.LambdaIntegration(unsubscribePushFn));
+
+        // Payment Routes
+        const payment = api.root.addResource('payment');
+
+        // POST /payment/order (Create Order for Credits)
+        payment.addResource('order').addMethod('POST', new apigateway.LambdaIntegration(razorpayFn), {
+            authorizer,
+            authorizationType: apigateway.AuthorizationType.COGNITO,
+        });
+
+        // POST /payment/subscription (Create Subscription)
+        payment.addResource('subscription').addMethod('POST', new apigateway.LambdaIntegration(razorpayFn), {
+            authorizer,
+            authorizationType: apigateway.AuthorizationType.COGNITO,
+        });
+
+        // POST /payment/webhook (Razorpay Webhook)
+        // No Authorizer - Signature Validation inside Lambda
+        payment.addResource('webhook').addMethod('POST', new apigateway.LambdaIntegration(razorpayFn));
+
+        // POST /payment/verify (Verify Signature from Client)
+        payment.addResource('verify').addMethod('POST', new apigateway.LambdaIntegration(razorpayFn), {
+            authorizer,
+            authorizationType: apigateway.AuthorizationType.COGNITO,
+        });
 
         // EventBridge Rule
         const rule = new events.Rule(this, 'DailyKuralRule', {

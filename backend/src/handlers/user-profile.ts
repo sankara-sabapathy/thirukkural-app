@@ -31,6 +31,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     email,
                     isPaid: false, // Default to free
                     receiveDailyEmail: false, // Default to false
+                    credits: 0,
+                    subscriptionStatus: 'inactive',
+                    region: 'IN', // Default, maybe detect?
+                    currency: 'INR',
                     createdAt: new Date().toISOString(),
                 };
                 await docClient.send(new PutCommand({

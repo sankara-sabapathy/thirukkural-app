@@ -228,3 +228,73 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
 
     return { subject, text: `Thirukkural Daily #${kuralId}\n\n${line1}\n${line2}\n\nTranslation: ${translation}\n\n${kuralLink}\n\n${unsubscribeText}\n${isSample ? '' : unsubscribeLink}`, html: htmlBody };
 };
+
+export interface SystemEmailOptions {
+    type: 'WELCOME_PLUS' | 'CREDITS_ADDED' | 'LOW_CREDITS' | 'PAYMENT_FAILED';
+    data?: any; // e.g. amount of credits, etc.
+}
+
+export const generateSystemEmail = (options: SystemEmailOptions) => {
+    let subject = '';
+    let headline = '';
+    let message = '';
+
+    // Colors
+    const primaryColor = '#1868db';
+    const white = '#ffffff';
+
+    switch (options.type) {
+        case 'WELCOME_PLUS':
+            subject = 'Welcome to Thirukkural Plus!';
+            headline = 'Subscription Active';
+            message = 'Thank you for subscribing to **Thirukkural Plus**. You now have unlimited access to daily emails.';
+            break;
+        case 'CREDITS_ADDED':
+            subject = 'Credits Added Successfully';
+            headline = 'Credits Added';
+            message = `You have successfully added **${options.data?.credits} credits** to your account.`;
+            break;
+        case 'LOW_CREDITS':
+            subject = 'Low Credit Warning';
+            headline = 'Running Low on Credits';
+            message = `You have **${options.data?.credits} credits** remaining. Please top up to continue receiving daily emails without interruption.`;
+            break;
+        case 'PAYMENT_FAILED':
+            subject = 'Payment Failed';
+            headline = 'Action Required';
+            message = 'We were unable to process your subscription renewal. Please update your payment method to maintain access.';
+            break;
+    }
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${subject}</title>
+        <style>
+             body { font-family: 'Inter', Helvetica, Arial, sans-serif; margin: 0; padding: 0; background-color: #f1f5f9; color: #334155; }
+        </style>
+    </head>
+    <body>
+        <div style="max-width: 600px; margin: 20px auto; background-color: ${white}; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <div style="background-color: ${primaryColor}; padding: 20px; text-align: center; color: ${white};">
+                <h1 style="margin: 0; font-size: 20px;">Thirukkural Daily</h1>
+            </div>
+            <div style="padding: 30px;">
+                <h2 style="color: #1e293b; margin-top: 0;">${headline}</h2>
+                <p style="font-size: 16px; line-height: 1.6; color: #475569;">
+                    ${message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
+                </p>
+                <div style="margin-top: 30px; text-align: center;">
+                    <a href="https://thirukkural.site/profile" style="background-color: ${primaryColor}; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">Go to Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+
+    return { subject, text: message.replace(/\*\*(.*?)\*\*/g, '$1'), html };
+};

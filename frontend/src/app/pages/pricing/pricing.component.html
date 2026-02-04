@@ -1,0 +1,76 @@
+<div class="pricing-container">
+    <div class="pricing-header">
+        <h1>Simple, Transparent Pricing</h1>
+        <p>Choose the plan that's right for you.</p>
+
+        <div class="currency-toggle">
+            <button [class.active]="currency === 'INR'" (click)="toggleCurrency('INR')">INR (₹)</button>
+            <button [class.active]="currency === 'USD'" (click)="toggleCurrency('USD')">USD ($)</button>
+        </div>
+    </div>
+
+    <div class="pricing-grid">
+        <!-- Credit Packs -->
+        <div class="pricing-card">
+            <div class="card-header">
+                <h2>Pay As You Go</h2>
+                <p>Perfect for occasional readers</p>
+            </div>
+            <div class="price">
+                <span class="currency">{{ currency === 'INR' ? '₹' : '$' }}</span>
+                <span class="value">{{ currency === 'INR' ? '15' : '1.00' }}</span>
+                <span class="period">/ pack</span>
+            </div>
+            <ul class="features">
+                <li>
+                    <strong>{{ currency === 'INR' ? '15' : '50' }} Credits</strong>
+                </li>
+                <li>1 Email = 0.5 Credits</li>
+                <li>Valid forever</li>
+            </ul>
+            <button class="cta-btn outline" (click)="buyCredits(currency === 'INR' ? 15 : 1.00)">
+                Buy {{ currency === 'INR' ? '15' : '50' }} Credits
+            </button>
+            <!-- Larger Packs -->
+            <div class="mini-packs">
+                <button (click)="buyCredits(currency === 'INR' ? 30 : 5.00)">
+                    {{ currency === 'INR' ? '₹30 (30 Cr)' : '$5 (250 Cr)' }}
+                </button>
+                <button (click)="buyCredits(currency === 'INR' ? 100 : 10.00)">
+                    {{ currency === 'INR' ? '₹100 (105 Cr)' : '$10 (500 Cr)' }}
+                </button>
+            </div>
+        </div>
+
+        <!-- Subscription -->
+        <div class="pricing-card featured">
+            <div class="popular-tag">MOST POPULAR</div>
+            <div class="card-header">
+                <h2>Thirukkural Plus</h2>
+                <p>For the dedicated scholar</p>
+            </div>
+            <div class="price">
+                <span class="currency">{{ currency === 'INR' ? '₹' : '$' }}</span>
+                <span class="value">{{ currency === 'INR' ? '15' : '0.99' }}</span>
+                <span class="period">/ month</span>
+            </div>
+            <ul class="features">
+                <li><strong>Unlimited Emails</strong></li>
+                <li>Unlimited Push Notifications</li>
+                <li>Priority Support</li>
+                <li>Access to all commentaries</li>
+            </ul>
+            <button class="cta-btn primary" (click)="subscribe('monthly')">
+                Subscribe Monthly
+            </button>
+            <div class="yearly-option">
+                or <a (click)="subscribe('yearly')">save 2 months with Yearly</a>
+                ({{ currency === 'INR' ? '₹150' : '$9.99' }}/yr)
+            </div>
+        </div>
+    </div>
+
+    <div class="vpn-note" *ngIf="currency === 'USD'">
+        <small>Note: International transactions include a small processing fee reflected in credit value.</small>
+    </div>
+</div>

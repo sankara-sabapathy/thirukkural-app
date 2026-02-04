@@ -339,6 +339,9 @@ Before deploying, you must populate the SSM Parameter Store for each stage.
 | `cloudflare_secret_key` | `SecureString`* | Random string for API protection |
 | `unsubscribe_secret` | `SecureString`* | Random string for HMAC signing |
 | `brevo_api_key` | `SecureString`* | Brevo API Key (if using Brevo) |
+| `razorpay_key_id` | `SecureString`* | Razorpay Key ID |
+| `razorpay_key_secret` | `SecureString`* | Razorpay Key Secret |
+| `razorpay_webhook_secret` | `SecureString`* | Razorpay Webhook Secret |
 
 *Use `SecureString` for sensitive secrets.*
 

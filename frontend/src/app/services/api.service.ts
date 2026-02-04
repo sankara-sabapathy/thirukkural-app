@@ -20,4 +20,14 @@ export class ApiService {
         const url = `${this.baseUrl}/unsubscribe`;
         return this.http.post(url, { token, feedback });
     }
+
+    getProfile(): Observable<any> {
+        const url = `${this.baseUrl}/profile`;
+        return this.http.get(url);
+    }
+
+    updateProfile(data: any): Observable<any> {
+        const url = `${this.baseUrl}/profile`;
+        return this.http.put(url, data);
+    }
 }

@@ -17,6 +17,8 @@ export const routes: Routes = [
         path: 'unsubscribe',
         loadComponent: () => import('./pages/unsubscribe/unsubscribe.component').then(m => m.UnsubscribeComponent)
     },
+    { path: 'pricing', loadComponent: () => import('./pages/pricing/pricing.component').then(m => m.PricingComponent) },
+    { path: 'profile', loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent) },
     {
         path: '**',
         redirectTo: ''
