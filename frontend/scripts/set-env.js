@@ -33,7 +33,10 @@ export const environment = {
             subscribe: '/subscribe'
         }
     },
-    vapidPublicKey: '${process.env.VAPID_PUBLIC_KEY}'
+    vapidPublicKey: '${process.env.VAPID_PUBLIC_KEY}',
+    razorpay: {
+        keyId: '${process.env.RAZORPAY_KEY_ID || 'rzp_test_SC6SfzckFW4xe0'}'
+    }
 };
 `;
 
