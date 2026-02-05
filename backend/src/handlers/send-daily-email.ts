@@ -58,6 +58,10 @@ export const handler = async (): Promise<void> => {
         // 3. Send email to each user with delay
         if (users.length > 0) {
             console.log(`Sending Kural ${kuralData.kuralId} to ${users.length} users via Email`);
+
+            // Check Environment Flag (Beta Mode / Prod Free Mode)
+            const enablePayments = process.env.ENABLE_PAYMENTS === 'true';
+
             for (const user of users) {
                 const email = user.email;
                 if (!email) continue;
@@ -77,7 +81,10 @@ export const handler = async (): Promise<void> => {
                 let shouldSend = false;
                 let deductCredits = false;
 
-                if (hasActiveSub) {
+                if (!enablePayments) {
+                    // BETA ACCESS: Send to everyone, no credit deduction
+                    shouldSend = true;
+                } else if (hasActiveSub) {
                     shouldSend = true;
                 } else if (credits >= COST) {
                     shouldSend = true;

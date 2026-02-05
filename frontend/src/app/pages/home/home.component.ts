@@ -39,6 +39,13 @@ export class HomeComponent implements OnInit {
     }
 
     async ngOnInit() {
+        // Strict Navigation: If logged in, redirect to dashboard
+        this.authService.user$.subscribe(user => {
+            if (user) {
+                this.router.navigate(['/profile']);
+            }
+        });
+
         // Check push notification subscription status
         await this.checkPushSubscriptionStatus();
 

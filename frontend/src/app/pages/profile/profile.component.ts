@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { PaymentService } from '../../services/payment.service';
+import { environment } from '../../../environments/environment';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
@@ -17,6 +18,7 @@ export class ProfileComponent implements OnInit {
     user: any = null;
     profile: any = null;
     loading = true;
+    enablePayments = environment.enablePayments;
 
     constructor(
         private apiService: ApiService,
@@ -32,7 +34,9 @@ export class ProfileComponent implements OnInit {
             this.user = user;
             if (user) {
                 this.fetchProfile();
+                this.fetchProfile();
                 this.checkPaymentSuccess();
+                this.checkPaymentIntent();
             } else {
                 this.loading = false;
                 // Optional: Redirect to login or show "Please login"
@@ -63,6 +67,63 @@ export class ProfileComponent implements OnInit {
                 });
             }
         });
+    }
+
+    async checkPaymentIntent() {
+        const intentStr = localStorage.getItem('paymentIntent');
+        if (!intentStr) return;
+
+        localStorage.removeItem('paymentIntent'); // Clear immediately
+        if (!this.enablePayments) return;
+
+        const intent = JSON.parse(intentStr);
+        console.log('Processing payment intent:', intent);
+
+        try {
+            if (intent.type === 'credits') {
+                const order = await this.paymentService.createOrder(intent.amount, intent.currency);
+                this.openCheckout({
+                    key: environment.razorpay.keyId,
+                    amount: order.amount,
+                    currency: order.currency,
+                    order_id: order.id,
+                    name: 'Thirukkural Daily',
+                    description: 'Credit Pack (Resumed)',
+                    theme: { color: '#1868db' }
+                }, 'credits');
+            } else if (intent.type === 'subscription') {
+                const sub = await this.paymentService.createSubscription(intent.planId);
+                this.openCheckout({
+                    key: environment.razorpay.keyId,
+                    subscription_id: sub.id,
+                    name: 'Thirukkural Plus',
+                    description: `${intent.planType} Subscription (Resumed)`,
+                    theme: { color: '#1868db' }
+                }, 'subscription');
+            }
+        } catch (e) {
+            console.error('Failed to resume payment', e);
+            this.snackBar.open('Failed to resume payment session.', 'Close', { duration: 5000 });
+        }
+    }
+
+    openCheckout(options: any, type: string) {
+        options.handler = async (response: any) => {
+            try {
+                await this.paymentService.verifyPayment(response);
+                this.snackBar.open(
+                    type === 'subscription' ? 'Welcome to Plus!' : 'Credits added!',
+                    'Awesome',
+                    { duration: 5000, panelClass: ['snackbar-success'], verticalPosition: 'top' }
+                );
+                this.fetchProfile(); // Refresh data
+            } catch (e) {
+                console.error('Verification failed', e);
+                alert('Payment verification failed.');
+            }
+        };
+
+        this.paymentService.openCheckout(options);
     }
 
     fetchProfile() {

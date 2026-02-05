@@ -2,11 +2,11 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PushNotificationService } from '../../services/push-notification.service';
 import { PwaService } from '../../services/pwa.service';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 
 @Component({
     selector: 'app-header',
@@ -24,10 +24,24 @@ export class HeaderComponent {
         private authService: AuthService,
         private pushService: PushNotificationService,
         private pwaService: PwaService,
-        private snackBar: MatSnackBar
+        private snackBar: MatSnackBar,
+        private router: Router
     ) {
         this.user$ = this.authService.user$;
         this.showInstallButton$ = this.pwaService.showInstallBanner$;
+    }
+
+    async onLogoClick() {
+        // If user is logged in, confirm logout
+        const user = await firstValueFrom(this.user$);
+        if (user) {
+            if (confirm('Do you want to sign out?')) {
+                this.logout();
+                this.router.navigate(['/']);
+            }
+        } else {
+            this.router.navigate(['/']);
+        }
     }
 
     installPwa() {

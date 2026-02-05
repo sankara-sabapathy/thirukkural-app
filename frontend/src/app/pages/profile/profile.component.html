@@ -13,19 +13,18 @@
                 <h3>Available Credits</h3>
                 <div class="value">{{ profile.credits | number:'1.0-1' }}</div>
                 <p class="subtext">1 Email = 0.5 Credits</p>
-                <a routerLink="/pricing" class="action-link">Add Credits</a>
+                <a *ngIf="enablePayments" routerLink="/pricing" class="action-link">Add Credits</a>
             </div>
 
-            <!-- Subscription Card -->
-            <div class="stat-card" [class.active]="profile.subscriptionStatus === 'active'">
+            <div class="stat-card" [class.active]="profile.subscriptionStatus === 'active' || !enablePayments">
                 <h3>Subscription Status</h3>
-                <div class="value status {{ profile.subscriptionStatus }}">
-                    {{ profile.subscriptionStatus | titlecase }}
+                <div class="value status" [class.active]="profile.subscriptionStatus === 'active' || !enablePayments">
+                    {{ enablePayments ? (profile.subscriptionStatus | titlecase) : 'Beta Access' }}
                 </div>
-                <p class="subtext" *ngIf="profile.subscriptionStatus === 'active'">
+                <p class="subtext" *ngIf="enablePayments && profile.subscriptionStatus === 'active'">
                     Renews on {{ profile.subscriptionExpiry | date:'mediumDate' }}
                 </p>
-                <div class="actions">
+                <div class="actions" *ngIf="enablePayments">
                     <a *ngIf="profile.subscriptionStatus !== 'active'" routerLink="/pricing" class="btn primary">Upgrade
                         to Plus</a>
                     <button *ngIf="profile.subscriptionStatus === 'active'" (click)="cancelSubscription()"

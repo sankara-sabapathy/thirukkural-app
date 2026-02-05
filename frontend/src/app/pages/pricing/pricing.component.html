@@ -9,6 +9,12 @@
         </div>
     </div>
 
+    <div class="beta-banner" *ngIf="!enablePayments">
+        <span class="badge">BETA</span>
+        <span class="text">Payments are currently disabled. Enjoy free access to all features during the beta
+            period!</span>
+    </div>
+
     <div class="pricing-grid">
         <!-- Credit Packs -->
         <div class="pricing-card">
@@ -28,16 +34,17 @@
                 <li>1 Email = 0.5 Credits</li>
                 <li>Valid forever</li>
             </ul>
-            <button class="cta-btn outline" (click)="buyCredits(currency === 'INR' ? 15 : 1.00)">
-                Buy {{ currency === 'INR' ? '15' : '50' }} Credits
+            <button class="cta-btn outline" (click)="buyCredits(currency === 'INR' ? 15 : 1.00)"
+                [disabled]="!enablePayments">
+                {{ enablePayments ? 'Buy ' + (currency === 'INR' ? '15' : '50') + ' Credits' : 'Coming Soon' }}
             </button>
             <!-- Larger Packs -->
             <div class="mini-packs">
-                <button (click)="buyCredits(currency === 'INR' ? 30 : 5.00)">
-                    {{ currency === 'INR' ? '₹30 (30 Cr)' : '$5 (250 Cr)' }}
+                <button (click)="buyCredits(currency === 'INR' ? 30 : 5.00)" [disabled]="!enablePayments">
+                    {{ enablePayments ? (currency === 'INR' ? '₹30 (30 Cr)' : '$5 (250 Cr)') : 'Coming Soon' }}
                 </button>
-                <button (click)="buyCredits(currency === 'INR' ? 100 : 10.00)">
-                    {{ currency === 'INR' ? '₹100 (105 Cr)' : '$10 (500 Cr)' }}
+                <button (click)="buyCredits(currency === 'INR' ? 100 : 10.00)" [disabled]="!enablePayments">
+                    {{ enablePayments ? (currency === 'INR' ? '₹100 (105 Cr)' : '$10 (500 Cr)') : 'Coming Soon' }}
                 </button>
             </div>
         </div>
@@ -60,8 +67,8 @@
                 <li>Priority Support</li>
                 <li>Access to all commentaries</li>
             </ul>
-            <button class="cta-btn primary" (click)="subscribe('monthly')">
-                Subscribe Monthly
+            <button class="cta-btn primary" (click)="subscribe('monthly')" [disabled]="!enablePayments">
+                {{ enablePayments ? 'Subscribe Monthly' : 'Coming Soon' }}
             </button>
             <div class="yearly-option">
                 or <a (click)="subscribe('yearly')">save 2 months with Yearly</a>

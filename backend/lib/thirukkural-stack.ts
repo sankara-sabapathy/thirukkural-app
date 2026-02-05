@@ -189,6 +189,7 @@ export class ThirukkuralStack extends cdk.Stack {
         // Pass PARAMETER NAMES for secrets so Lambda can fetch them.
         const commonEnv = {
             STAGE: stage,
+            ENABLE_PAYMENTS: isProd ? 'false' : 'true',
             KURAL_TABLE: kuralTable.tableName,
             USERS_TABLE: usersTable.tableName,
             RATE_LIMIT_TABLE: rateLimitTable.tableName,
