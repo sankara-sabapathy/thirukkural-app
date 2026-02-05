@@ -199,19 +199,34 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // 4. Verify Payment Signature (Frontend Callback)
         if (path.endsWith('/verify') && method === 'POST') {
             const body = safeJsonParse(event.body);
-            const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
+            const { razorpay_order_id, razorpay_payment_id, razorpay_signature, razorpay_subscription_id } = body;
 
-            if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+            if (!razorpay_payment_id || !razorpay_signature) {
                 return createResponse(400, { message: 'Missing required parameters' }, origin);
             }
 
             const keySecret = await getSecret('PARAM_RAZORPAY_KEY_SECRET');
             if (!keySecret) throw new Error('Razorpay secret missing');
 
-            const generated_signature = crypto
-                .createHmac('sha256', keySecret)
-                .update(razorpay_order_id + "|" + razorpay_payment_id)
-                .digest('hex');
+            let generated_signature = '';
+            if (razorpay_subscription_id) {
+                // Subscription Verification: payment_id + "|" + subscription_id
+                generated_signature = crypto
+                    .createHmac('sha256', keySecret)
+                    .update(razorpay_payment_id + "|" + razorpay_subscription_id)
+                    .digest('hex');
+            } else if (razorpay_order_id) {
+                // Order Verification: order_id + "|" + payment_id
+                generated_signature = crypto
+                    .createHmac('sha256', keySecret)
+                    .update(razorpay_order_id + "|" + razorpay_payment_id)
+                    .digest('hex');
+            } else {
+                return createResponse(400, { message: 'Missing order_id or subscription_id' }, origin);
+            }
+
+            console.log('Generated Signature:', generated_signature);
+            console.log('Received Signature:', razorpay_signature);
 
             if (generated_signature === razorpay_signature) {
                 return createResponse(200, { status: 'valid' }, origin);
