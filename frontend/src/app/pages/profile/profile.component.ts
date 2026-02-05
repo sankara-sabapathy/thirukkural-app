@@ -2,12 +2,15 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
-import { Router, RouterModule } from '@angular/router';
+import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
     selector: 'app-profile',
     standalone: true,
-    imports: [CommonModule, RouterModule],
+    imports: [CommonModule, RouterModule, MatSnackBarModule],
     templateUrl: './profile.component.html',
     styleUrls: ['./profile.component.css']
 })
@@ -19,7 +22,9 @@ export class ProfileComponent implements OnInit {
     constructor(
         private apiService: ApiService,
         private authService: AuthService,
-        private router: Router
+        private router: Router,
+        private route: ActivatedRoute,
+        private snackBar: MatSnackBar
     ) { }
 
     ngOnInit() {
@@ -27,10 +32,35 @@ export class ProfileComponent implements OnInit {
             this.user = user;
             if (user) {
                 this.fetchProfile();
+                this.checkPaymentSuccess();
             } else {
                 this.loading = false;
                 // Optional: Redirect to login or show "Please login"
                 this.router.navigate(['/login']);
+            }
+        });
+    }
+
+    checkPaymentSuccess() {
+        this.route.queryParams.subscribe(params => {
+            if (params['paymentSuccess']) {
+                const type = params['paymentSuccess'];
+                const message = type === 'subscription'
+                    ? 'Welcome to Thirukkural Plus! Your subscription is active.'
+                    : 'Credits added successfully!';
+
+                this.snackBar.open(message, 'Awesome', {
+                    duration: 5000,
+                    panelClass: ['snackbar-success'],
+                    verticalPosition: 'top'
+                });
+
+                // Clear params
+                this.router.navigate([], {
+                    relativeTo: this.route,
+                    queryParams: { paymentSuccess: null },
+                    queryParamsHandling: 'merge'
+                });
             }
         });
     }

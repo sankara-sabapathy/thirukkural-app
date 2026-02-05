@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Project Context: Thirukkural Application
 
 1.  **Project Goal**: A daily service delivering Thirukkural (Tamil wisdom) via email and push notifications, monetized through a credit and subscription system.
@@ -16,7 +20,13 @@
     *   **Notifications**: Uses `web-push` for browser notifications and dynamic templates for system emails (Welcome, Low Credits, etc.).
 4.  **Configuration & Secrets**:
     *   Managed via AWS SSM Parameter Store (`/stage/thirukkural/...`).
-    *   Sensitive keys (Razorpay Secret, Google Client Secret) are fetched at runtime or injected as SecureStrings.
+    *   **Frontend Config**:
+        *   Uses `envsubst` in GitHub Actions to inject values into `environment.prod.ts` and `environment.dev.ts` at build time.
+        *   Keys fetched from CloudFormation outputs: `API_URL`, `USER_POOL_ID`, `CLIENT_ID`, `USER_POOL_DOMAIN`.
+        *   Keys fetched from SSM: `VAPID_PUBLIC_KEY`, `RAZORPAY_KEY_ID` (SecureString), `BASE_DOMAIN`.
+        *   **Local Dev**: Uses `environment.ts` with hardcoded/cached values.
+    *   **Backend Secrets**:
+        *   Sensitive keys (Razorpay Secret, Google Client Secret) are fetched at runtime or injected as SecureStrings.
     *   `scripts/setup-ssm.ts` is the source of truth for parameter keys.
 5.  **Development & Testing**:
     *   **Localhost Auth**: By default, `AuthService` uses a dummy user. To test against real backend (e.g., for Payments), set `localStorage.setItem('real_auth', 'true')` in the browser console.

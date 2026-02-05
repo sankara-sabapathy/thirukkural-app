@@ -55,9 +55,8 @@ export class PricingComponent implements OnInit {
                 handler: async (response: any) => {
                     try {
                         await this.paymentService.verifyPayment(response);
-                        alert('Payment Successful! Credits will be added shortly.');
                         this.isLoading = false;
-                        this.router.navigate(['/profile']);
+                        this.router.navigate(['/profile'], { queryParams: { paymentSuccess: 'credits' } });
                     } catch (e) {
                         console.error('Verification failed', e);
                         alert('Payment verification failed.');
@@ -99,9 +98,8 @@ export class PricingComponent implements OnInit {
                 handler: async (response: any) => {
                     try {
                         await this.paymentService.verifyPayment(response);
-                        alert('Subscription Successful!');
                         this.isLoading = false;
-                        this.router.navigate(['/profile']);
+                        this.router.navigate(['/profile'], { queryParams: { paymentSuccess: 'subscription' } });
                     } catch (e) {
                         console.error('Verification failed', e);
                         alert('Subscription verification failed.');

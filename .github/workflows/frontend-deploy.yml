@@ -93,6 +93,7 @@ jobs:
         # Fetch Base Domain and VAPID Key from SSM
         VAPID_KEY=$(aws ssm get-parameter --name "/$STAGE/thirukkural/vapid_public_key" --query "Parameter.Value" --output text)
         BASE_DOMAIN=$(aws ssm get-parameter --name "/$STAGE/thirukkural/base_domain" --query "Parameter.Value" --output text)
+        RAZORPAY_KEY=$(aws ssm get-parameter --name "/$STAGE/thirukkural/razorpay_key_id" --with-decryption --query "Parameter.Value" --output text)
         
         check_val "VAPID_PUBLIC_KEY" "$VAPID_KEY"
         check_val "BASE_DOMAIN" "$BASE_DOMAIN"
@@ -102,6 +103,7 @@ jobs:
         echo "COGNITO_WEB_CLIENT_ID=$CLIENT_ID" >> $GITHUB_ENV
         echo "COGNITO_DOMAIN=$USER_POOL_DOMAIN" >> $GITHUB_ENV
         echo "VAPID_PUBLIC_KEY=$VAPID_KEY" >> $GITHUB_ENV
+        echo "RAZORPAY_KEY_ID=$RAZORPAY_KEY" >> $GITHUB_ENV
         echo "S3_BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
         echo "APP_BASE_DOMAIN=$BASE_DOMAIN" >> $GITHUB_ENV
         
@@ -119,7 +121,10 @@ jobs:
 
     - name: Generate Environment File
       run: |
-        node scripts/set-env.js
+        # Replace placeholders in environment files with actual values
+        # We process BOTH dev and prod files so they are ready for whichever build config uses them
+        envsubst < src/environments/environment.prod.ts > src/environments/environment.prod.ts.tmp && mv src/environments/environment.prod.ts.tmp src/environments/environment.prod.ts
+        envsubst < src/environments/environment.dev.ts > src/environments/environment.dev.ts.tmp && mv src/environments/environment.dev.ts.tmp src/environments/environment.dev.ts
 
     - name: Build
       run: |

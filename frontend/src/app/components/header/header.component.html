@@ -7,11 +7,22 @@
 
     <!-- Desktop Navigation -->
     <div class="nav-links">
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">Home</a>
-      <a routerLink="/kurals" routerLinkActive="active" class="nav-link">Library</a>
-      <a routerLink="/pricing" routerLinkActive="active" class="nav-link">Pricing</a>
-      <a routerLink="/about" routerLinkActive="active" class="nav-link">About</a>
-      <a routerLink="/contact" routerLinkActive="active" class="nav-link">Contact</a>
+      <!-- Common Links -->
+
+      <!-- Public Only Links -->
+      <ng-container *ngIf="!(user$ | async)">
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">Home</a>
+        <a routerLink="/kurals" routerLinkActive="active" class="nav-link">Library</a>
+        <a routerLink="/pricing" routerLinkActive="active" class="nav-link">Pricing</a>
+        <a routerLink="/about" routerLinkActive="active" class="nav-link">About</a>
+        <a routerLink="/contact" routerLinkActive="active" class="nav-link">Contact</a>
+      </ng-container>
+
+      <!-- Logged In Links -->
+      <ng-container *ngIf="user$ | async">
+        <a routerLink="/profile" routerLinkActive="active" class="nav-link">Dashboard</a>
+        <a routerLink="/kurals" routerLinkActive="active" class="nav-link">Library</a>
+      </ng-container>
     </div>
 
     <!-- Desktop Actions -->
