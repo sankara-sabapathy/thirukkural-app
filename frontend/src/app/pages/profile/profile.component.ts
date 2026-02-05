@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { PaymentService } from '../../services/payment.service';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
@@ -20,6 +21,7 @@ export class ProfileComponent implements OnInit {
     constructor(
         private apiService: ApiService,
         private authService: AuthService,
+        private paymentService: PaymentService,
         private router: Router,
         private route: ActivatedRoute,
         private snackBar: MatSnackBar
@@ -82,9 +84,30 @@ export class ProfileComponent implements OnInit {
         });
     }
 
-    cancelSubscription() {
-        // TODO: Implement cancel subscription (Requires backend endpoint DELETE or POST /cancel)
-        // For now, mailto support
-        window.location.href = "mailto:support@thirukkural.site?subject=Cancel Subscription";
+    async cancelSubscription() {
+        if (!confirm('Are you sure you want to cancel your subscription? You will lose access to premium features at the end of the billing period.')) {
+            return;
+        }
+
+        try {
+            await this.paymentService.cancelSubscription();
+
+            // Successfeedback
+            this.snackBar.open('Subscription cancelled successfully.', 'OK', {
+                duration: 5000,
+                panelClass: ['snackbar-success'],
+                verticalPosition: 'top'
+            });
+
+            // Refresh profile to show cancelled status
+            this.fetchProfile();
+        } catch (error) {
+            console.error('Cancellation failed', error);
+            this.snackBar.open('Failed to cancel subscription. Please try again or contact support.', 'Close', {
+                duration: 5000,
+                panelClass: ['snackbar-error'],
+                verticalPosition: 'top'
+            });
+        }
     }
 }

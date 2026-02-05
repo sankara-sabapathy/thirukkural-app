@@ -36,6 +36,10 @@ export class PaymentService {
         return firstValueFrom(this.http.post(`${this.apiUrl}/verify`, response));
     }
 
+    async cancelSubscription(): Promise<any> {
+        return firstValueFrom(this.http.post(`${this.apiUrl}/cancel`, {}));
+    }
+
     openCheckout(options: any): void {
         if (typeof Razorpay === 'undefined') {
             console.error('Razorpay SDK not loaded');

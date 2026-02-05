@@ -441,6 +441,12 @@ export class ThirukkuralStack extends cdk.Stack {
             authorizationType: apigateway.AuthorizationType.COGNITO,
         });
 
+        // POST /payment/cancel (Cancel Subscription)
+        payment.addResource('cancel').addMethod('POST', new apigateway.LambdaIntegration(razorpayFn), {
+            authorizer,
+            authorizationType: apigateway.AuthorizationType.COGNITO,
+        });
+
         // EventBridge Rule
         const rule = new events.Rule(this, 'DailyKuralRule', {
             schedule: events.Schedule.cron({ minute: '30', hour: '2' }),

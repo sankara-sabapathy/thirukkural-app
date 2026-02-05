@@ -23,13 +23,13 @@
                     {{ profile.subscriptionStatus | titlecase }}
                 </div>
                 <p class="subtext" *ngIf="profile.subscriptionStatus === 'active'">
-                    Renews on {{ profile.nextBillingAt * 1000 | date:'mediumDate' }}
+                    Renews on {{ profile.subscriptionExpiry | date:'mediumDate' }}
                 </p>
                 <div class="actions">
                     <a *ngIf="profile.subscriptionStatus !== 'active'" routerLink="/pricing" class="btn primary">Upgrade
                         to Plus</a>
                     <button *ngIf="profile.subscriptionStatus === 'active'" (click)="cancelSubscription()"
-                        class="btn text">Manage</button>
+                        class="btn text">Manage / Cancel</button>
                 </div>
             </div>
         </div>

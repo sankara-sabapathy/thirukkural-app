@@ -4,8 +4,8 @@ import { validateWebhookSignature } from 'razorpay/dist/utils/razorpay-utils';
 import { getSecret } from '../shared/secrets';
 import { createResponse, safeJsonParse } from '../shared/utils';
 import { docClient } from '../shared/dynamo';
-import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { PRICING_CONFIG, RazorpayOrderRequest, RazorpaySubscriptionRequest } from '../shared/types';
+import { GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { PRICING_CONFIG, RazorpayOrderRequest, RazorpaySubscriptionRequest, UserProfile } from '../shared/types';
 import * as crypto from 'crypto';
 
 const USERS_TABLE = process.env.USERS_TABLE;
@@ -233,6 +233,47 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             } else {
                 return createResponse(400, { message: 'Invalid signature' }, origin);
             }
+        }
+
+        // 5. Cancel Subscription
+        if (path.endsWith('/cancel') && method === 'POST') {
+            const userId = event.requestContext.authorizer?.claims?.sub;
+            if (!userId) return createResponse(401, { message: 'Unauthorized' }, origin);
+
+            // Fetch user's subscription ID from DB
+            const userResult = await docClient.send(new GetCommand({
+                TableName: USERS_TABLE,
+                Key: { userId }
+            }));
+
+            const user = userResult.Item as UserProfile;
+            if (!user || !user.subscriptionId || user.subscriptionStatus !== 'active') {
+                return createResponse(400, { message: 'No active subscription found to cancel' }, origin);
+            }
+
+            // Cancel on Razorpay (cancel_at_cycle_end=0 -> immediate)
+            try {
+                // Razorpay cancellation usually returns the updated subscription object
+                await rzp.subscriptions.cancel(user.subscriptionId, false);
+            } catch (rzpErr: any) {
+                console.error('Razorpay Cancellation Failed:', rzpErr);
+                // Even if Razorpay fails (e.g. already cancelled), we might want to sync local state?
+                // But safer to return error.
+                return createResponse(500, { message: 'Failed to cancel subscription with provider', details: rzpErr.error }, origin);
+            }
+
+            // Update DB Status immediately
+            await docClient.send(new UpdateCommand({
+                TableName: USERS_TABLE,
+                Key: { userId },
+                UpdateExpression: 'SET subscriptionStatus = :status, updatedAt = :now',
+                ExpressionAttributeValues: {
+                    ':status': 'cancelled',
+                    ':now': new Date().toISOString()
+                }
+            }));
+
+            return createResponse(200, { status: 'cancelled' }, origin);
         }
 
         return createResponse(404, { message: 'Not Found' }, origin);
