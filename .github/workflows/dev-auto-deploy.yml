@@ -126,6 +126,8 @@ jobs:
         USER_POOL_ID=$(get_output 'UserPoolId')
         CLIENT_ID=$(get_output 'UserPoolClientId')
         USER_POOL_DOMAIN=$(get_output 'UserPoolDomain')
+        # Strip https:// prefix as Amplify expects just the domain
+        USER_POOL_DOMAIN=${USER_POOL_DOMAIN#https://}
         BUCKET_NAME=$(get_output 'WebsiteBucketName')
         
         # SSM Parameters
