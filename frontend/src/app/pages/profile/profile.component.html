@@ -32,17 +32,28 @@
                         class="btn text">Manage / Cancel</button>
                 </div>
             </div>
+
+            <!-- Daily Wisdom Card -->
+            <div class="stat-card" [class.active]="profile.receiveDailyEmail">
+                <h3>Daily Wisdom</h3>
+                <div class="value status" [class.active]="profile.receiveDailyEmail"
+                    [class.inactive]="!profile.receiveDailyEmail">
+                    {{ profile.receiveDailyEmail ? 'Active' : 'Paused' }}
+                </div>
+                <p class="subtext">
+                    {{ profile.receiveDailyEmail ? "You're all set! Delivered daily at 9 AM." : "Enable to receive daily
+                    emails." }}
+                </p>
+                <div class="actions">
+                    <button (click)="toggleDailyEmail()" class="btn text">
+                        {{ profile.receiveDailyEmail ? 'Pause Emails' : 'Resume Emails' }}
+                    </button>
+                </div>
+            </div>
         </div>
 
         <div class="settings-section">
-            <h2>Settings</h2>
-            <div class="setting-item">
-                <label>
-                    <input type="checkbox" [checked]="profile.receiveDailyEmail" disabled>
-                    Receive Daily Emails
-                </label>
-                <p class="hint">Toggle currently managed via unsubscribe link or contact support.</p>
-            </div>
+            <!-- PWA or other settings can go here later -->
         </div>
     </div>
 </div>

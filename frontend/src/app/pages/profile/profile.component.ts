@@ -84,6 +84,30 @@ export class ProfileComponent implements OnInit {
         });
     }
 
+    async toggleDailyEmail() {
+        if (!this.profile) return;
+
+        const newStatus = !this.profile.receiveDailyEmail;
+        // Optimistic update
+        this.profile.receiveDailyEmail = newStatus;
+
+        this.apiService.updateProfile({ receiveDailyEmail: newStatus }).subscribe({
+            next: () => {
+                this.snackBar.open(
+                    newStatus ? "You're all set! Daily wisdom will be delivered." : "Daily emails paused.",
+                    'OK',
+                    { duration: 3000, panelClass: ['snackbar-success'], verticalPosition: 'top' }
+                );
+            },
+            error: (err) => {
+                // Revert on failure
+                this.profile.receiveDailyEmail = !newStatus;
+                console.error("Failed to update preference", err);
+                this.snackBar.open("Failed to update preference.", 'Close', { duration: 3000 });
+            }
+        });
+    }
+
     async cancelSubscription() {
         if (!confirm('Are you sure you want to cancel your subscription? You will lose access to premium features at the end of the billing period.')) {
             return;

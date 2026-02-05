@@ -7,7 +7,7 @@ import { SubscriptionComponent } from '../../components/subscription/subscriptio
 import { AuthService } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
 import { PushNotificationService } from '../../services/push-notification.service';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 
 @Component({
     selector: 'app-home',
@@ -128,10 +128,20 @@ export class HomeComponent implements OnInit {
         this.showNotificationPrompt = false;
     }
 
-    scrollToSubscribe() {
-        document.getElementById('subscribe')?.scrollIntoView({ behavior: 'smooth' });
+    async onStartJourney() {
+        const user = await firstValueFrom(this.authService.user$);
+        if (user) {
+            // Logged in -> Go to Dashboard
+            this.router.navigate(['/profile']);
+        } else {
+            // Logged out -> Login (which will redirect back to home/dashboard ideally)
+            this.authService.login();
+        }
     }
 
+    scrollToSubscribe() {
+        this.onStartJourney();
+    }
     goToRandomKural() {
         const randomId = Math.floor(Math.random() * 1330) + 1;
         this.router.navigate(['/kural', randomId]);
