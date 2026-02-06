@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
@@ -6,6 +6,7 @@ import { PaymentService } from '../../services/payment.service';
 import { environment } from '../../../environments/environment';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
     selector: 'app-profile',
@@ -26,11 +27,12 @@ export class ProfileComponent implements OnInit {
         private paymentService: PaymentService,
         private router: Router,
         private route: ActivatedRoute,
-        private snackBar: MatSnackBar
+        private snackBar: MatSnackBar,
+        private destroyRef: DestroyRef
     ) { }
 
     ngOnInit() {
-        this.authService.user$.subscribe(user => {
+        this.authService.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(user => {
             this.user = user;
             if (user) {
                 this.fetchProfile();
@@ -45,7 +47,7 @@ export class ProfileComponent implements OnInit {
     }
 
     checkPaymentSuccess() {
-        this.route.queryParams.subscribe(params => {
+        this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
             if (params['paymentSuccess']) {
                 const type = params['paymentSuccess'];
                 const message = type === 'subscription'
@@ -71,14 +73,18 @@ export class ProfileComponent implements OnInit {
     async checkPaymentIntent() {
         const intentStr = localStorage.getItem('paymentIntent');
         if (!intentStr) return;
-
-        localStorage.removeItem('paymentIntent'); // Clear immediately
-        if (!this.enablePayments) return;
-
-        const intent = JSON.parse(intentStr);
-        console.log('Processing payment intent:', intent);
+        if (!this.enablePayments) {
+            localStorage.removeItem('paymentIntent');
+            return;
+        }
 
         try {
+            const intent = JSON.parse(intentStr);
+            // Safe to remove now, or keep until success? 
+            // Better to remove to avoid infinite loop on malformed data, 
+            // but if valid parse, we process.
+            localStorage.removeItem('paymentIntent');
+
             if (intent.type === 'credits') {
                 const order = await this.paymentService.createOrder(intent.amount, intent.currency);
                 this.openCheckout({
@@ -101,7 +107,8 @@ export class ProfileComponent implements OnInit {
                 }, 'subscription');
             }
         } catch (e) {
-            console.error('Failed to resume payment', e);
+            console.error('Failed to resume payment or parse intent', e);
+            localStorage.removeItem('paymentIntent'); // Ensure cleared on error
             this.snackBar.open('Failed to resume payment session.', 'Close', { duration: 5000 });
         }
     }

@@ -20,10 +20,7 @@ export interface UserProfile {
 }
 
 export interface RazorpayOrderRequest {
-    amount: number; // In smallest currency unit (paise/cents) OR main unit handled by backend?
-    // Usually frontend sends main unit or plan ID.
-    // Let's expect amount in main unit (INR/USD) for credit packs
-    amountMain: number;
+    amount: number; // In smallest currency unit (paise/cents)
     currency: 'INR' | 'USD';
     receipt?: string;
 }
@@ -37,13 +34,13 @@ export const PRICING_CONFIG = {
         currency: 'INR',
         creditCost: 1.0, // 1 Credit = 1 INR
         plans: {
-            monthly: { amount: 15, razorpayPlanId: 'plan_SCB8cdaYV5UXEP' },
-            yearly: { amount: 150, razorpayPlanId: 'plan_SCB8dBVUs1Jmmw' }
+            monthly: { amount: 15, razorpayPlanId: process.env.RAZORPAY_PLAN_MONTHLY_INR || 'plan_SCB8cdaYV5UXEP' },
+            yearly: { amount: 150, razorpayPlanId: process.env.RAZORPAY_PLAN_YEARLY_INR || 'plan_SCB8dBVUs1Jmmw' }
         }
     },
     ROW: {
         currency: 'USD',
-        creditCost: 0.02, // Derived? No, plan says $1 = 50 credits -> $0.02 per credit.
+        creditCost: 0.02,
         plans: {
             monthly: { amount: 0.99, razorpayPlanId: process.env.RAZORPAY_PLAN_MONTHLY_USD || 'plan_monthly_usd' },
             yearly: { amount: 9.99, razorpayPlanId: process.env.RAZORPAY_PLAN_YEARLY_USD || 'plan_yearly_usd' }

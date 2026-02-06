@@ -67,39 +67,58 @@ export const handler = async (): Promise<void> => {
                 if (!email) continue;
 
                 const userId = user.userId;
-                // Payment Logic Check
-                // 1. Check Subscription
-                const hasActiveSub = user.subscriptionStatus === 'active';
-                // TODO: Check expiry date if 'active' doesn't auto-expire? 
-                // Assuming status is source of truth kept up-to-date by webhooks/cron.
+                // PII Safety: Use userId for logs, or masked email only if necessary
+                const logId = `User ${userId}`;
 
-                // 2. Check Credits
+                // Payment Logic Check
+                const hasActiveSub = user.subscriptionStatus === 'active';
                 const credits = user.credits !== undefined ? user.credits : 0;
                 const COST = 0.5;
-                const LOW_CREDIT_THRESHOLD = 5.0; // Alert when dropping below 5
+                const LOW_CREDIT_THRESHOLD = 5.0;
 
                 let shouldSend = false;
-                let deductCredits = false;
+                let creditsDeducted = false;
+                let newBalance: number | undefined = undefined;
 
                 if (!enablePayments) {
                     // BETA ACCESS: Send to everyone, no credit deduction
                     shouldSend = true;
                 } else if (hasActiveSub) {
                     shouldSend = true;
-                } else if (credits >= COST) {
-                    shouldSend = true;
-                    deductCredits = true;
                 } else {
-                    console.log(`Skipping user ${email} (No sub, Insufficient credits: ${credits})`);
-                    shouldSend = false;
-                    // TODO: Maybe send ONE 'Out of credits' email?
+                    // Credit Deduction Mode: Attempt Atomic Deduction FIRST
+                    try {
+                        const updateResult = await docClient.send(new UpdateCommand({
+                            TableName: process.env.USERS_TABLE,
+                            Key: { userId },
+                            UpdateExpression: 'SET credits = credits - :cost, updatedAt = :now',
+                            ConditionExpression: 'credits >= :cost',
+                            ExpressionAttributeValues: {
+                                ':cost': COST,
+                                ':now': new Date().toISOString()
+                            },
+                            ReturnValues: 'ALL_NEW'
+                        }));
+
+                        // Deduction Successful
+                        creditsDeducted = true;
+                        shouldSend = true;
+                        newBalance = updateResult.Attributes?.credits;
+
+                    } catch (err: any) {
+                        if (err.name === 'ConditionalCheckFailedException') {
+                            console.log(`Skipping ${logId}: Insufficient credits (${credits})`);
+                        } else {
+                            console.error(`Error deducting credits for ${logId}`, err);
+                        }
+                        shouldSend = false;
+                    }
                 }
 
                 if (shouldSend) {
                     try {
                         // Generate unique secure unsubscribe link
                         const token = await generateUnsubscribeToken(email);
-                        // Use configured base domain or fallback
                         const baseDomain = process.env.APP_DOMAIN || 'https://thirukkural.site';
                         const unsubscribeLink = `${baseDomain}/unsubscribe?token=${encodeURIComponent(token)}`;
 
@@ -111,54 +130,47 @@ export const handler = async (): Promise<void> => {
                             text: text,
                             html: html
                         });
-                        console.log(`Sent email to ${email}`);
+                        console.log(`Sent email to ${logId}`);
 
-                        // Logic: Deduct Credits
-                        // Logic: Deduct Credits
-                        if (deductCredits) {
+                        // Logic: Low Credit Alert (Post-Send)
+                        if (creditsDeducted && newBalance !== undefined && newBalance < LOW_CREDIT_THRESHOLD && (newBalance + COST) >= LOW_CREDIT_THRESHOLD) {
+                            console.log(`Triggering Low Credit Alert for ${logId}`);
+                            const alertEmail = generateSystemEmail({
+                                type: 'LOW_CREDITS',
+                                data: { credits: newBalance }
+                            });
+                            // Best effort alert
+                            await sendEmail({
+                                to: [email],
+                                subject: alertEmail.subject,
+                                text: alertEmail.text,
+                                html: alertEmail.html
+                            }).catch(e => console.error(`Failed to send alert to ${logId}`, e));
+                        }
+
+                        // Wait 1 second to respect limits
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    } catch (e) {
+                        console.error(`Failed email for ${logId}`, e);
+
+                        // COMPENSATION: Refund credits if email failed but credits were deducted
+                        if (creditsDeducted) {
+                            console.log(`Refunding credits to ${logId} due to send failure`);
                             try {
-                                const updateResult = await docClient.send(new UpdateCommand({
+                                await docClient.send(new UpdateCommand({
                                     TableName: process.env.USERS_TABLE,
                                     Key: { userId },
-                                    UpdateExpression: 'SET credits = credits - :cost, updatedAt = :now',
-                                    ConditionExpression: 'credits >= :cost',
+                                    UpdateExpression: 'SET credits = credits + :cost, updatedAt = :now',
                                     ExpressionAttributeValues: {
                                         ':cost': COST,
                                         ':now': new Date().toISOString()
-                                    },
-                                    ReturnValues: 'ALL_NEW'
+                                    }
                                 }));
-
-                                const newCredits = updateResult.Attributes?.credits;
-
-                                // Logic: Low Credit Alert
-                                // Check if we crossed threshold downwards
-                                if (newCredits !== undefined && newCredits < LOW_CREDIT_THRESHOLD && (newCredits + COST) >= LOW_CREDIT_THRESHOLD) {
-                                    console.log(`Triggering Low Credit Alert for ${email}`);
-                                    const alertEmail = generateSystemEmail({
-                                        type: 'LOW_CREDITS',
-                                        data: { credits: newCredits }
-                                    });
-                                    await sendEmail({
-                                        to: [email],
-                                        subject: alertEmail.subject,
-                                        text: alertEmail.text,
-                                        html: alertEmail.html
-                                    });
-                                }
-                            } catch (err: any) {
-                                if (err.name === 'ConditionalCheckFailedException') {
-                                    console.warn(`Atomic deduction failed for ${email}: Insufficient credits`);
-                                } else {
-                                    console.error(`Credit deduction error for ${email}`, err);
-                                }
+                            } catch (refundErr) {
+                                console.error(`CRITICAL: Failed to refund credits to ${logId}`, refundErr);
                             }
                         }
-
-                        // Wait 1 second to respect limits (SES sandbox or API rate limits)
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                    } catch (e) {
-                        console.error(`Failed email for ${email}`, e);
                     }
                 }
             }

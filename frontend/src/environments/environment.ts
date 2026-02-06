@@ -19,5 +19,5 @@ export const environment = {
     razorpay: {
         keyId: 'rzp_test_SC6SfzckFW4xe0'
     },
-    vapidPublicKey: 'undefined'
+    vapidPublicKey: undefined
 };

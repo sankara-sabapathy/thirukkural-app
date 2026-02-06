@@ -23,7 +23,11 @@ export class PaymentService {
     constructor(private http: HttpClient) { }
 
     async createOrder(amountMain: number, currency: 'INR' | 'USD' = 'INR'): Promise<any> {
-        const body: OrderRequest = { amountMain, currency };
+        // Convert to smallest currency unit (paise/cents)
+        // INR: 1 = 100 paise
+        // USD: 1 = 100 cents
+        const amount = Math.round(amountMain * 100);
+        const body: any = { amount, currency }; // Send 'amount' as per key update
         return firstValueFrom(this.http.post(`${this.apiUrl}/order`, body));
     }
 

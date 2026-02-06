@@ -46,16 +46,14 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             if (!userId) return createResponse(401, { message: 'Unauthorized' }, origin);
 
             const body = safeJsonParse(event.body);
-            const { amountMain, currency } = body as RazorpayOrderRequest;
+            const { amount, currency } = body as RazorpayOrderRequest;
 
-            if (!amountMain || !currency) {
+            if (!amount || !currency) {
                 return createResponse(400, { message: 'Missing amount or currency' }, origin);
             }
 
-            // Smallest Unit Calculation
-            // INR: 1 INR = 100 paise
-            // USD: 1 USD = 100 cents
-            const amountSmallest = Math.round(amountMain * 100);
+            // Amount is already in smallest unit (paise/cents)
+            const amountSmallest = amount;
 
             const options = {
                 amount: amountSmallest,
