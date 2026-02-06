@@ -114,32 +114,44 @@ export const handler = async (): Promise<void> => {
                         console.log(`Sent email to ${email}`);
 
                         // Logic: Deduct Credits
+                        // Logic: Deduct Credits
                         if (deductCredits) {
-                            const newCredits = credits - COST;
-                            await docClient.send(new UpdateCommand({
-                                TableName: process.env.USERS_TABLE,
-                                Key: { userId },
-                                UpdateExpression: 'SET credits = :val, updatedAt = :now',
-                                ExpressionAttributeValues: {
-                                    ':val': newCredits,
-                                    ':now': new Date().toISOString()
-                                }
-                            }));
+                            try {
+                                const updateResult = await docClient.send(new UpdateCommand({
+                                    TableName: process.env.USERS_TABLE,
+                                    Key: { userId },
+                                    UpdateExpression: 'SET credits = credits - :cost, updatedAt = :now',
+                                    ConditionExpression: 'credits >= :cost',
+                                    ExpressionAttributeValues: {
+                                        ':cost': COST,
+                                        ':now': new Date().toISOString()
+                                    },
+                                    ReturnValues: 'ALL_NEW'
+                                }));
 
-                            // Logic: Low Credit Alert
-                            // Check if we crossed threshold downwards
-                            if (credits >= LOW_CREDIT_THRESHOLD && newCredits < LOW_CREDIT_THRESHOLD) {
-                                console.log(`Triggering Low Credit Alert for ${email}`);
-                                const alertEmail = generateSystemEmail({
-                                    type: 'LOW_CREDITS',
-                                    data: { credits: newCredits }
-                                });
-                                await sendEmail({
-                                    to: [email],
-                                    subject: alertEmail.subject,
-                                    text: alertEmail.text,
-                                    html: alertEmail.html
-                                });
+                                const newCredits = updateResult.Attributes?.credits;
+
+                                // Logic: Low Credit Alert
+                                // Check if we crossed threshold downwards
+                                if (newCredits !== undefined && newCredits < LOW_CREDIT_THRESHOLD && (newCredits + COST) >= LOW_CREDIT_THRESHOLD) {
+                                    console.log(`Triggering Low Credit Alert for ${email}`);
+                                    const alertEmail = generateSystemEmail({
+                                        type: 'LOW_CREDITS',
+                                        data: { credits: newCredits }
+                                    });
+                                    await sendEmail({
+                                        to: [email],
+                                        subject: alertEmail.subject,
+                                        text: alertEmail.text,
+                                        html: alertEmail.html
+                                    });
+                                }
+                            } catch (err: any) {
+                                if (err.name === 'ConditionalCheckFailedException') {
+                                    console.warn(`Atomic deduction failed for ${email}: Insufficient credits`);
+                                } else {
+                                    console.error(`Credit deduction error for ${email}`, err);
+                                }
                             }
                         }
 

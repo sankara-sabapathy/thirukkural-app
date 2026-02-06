@@ -1,6 +1,6 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { fetchAuthSession } from 'aws-amplify/auth';
-import { from, switchMap } from 'rxjs';
+import { from, switchMap, catchError } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
@@ -18,7 +18,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
                     return next(cloned);
                 }
                 return next(req);
-            })
+            }),
+            catchError(() => next(req)) // Fallback on auth error
         );
     }
     return next(req);

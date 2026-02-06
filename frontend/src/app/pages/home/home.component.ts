@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -33,14 +34,15 @@ export class HomeComponent implements OnInit {
         private apiService: ApiService,
         private snackBar: MatSnackBar,
         private router: Router,
-        private pushService: PushNotificationService
+        private pushService: PushNotificationService,
+        private destroyRef: DestroyRef
     ) {
         this.user$ = this.authService.user$;
     }
 
     async ngOnInit() {
         // Strict Navigation: If logged in, redirect to dashboard
-        this.authService.user$.subscribe(user => {
+        this.authService.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(user => {
             if (user) {
                 this.router.navigate(['/profile']);
             }

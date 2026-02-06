@@ -45,8 +45,8 @@ export const PRICING_CONFIG = {
         currency: 'USD',
         creditCost: 0.02, // Derived? No, plan says $1 = 50 credits -> $0.02 per credit.
         plans: {
-            monthly: { amount: 0.99, razorpayPlanId: 'plan_monthly_usd' },
-            yearly: { amount: 9.99, razorpayPlanId: 'plan_yearly_usd' }
+            monthly: { amount: 0.99, razorpayPlanId: process.env.RAZORPAY_PLAN_MONTHLY_USD || 'plan_monthly_usd' },
+            yearly: { amount: 9.99, razorpayPlanId: process.env.RAZORPAY_PLAN_YEARLY_USD || 'plan_yearly_usd' }
         }
     }
 };

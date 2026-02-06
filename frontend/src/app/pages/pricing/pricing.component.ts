@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PaymentService } from '../../services/payment.service';
 import { HttpClient } from '@angular/common/http';
@@ -22,7 +22,8 @@ export class PricingComponent implements OnInit {
     constructor(
         private paymentService: PaymentService,
         private authService: AuthService,
-        private router: Router
+        private router: Router,
+        private ngZone: NgZone
     ) { }
 
     ngOnInit() {
@@ -57,15 +58,17 @@ export class PricingComponent implements OnInit {
                 name: 'Thirukkural Daily',
                 description: 'Credit Pack',
                 handler: async (response: any) => {
-                    try {
-                        await this.paymentService.verifyPayment(response);
-                        this.isLoading = false;
-                        this.router.navigate(['/profile'], { queryParams: { paymentSuccess: 'credits' } });
-                    } catch (e) {
-                        console.error('Verification failed', e);
-                        alert('Payment verification failed.');
-                        this.isLoading = false;
-                    }
+                    this.ngZone.run(async () => {
+                        try {
+                            await this.paymentService.verifyPayment(response);
+                            this.isLoading = false;
+                            this.router.navigate(['/profile'], { queryParams: { paymentSuccess: 'credits' } });
+                        } catch (e) {
+                            console.error('Verification failed', e);
+                            alert('Payment verification failed.');
+                            this.isLoading = false;
+                        }
+                    });
                 },
                 theme: {
                     color: '#1868db'
@@ -109,15 +112,17 @@ export class PricingComponent implements OnInit {
                 name: 'Thirukkural Plus',
                 description: `${planType} Subscription`,
                 handler: async (response: any) => {
-                    try {
-                        await this.paymentService.verifyPayment(response);
-                        this.isLoading = false;
-                        this.router.navigate(['/profile'], { queryParams: { paymentSuccess: 'subscription' } });
-                    } catch (e) {
-                        console.error('Verification failed', e);
-                        alert('Subscription verification failed.');
-                        this.isLoading = false;
-                    }
+                    this.ngZone.run(async () => {
+                        try {
+                            await this.paymentService.verifyPayment(response);
+                            this.isLoading = false;
+                            this.router.navigate(['/profile'], { queryParams: { paymentSuccess: 'subscription' } });
+                        } catch (e) {
+                            console.error('Verification failed', e);
+                            alert('Subscription verification failed.');
+                            this.isLoading = false;
+                        }
+                    });
                 },
                 theme: { color: '#1868db' }
             });

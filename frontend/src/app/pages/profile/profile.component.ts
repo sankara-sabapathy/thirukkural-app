@@ -34,7 +34,6 @@ export class ProfileComponent implements OnInit {
             this.user = user;
             if (user) {
                 this.fetchProfile();
-                this.fetchProfile();
                 this.checkPaymentSuccess();
                 this.checkPaymentIntent();
             } else {

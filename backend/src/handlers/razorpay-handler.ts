@@ -130,39 +130,60 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 const notes = payment.notes;
 
                 // Only handle CREDIT_PACK here. Subscriptions handled by subscription events?
-                // Razorpay sends payment.captured for subs too? 
-                // Check notes.
                 if (notes?.type === 'CREDIT_PACK') {
                     const userId = notes.userId;
+                    if (!userId) {
+                        console.warn('User ID missing in payment.captured event');
+                        return createResponse(200, { status: 'ignored_missing_user' });
+                    }
+
                     const amountPaid = payment.amount / 100; // In main unit
                     const currency = payment.currency;
+                    const paymentId = payment.id;
 
                     // Calculate Credits
                     let creditsToAdd = 0;
                     if (currency === 'INR') {
                         creditsToAdd = amountPaid; // 1 INR = 1 Credit
-                        if (amountPaid >= 100) creditsToAdd *= 1.05; // 5% Bonus logic if needed
+                        if (amountPaid >= 100) creditsToAdd *= 1.05; // 5% Bonus logic
                     } else if (currency === 'USD') {
                         creditsToAdd = amountPaid * 50; // $1 = 50 Credits
                     }
 
-                    console.log(`Adding ${creditsToAdd} credits to user ${userId}`);
+                    console.log(`Adding ${creditsToAdd} credits to user ${userId} for payment ${paymentId}`);
 
-                    await docClient.send(new UpdateCommand({
-                        TableName: USERS_TABLE,
-                        Key: { userId },
-                        UpdateExpression: 'SET credits = if_not_exists(credits, :zero) + :val, updatedAt = :now',
-                        ExpressionAttributeValues: {
-                            ':zero': 0,
-                            ':val': creditsToAdd,
-                            ':now': new Date().toISOString()
+                    try {
+                        await docClient.send(new UpdateCommand({
+                            TableName: USERS_TABLE,
+                            Key: { userId },
+                            // Atomic add credits AND record payment ID to prevent double processing
+                            UpdateExpression: 'ADD processedPayments :pid_set SET credits = if_not_exists(credits, :zero) + :val, updatedAt = :now',
+                            ConditionExpression: 'NOT contains(processedPayments, :pid)',
+                            ExpressionAttributeValues: {
+                                ':zero': 0,
+                                ':val': creditsToAdd,
+                                ':now': new Date().toISOString(),
+                                ':pid': paymentId,
+                                ':pid_set': new Set([paymentId])
+                            }
+                        }));
+                    } catch (err: any) {
+                        if (err.name === 'ConditionalCheckFailedException') {
+                            console.log(`Payment ${paymentId} already processed for user ${userId}`);
+                            return createResponse(200, { status: 'already_processed' });
                         }
-                    }));
+                        throw err;
+                    }
                 }
             } else if (eventType === 'subscription.charged') {
                 const sub = data.subscription.entity;
                 const payment = data.payment.entity;
                 const userId = sub.notes?.userId;
+
+                if (!userId) {
+                    console.warn(`User ID missing in subscription.charged event. Sub ID: ${sub.id}`);
+                    return createResponse(200, { status: 'ignored_missing_user' });
+                }
 
                 console.log(`Subscription charged for user ${userId}`);
 
@@ -181,6 +202,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             } else if (eventType === 'subscription.cancelled' || eventType === 'subscription.halted') {
                 const sub = data.subscription.entity;
                 const userId = sub.notes?.userId;
+
+                if (!userId) {
+                    console.warn(`User ID missing in subscription event ${eventType}. Sub ID: ${sub.id}`);
+                    return createResponse(200, { status: 'ignored_missing_user' });
+                }
 
                 await docClient.send(new UpdateCommand({
                     TableName: USERS_TABLE,
