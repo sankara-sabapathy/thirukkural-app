@@ -6,8 +6,9 @@ import { firstValueFrom } from 'rxjs';
 declare var Razorpay: any;
 
 export interface OrderRequest {
-    amountMain: number;
+    amount: number; // Smallest currency unit (paise/cents)
     currency: 'INR' | 'USD';
+    receipt?: string;
 }
 
 export interface SubscriptionRequest {
