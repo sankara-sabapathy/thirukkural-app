@@ -19,15 +19,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const method = event.httpMethod;
 
         if (method === 'GET') {
-            console.log('Fetching profile for userId:', userId, 'Table:', TABLE_NAME);
+            console.log('Fetching profile from', TABLE_NAME);
             const params = {
                 TableName: TABLE_NAME,
                 Key: { userId },
             };
-            console.log('DynamoDB Get Params:', JSON.stringify(params));
+            // console.log('DynamoDB Get Params:', JSON.stringify(params)); // Redacted PII
 
             const result = await docClient.send(new GetCommand(params));
-            console.log('DynamoDB Get Result:', result);
+            // console.log('DynamoDB Get Result:', result); // Redacted PII
 
             if (!result.Item) {
                 console.log('User not found, creating default profile...');
@@ -44,12 +44,22 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     createdAt: new Date().toISOString(),
                 };
 
-                await docClient.send(new PutCommand({
-                    TableName: TABLE_NAME,
-                    Item: newProfile,
-                }));
-                console.log('Default profile created');
-                return createResponse(200, newProfile, origin);
+                try {
+                    await docClient.send(new PutCommand({
+                        TableName: TABLE_NAME,
+                        Item: newProfile,
+                        ConditionExpression: 'attribute_not_exists(userId)'
+                    }));
+                    console.log('Default profile created');
+                    return createResponse(200, newProfile, origin);
+                } catch (putErr: any) {
+                    if (putErr.name === 'ConditionalCheckFailedException') {
+                        console.log('Profile created concurrently, fetching existing...');
+                        const retryResult = await docClient.send(new GetCommand(params));
+                        return createResponse(200, retryResult.Item, origin);
+                    }
+                    throw putErr;
+                }
             }
 
             return createResponse(200, result.Item, origin);

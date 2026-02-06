@@ -47,6 +47,38 @@
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
+.beta-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+    padding: 12px 24px;
+    border-radius: 50px;
+    margin: 0 auto 40px;
+    max-width: 800px;
+    font-weight: 500;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.beta-banner .badge {
+    background: #2563eb;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.beta-banner .text {
+    font-size: 0.95rem;
+    color: #1e3a8a;
+}
+
 .pricing-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -157,7 +189,17 @@
     border: none;
 }
 
-.cta-btn.primary:hover {
+.cta-btn[disabled],
+button[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #cbd5e1 !important;
+    color: #64748b !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: none !important;
+}
+
+.cta-btn.primary:hover:not([disabled]) {
     background: #1456b3;
 }
 
@@ -167,7 +209,7 @@
     border: 2px solid #1868db;
 }
 
-.cta-btn.outline:hover {
+.cta-btn.outline:hover:not([disabled]) {
     background: #f0f7ff;
 }
 
@@ -188,7 +230,7 @@
     color: #64748b;
 }
 
-.mini-packs button:hover {
+.mini-packs button:hover:not([disabled]) {
     background: #e2e8f0;
 }
 
@@ -203,6 +245,13 @@
     color: #1868db;
     text-decoration: underline;
     cursor: pointer;
+}
+
+.yearly-option a[aria-disabled="true"] {
+    color: #94a3b8;
+    cursor: not-allowed;
+    pointer-events: none;
+    text-decoration: none;
 }
 
 .vpn-note {

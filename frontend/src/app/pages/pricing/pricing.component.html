@@ -71,7 +71,7 @@
                 {{ enablePayments ? 'Subscribe Monthly' : 'Coming Soon' }}
             </button>
             <div class="yearly-option">
-                or <a (click)="subscribe('yearly')">save 2 months with Yearly</a>
+                or <a (click)="enablePayments && subscribe('yearly')" [attr.aria-disabled]="!enablePayments">save 2 months with Yearly</a>
                 ({{ currency === 'INR' ? '₹150' : '$9.99' }}/yr)
             </div>
         </div>

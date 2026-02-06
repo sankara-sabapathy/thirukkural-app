@@ -1,4 +1,5 @@
-import { Component, OnInit, NgZone } from '@angular/core';
+import { Component, OnInit, NgZone, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { PaymentService } from '../../services/payment.service';
 import { HttpClient } from '@angular/common/http';
@@ -23,11 +24,12 @@ export class PricingComponent implements OnInit {
         private paymentService: PaymentService,
         private authService: AuthService,
         private router: Router,
-        private ngZone: NgZone
+        private ngZone: NgZone,
+        private destroyRef: DestroyRef // Injected for cleanup
     ) { }
 
     ngOnInit() {
-        this.authService.isAuthenticated$.subscribe(auth => {
+        this.authService.isAuthenticated$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(auth => {
             this.isLoggedIn = auth;
             // If logged in, maybe fetch user pref for currency?
             // For now, default to INR or detect locally.
