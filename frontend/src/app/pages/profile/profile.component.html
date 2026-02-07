@@ -57,8 +57,9 @@
     </div>
 
     <!-- Error State -->
-    <div *ngIf="!loading && !profile" class="error-state" style="text-align: center; padding: 40px; color: #64748b;">
+    <!-- Error State -->
+    <div *ngIf="!loading && !profile" class="error-state">
         <p>Unable to load your profile. Please try again later.</p>
-        <button (click)="ngOnInit()" class="btn text" style="margin-top: 10px;">Retry</button>
+        <button (click)="loadProfile()" class="btn text retry-btn">Retry</button>
     </div>
 </div>

@@ -35,7 +35,7 @@ export class ProfileComponent implements OnInit {
         this.authService.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(user => {
             this.user = user;
             if (user) {
-                this.fetchProfile();
+                this.loadProfile();
                 this.checkPaymentSuccess();
                 this.checkPaymentIntent();
             } else {
@@ -44,6 +44,10 @@ export class ProfileComponent implements OnInit {
                 this.router.navigate(['/login']);
             }
         });
+    }
+
+    loadProfile() {
+        this.fetchProfile();
     }
 
     checkPaymentSuccess() {

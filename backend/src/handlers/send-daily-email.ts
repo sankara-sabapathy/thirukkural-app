@@ -81,7 +81,6 @@ export const handler = async (): Promise<void> => {
                 const emailCost = regionConfig.creditCost;
 
                 const LOW_CREDIT_THRESHOLD = 5.0;
-                const LOW_CREDIT_THRESHOLD = 5.0;
 
                 let shouldSend = false;
                 let creditsDeducted = false;
