@@ -32,6 +32,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             if (!result.Item) {
                 console.log('User not found, creating default profile...');
                 // If user doesn't exist in DB but is authenticated, create a default profile
+                // Detect region from CloudFront headers (injected by CF)
+                const cfCountry = (event.headers?.['CloudFront-Viewer-Country'] || event.headers?.['cloudfront-viewer-country']) as string;
+
+                // Default to IN if not present (for now), but prefer detected country
+                const region = (cfCountry && cfCountry.toUpperCase() === 'IN') ? 'IN' : (cfCountry ? 'ROW' : 'IN');
+                const currency = region === 'IN' ? 'INR' : 'USD';
+
+                // TODO: [TK-101] Improve region detection accuracy and support more currencies if needed.
+                // Currently assuming IN = INR, Everything else = USD (ROW).
+
                 const newProfile = {
                     userId,
                     email,
@@ -39,8 +49,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     receiveDailyEmail: false, // Default to false
                     credits: 0,
                     subscriptionStatus: 'inactive',
-                    region: 'IN', // Default, maybe detect?
-                    currency: 'INR',
+                    region,
+                    currency,
                     createdAt: new Date().toISOString(),
                 };
 
