@@ -22,12 +22,12 @@ export class ApiService {
     }
 
     getProfile(): Observable<any> {
-        const url = `${this.baseUrl}/profile`;
+        const url = `${this.baseUrl}${environment.api.endpoints.profile}`;
         return this.http.get(url);
     }
 
     updateProfile(data: any): Observable<any> {
-        const url = `${this.baseUrl}/profile`;
+        const url = `${this.baseUrl}${environment.api.endpoints.profile}`;
         return this.http.put(url, data);
     }
 }

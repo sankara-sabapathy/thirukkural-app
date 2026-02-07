@@ -76,7 +76,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
 
         if (method === 'PUT') {
-            const body = JSON.parse(event.body ?? '{}');
+            let body;
+            try {
+                body = JSON.parse(event.body ?? '{}');
+            } catch (e) {
+                return createResponse(400, { message: 'Invalid JSON body' }, origin);
+            }
 
             // Validate allowed fields
             const { receiveDailyEmail } = body;

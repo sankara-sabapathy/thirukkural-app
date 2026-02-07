@@ -81,88 +81,113 @@
     </div>
 
     <div class="mobile-menu-content">
-      <div class="mobile-nav-links">
-        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="mobile-nav-link"
-          (click)="closeMobileMenu()">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path
-              d="M3 10l7-7 7 7M4 9v8a1 1 0 001 1h3a1 1 0 001-1v-3a1 1 0 011-1h2a1 1 0 011 1v3a1 1 0 001 1h3a1 1 0 001-1V9"
-              stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-          Home
-        </a>
-        <a routerLink="/kurals" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M5 4h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2zM7 8h6M7 12h4"
-              stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-          Library
-        </a>
-        <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path
-              d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"
-              stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-          Pricing
-        </a>
-        <a routerLink="/about" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM10 11v4M10 7h.01" stroke="currentColor" stroke-width="1.5"
-              stroke-linecap="round" />
-          </svg>
-          About
-        </a>
-        <a routerLink="/contact" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path
-              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-              stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-          Contact
-        </a>
-      </div>
+      <div class="mobile-menu-content">
+        <div class="mobile-nav-links">
+          <!-- Public Links (Only if NOT logged in) -->
+          <ng-container *ngIf="!(user$ | async)">
+            <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"
+              class="mobile-nav-link" (click)="closeMobileMenu()">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path
+                  d="M3 10l7-7 7 7M4 9v8a1 1 0 001 1h3a1 1 0 001-1v-3a1 1 0 011-1h2a1 1 0 011 1v3a1 1 0 001 1h3a1 1 0 001-1V9"
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+              Home
+            </a>
+            <a routerLink="/kurals" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M5 4h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2zM7 8h6M7 12h4"
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+              Library
+            </a>
+            <a routerLink="/pricing" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                <line x1="7" y1="7" x2="7.01" y2="7"></line>
+              </svg>
+              Pricing
+            </a>
+            <a routerLink="/about" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM10 11v4M10 7h.01" stroke="currentColor" stroke-width="1.5"
+                  stroke-linecap="round" />
+              </svg>
+              About
+            </a>
+            <a routerLink="/contact" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+              Contact
+            </a>
+          </ng-container>
 
-      <div class="mobile-menu-actions">
-        <button mat-button class="mobile-btn" (click)="subscribeToNotifications(); closeMobileMenu()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z" />
-          </svg>
-          Enable Notifications
-        </button>
+          <!-- Logged In Links -->
+          <ng-container *ngIf="user$ | async">
+            <a routerLink="/profile" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              Dashboard
+            </a>
+            <a routerLink="/kurals" routerLinkActive="active" class="mobile-nav-link" (click)="closeMobileMenu()">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M5 4h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2zM7 8h6M7 12h4"
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+              Library
+            </a>
+          </ng-container>
+        </div>
 
-        <button mat-button class="mobile-btn" *ngIf="showInstallButton$ | async"
-          (click)="installPwa(); closeMobileMenu()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
-          </svg>
-          Install App
-        </button>
-        <ng-container *ngIf="user$ | async as user; else mobileLoginBtn">
-          <div class="mobile-user-info" routerLink="/profile" (click)="closeMobileMenu()">
-            <div class="user-avatar">{{ user.attributes.email[0].toUpperCase() }}</div>
-            <span class="user-email">{{ user.attributes.email }}</span>
-          </div>
-          <button mat-button class="btn-logout mobile-btn" (click)="logout(); closeMobileMenu()">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M9 3H5a2 2 0 00-2 2v10a2 2 0 002 2h4M15 10l4-4m0 0l-4-4m4 4H9" stroke="currentColor"
-                stroke-width="1.5" stroke-linecap="round" />
+        <div class="mobile-menu-actions">
+          <button mat-button class="mobile-btn" (click)="subscribeToNotifications(); closeMobileMenu()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z" />
             </svg>
-            Sign Out
+            Enable Notifications
           </button>
-        </ng-container>
 
-        <ng-template #mobileLoginBtn>
-          <button mat-button class="btn-login mobile-btn" (click)="login(); closeMobileMenu()">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M10 10a4 4 0 100-8 4 4 0 000 8zm0 2c-4.42 0-8 1.79-8 4v2h16v-2c0-2.21-3.58-4-8-4z"
-                fill="currentColor" />
+          <button mat-button class="mobile-btn" *ngIf="showInstallButton$ | async"
+            (click)="installPwa(); closeMobileMenu()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
             </svg>
-            Sign In
+            Install App
           </button>
-        </ng-template>
+          <ng-container *ngIf="user$ | async as user; else mobileLoginBtn">
+            <div class="mobile-user-info" routerLink="/profile" (click)="closeMobileMenu()">
+              <div class="user-avatar">{{ user.attributes.email[0].toUpperCase() }}</div>
+              <span class="user-email">{{ user.attributes.email }}</span>
+            </div>
+            <button mat-button class="btn-logout mobile-btn" (click)="logout(); closeMobileMenu()">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M9 3H5a2 2 0 00-2 2v10a2 2 0 002 2h4M15 10l4-4m0 0l-4-4m4 4H9" stroke="currentColor"
+                  stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+              Sign Out
+            </button>
+          </ng-container>
+
+          <ng-template #mobileLoginBtn>
+            <button mat-button class="btn-login mobile-btn" (click)="login(); closeMobileMenu()">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M10 10a4 4 0 100-8 4 4 0 000 8zm0 2c-4.42 0-8 1.79-8 4v2h16v-2c0-2.21-3.58-4-8-4z"
+                  fill="currentColor" />
+              </svg>
+              Sign In
+            </button>
+          </ng-template>
+        </div>
       </div>
     </div>
-  </div>
 </header>

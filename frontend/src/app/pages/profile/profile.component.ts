@@ -183,7 +183,7 @@ export class ProfileComponent implements OnInit {
         try {
             await this.paymentService.cancelSubscription();
 
-            // Successfeedback
+            // Success feedback
             this.snackBar.open('Subscription cancelled successfully.', 'OK', {
                 duration: 5000,
                 panelClass: ['snackbar-success'],

@@ -114,7 +114,7 @@ Correctness first. Performance second. Never skip step 1.
 
 <pattern name="inline_planning">
 For multi-step tasks, emit a lightweight plan before executing:
-```
+```text
 PLAN:
 1. [step] — [why]
 2. [step] — [why]

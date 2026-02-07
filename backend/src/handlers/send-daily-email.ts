@@ -8,6 +8,7 @@ import { generateUnsubscribeToken } from '../shared/crypto-utils';
 import { getSecret } from '../shared/secrets';
 import { generateSystemEmail } from '../shared/email-templates';
 import * as webpush from 'web-push';
+import { PRICING_CONFIG } from '../shared/types';
 
 
 export const handler = async (): Promise<void> => {
@@ -73,7 +74,13 @@ export const handler = async (): Promise<void> => {
                 // Payment Logic Check
                 const hasActiveSub = user.subscriptionStatus === 'active';
                 const credits = user.credits !== undefined ? user.credits : 0;
-                const COST = 0.5;
+                const region = user.region || 'IN'; // Default to IN
+                // Calculate dynamic cost based on region
+                // Fallback to IN if region not found in config (shouldn't happen with defaults)
+                const regionConfig = PRICING_CONFIG[region as keyof typeof PRICING_CONFIG] || PRICING_CONFIG['IN'];
+                const emailCost = regionConfig.creditCost;
+
+                const LOW_CREDIT_THRESHOLD = 5.0;
                 const LOW_CREDIT_THRESHOLD = 5.0;
 
                 let shouldSend = false;
@@ -94,7 +101,7 @@ export const handler = async (): Promise<void> => {
                             UpdateExpression: 'SET credits = credits - :cost, updatedAt = :now',
                             ConditionExpression: 'credits >= :cost',
                             ExpressionAttributeValues: {
-                                ':cost': COST,
+                                ':cost': emailCost,
                                 ':now': new Date().toISOString()
                             },
                             ReturnValues: 'ALL_NEW'
@@ -133,7 +140,7 @@ export const handler = async (): Promise<void> => {
                         console.log(`Sent email to ${logId}`);
 
                         // Logic: Low Credit Alert (Post-Send)
-                        if (creditsDeducted && newBalance !== undefined && newBalance < LOW_CREDIT_THRESHOLD && (newBalance + COST) >= LOW_CREDIT_THRESHOLD) {
+                        if (creditsDeducted && newBalance !== undefined && newBalance < LOW_CREDIT_THRESHOLD && (newBalance + emailCost) >= LOW_CREDIT_THRESHOLD) {
                             console.log(`Triggering Low Credit Alert for ${logId}`);
                             const alertEmail = generateSystemEmail({
                                 type: 'LOW_CREDITS',
@@ -163,7 +170,7 @@ export const handler = async (): Promise<void> => {
                                     Key: { userId },
                                     UpdateExpression: 'SET credits = credits + :cost, updatedAt = :now',
                                     ExpressionAttributeValues: {
-                                        ':cost': COST,
+                                        ':cost': emailCost,
                                         ':now': new Date().toISOString()
                                     }
                                 }));

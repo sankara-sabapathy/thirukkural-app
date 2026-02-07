@@ -74,6 +74,13 @@ export class PricingComponent implements OnInit {
                 },
                 theme: {
                     color: '#1868db'
+                },
+                modal: {
+                    ondismiss: () => {
+                        this.ngZone.run(() => {
+                            this.isLoading = false;
+                        });
+                    }
                 }
             });
         } catch (e) {
@@ -126,7 +133,14 @@ export class PricingComponent implements OnInit {
                         }
                     });
                 },
-                theme: { color: '#1868db' }
+                theme: { color: '#1868db' },
+                modal: {
+                    ondismiss: () => {
+                        this.ngZone.run(() => {
+                            this.isLoading = false;
+                        });
+                    }
+                }
             });
         } catch (e) {
             console.error(e);

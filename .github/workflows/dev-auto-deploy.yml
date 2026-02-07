@@ -144,6 +144,18 @@ jobs:
         echo "S3_BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
         echo "APP_BASE_DOMAIN=$BASE_DOMAIN" >> $GITHUB_ENV
         
+        # Validation
+        validate_var() {
+          if [ -z "$2" ]; then
+            echo "Error: $1 is not set or empty"
+            exit 1
+          fi
+        }
+
+        validate_var "RAZORPAY_KEY" "$RAZORPAY_KEY"
+        validate_var "VAPID_KEY" "$VAPID_KEY"
+        validate_var "BASE_DOMAIN" "$BASE_DOMAIN"
+        
         # Site Domain for Dev (subdomain)
         SITE_DOMAIN="dev.$BASE_DOMAIN"
         echo "SITE_DOMAIN=$SITE_DOMAIN" >> $GITHUB_ENV

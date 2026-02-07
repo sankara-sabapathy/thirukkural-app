@@ -31,17 +31,8 @@ export class HeaderComponent {
         this.showInstallButton$ = this.pwaService.showInstallBanner$;
     }
 
-    async onLogoClick() {
-        // If user is logged in, confirm logout
-        const user = await firstValueFrom(this.user$);
-        if (user) {
-            if (confirm('Do you want to sign out?')) {
-                this.logout();
-                this.router.navigate(['/']);
-            }
-        } else {
-            this.router.navigate(['/']);
-        }
+    onLogoClick() {
+        this.router.navigate(['/']);
     }
 
     installPwa() {

@@ -55,4 +55,10 @@
             <!-- PWA or other settings can go here later -->
         </div>
     </div>
+
+    <!-- Error State -->
+    <div *ngIf="!loading && !profile" class="error-state" style="text-align: center; padding: 40px; color: #64748b;">
+        <p>Unable to load your profile. Please try again later.</p>
+        <button (click)="ngOnInit()" class="btn text" style="margin-top: 10px;">Retry</button>
+    </div>
 </div>
