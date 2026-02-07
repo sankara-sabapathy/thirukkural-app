@@ -273,7 +273,7 @@ export class ThirukkuralStack extends cdk.Stack {
         kuralTable.grantReadData(sendEmailFn);
         kuralTable.grantReadData(sendSampleEmailFn);
         usersTable.grantReadWriteData(userProfileFn);
-        usersTable.grantReadData(sendEmailFn);
+        usersTable.grantReadWriteData(sendEmailFn);
         usersTable.grantReadWriteData(unsubscribeEmailFn);
         rateLimitTable.grantReadWriteData(sendSampleEmailFn);
         pushSubscriptionsTable.grantReadWriteData(subscribePushFn);

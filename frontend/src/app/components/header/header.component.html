@@ -42,8 +42,9 @@
       </button>
       <ng-container *ngIf="user$ | async as user; else loginBtn">
         <div class="user-menu">
-          <div class="user-avatar" routerLink="/profile" style="cursor: pointer;">{{
-            user?.attributes?.email?.[0]?.toUpperCase() }}</div>
+          <a class="user-avatar" routerLink="/profile" style="cursor: pointer; text-decoration: none;"
+            aria-label="Profile">{{
+            user?.attributes?.email?.[0]?.toUpperCase() }}</a>
           <button mat-button class="btn-logout" (click)="logout()">Sign Out</button>
         </div>
       </ng-container>
@@ -164,10 +165,11 @@
           Install App
         </button>
         <ng-container *ngIf="user$ | async as user; else mobileLoginBtn">
-          <div class="mobile-user-info" routerLink="/profile" (click)="closeMobileMenu()">
+          <a class="mobile-user-info" routerLink="/profile" (click)="closeMobileMenu()"
+            style="text-decoration: none; color: inherit;" aria-label="Profile">
             <div class="user-avatar">{{ user?.attributes?.email?.[0]?.toUpperCase() }}</div>
-            <span class="user-email">{{ user.attributes.email }}</span>
-          </div>
+            <span class="user-email">{{ user?.attributes?.email }}</span>
+          </a>
           <button mat-button class="btn-logout mobile-btn" (click)="logout(); closeMobileMenu()">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M9 3H5a2 2 0 00-2 2v10a2 2 0 002 2h4M15 10l4-4m0 0l-4-4m4 4H9" stroke="currentColor"
