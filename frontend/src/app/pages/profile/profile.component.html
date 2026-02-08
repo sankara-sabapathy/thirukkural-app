@@ -1,0 +1,64 @@
+<div class="profile-container">
+    <div *ngIf="loading" class="loading">Loading profile...</div>
+
+    <div *ngIf="!loading && profile" class="dashboard">
+        <div class="header">
+            <h1>My Account</h1>
+            <p>{{ profile.email }}</p>
+        </div>
+
+        <div class="stats-grid">
+            <!-- Credits Card -->
+            <div class="stat-card">
+                <h3>Available Credits</h3>
+                <div class="value">{{ profile.credits | number:'1.0-1' }}</div>
+                <p class="subtext">1 Email = 0.5 Credits</p>
+                <a *ngIf="enablePayments" routerLink="/pricing" class="action-link">Add Credits</a>
+            </div>
+
+            <div class="stat-card" [class.active]="profile.subscriptionStatus === 'active' || !enablePayments">
+                <h3>Subscription Status</h3>
+                <div class="value status" [class.active]="profile.subscriptionStatus === 'active' || !enablePayments">
+                    {{ enablePayments ? (profile.subscriptionStatus | titlecase) : 'Beta Access' }}
+                </div>
+                <p class="subtext" *ngIf="enablePayments && profile.subscriptionStatus === 'active'">
+                    Renews on {{ profile.subscriptionExpiry | date:'mediumDate' }}
+                </p>
+                <div class="actions" *ngIf="enablePayments">
+                    <a *ngIf="profile.subscriptionStatus !== 'active'" routerLink="/pricing" class="btn primary">Upgrade
+                        to Plus</a>
+                    <button *ngIf="profile.subscriptionStatus === 'active'" (click)="cancelSubscription()"
+                        class="btn text">Manage / Cancel</button>
+                </div>
+            </div>
+
+            <!-- Daily Wisdom Card -->
+            <div class="stat-card" [class.active]="profile.receiveDailyEmail">
+                <h3>Daily Wisdom</h3>
+                <div class="value status" [class.active]="profile.receiveDailyEmail"
+                    [class.inactive]="!profile.receiveDailyEmail">
+                    {{ profile.receiveDailyEmail ? 'Active' : 'Paused' }}
+                </div>
+                <p class="subtext">
+                    {{ profile.receiveDailyEmail ? "You're all set! Delivered daily at 9 AM." : "Enable to receive daily
+                    emails." }}
+                </p>
+                <div class="actions">
+                    <button (click)="toggleDailyEmail()" class="btn text">
+                        {{ profile.receiveDailyEmail ? 'Pause Emails' : 'Resume Emails' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <!-- PWA or other settings can go here later -->
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="!loading && !profile" class="error-state">
+        <p>Unable to load your profile. Please try again later.</p>
+        <button (click)="loadProfile()" class="btn text retry-btn">Retry</button>
+    </div>
+</div>

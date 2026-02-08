@@ -6,7 +6,9 @@ import { getRandomKural } from '../shared/kural-utils';
 import { sendEmail } from '../shared/email-service';
 import { generateUnsubscribeToken } from '../shared/crypto-utils';
 import { getSecret } from '../shared/secrets';
+import { generateSystemEmail } from '../shared/email-templates';
 import * as webpush from 'web-push';
+import { PRICING_CONFIG } from '../shared/types';
 
 
 export const handler = async (): Promise<void> => {
@@ -57,30 +59,125 @@ export const handler = async (): Promise<void> => {
         // 3. Send email to each user with delay
         if (users.length > 0) {
             console.log(`Sending Kural ${kuralData.kuralId} to ${users.length} users via Email`);
+
+            // Check Environment Flag (Beta Mode / Prod Free Mode)
+            const enablePayments = process.env.ENABLE_PAYMENTS === 'true';
+
             for (const user of users) {
                 const email = user.email;
                 if (!email) continue;
 
-                try {
-                    // Generate unique secure unsubscribe link
-                    const token = await generateUnsubscribeToken(email);
-                    // Use configured base domain or fallback
-                    const baseDomain = process.env.APP_DOMAIN || 'https://thirukkural.site';
-                    const unsubscribeLink = `${baseDomain}/unsubscribe?token=${encodeURIComponent(token)}`;
+                const userId = user.userId;
+                // PII Safety: Use userId for logs, or masked email only if necessary
+                const logId = `User ${userId}`;
 
-                    const { subject, text, html } = generateKuralEmail(kuralData, false, unsubscribeLink);
+                // Payment Logic Check
+                const hasActiveSub = user.subscriptionStatus === 'active';
+                const credits = user.credits !== undefined ? user.credits : 0;
+                const region = user.region || 'IN'; // Default to IN
+                // Calculate dynamic cost based on region
+                // Fallback to IN if region not found in config (shouldn't happen with defaults)
+                const regionConfig = PRICING_CONFIG[region as keyof typeof PRICING_CONFIG] || PRICING_CONFIG['IN'];
+                const emailCost = regionConfig.creditCost;
 
-                    await sendEmail({
-                        to: [email],
-                        subject: subject,
-                        text: text,
-                        html: html
-                    });
-                    console.log(`Sent email to ${email}`);
-                    // Wait 1 second to respect limits (SES sandbox or API rate limits)
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                } catch (e) {
-                    console.error(`Failed email for ${email}`, e);
+                const LOW_CREDIT_THRESHOLD = 5.0;
+
+                let shouldSend = false;
+                let creditsDeducted = false;
+                let newBalance: number | undefined = undefined;
+
+                if (!enablePayments) {
+                    // BETA ACCESS: Send to everyone, no credit deduction
+                    shouldSend = true;
+                } else if (hasActiveSub) {
+                    shouldSend = true;
+                } else {
+                    // Credit Deduction Mode: Attempt Atomic Deduction FIRST
+                    try {
+                        const updateResult = await docClient.send(new UpdateCommand({
+                            TableName: process.env.USERS_TABLE,
+                            Key: { userId },
+                            UpdateExpression: 'SET credits = credits - :cost, updatedAt = :now',
+                            ConditionExpression: 'credits >= :cost',
+                            ExpressionAttributeValues: {
+                                ':cost': emailCost,
+                                ':now': new Date().toISOString()
+                            },
+                            ReturnValues: 'ALL_NEW'
+                        }));
+
+                        // Deduction Successful
+                        creditsDeducted = true;
+                        shouldSend = true;
+                        newBalance = updateResult.Attributes?.credits;
+
+                    } catch (err: any) {
+                        if (err.name === 'ConditionalCheckFailedException') {
+                            console.log(`Skipping ${logId}: Insufficient credits (${credits})`);
+                        } else {
+                            console.error(`Error deducting credits for ${logId}`, err);
+                        }
+                        shouldSend = false;
+                    }
+                }
+
+                if (shouldSend) {
+                    try {
+                        // Generate unique secure unsubscribe link
+                        const token = await generateUnsubscribeToken(email);
+                        const baseDomain = process.env.APP_DOMAIN || 'https://thirukkural.site';
+                        const unsubscribeLink = `${baseDomain}/unsubscribe?token=${encodeURIComponent(token)}`;
+
+                        const { subject, text, html } = generateKuralEmail(kuralData, false, unsubscribeLink);
+
+                        await sendEmail({
+                            to: [email],
+                            subject: subject,
+                            text: text,
+                            html: html
+                        });
+                        console.log(`Sent email to ${logId}`);
+
+                        // Logic: Low Credit Alert (Post-Send)
+                        if (creditsDeducted && newBalance !== undefined && newBalance < LOW_CREDIT_THRESHOLD && (newBalance + emailCost) >= LOW_CREDIT_THRESHOLD) {
+                            console.log(`Triggering Low Credit Alert for ${logId}`);
+                            const alertEmail = generateSystemEmail({
+                                type: 'LOW_CREDITS',
+                                data: { credits: newBalance }
+                            });
+                            // Best effort alert
+                            await sendEmail({
+                                to: [email],
+                                subject: alertEmail.subject,
+                                text: alertEmail.text,
+                                html: alertEmail.html
+                            }).catch(e => console.error(`Failed to send alert to ${logId}`, e));
+                        }
+
+                        // Wait 1 second to respect limits
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    } catch (e) {
+                        console.error(`Failed email for ${logId}`, e);
+
+                        // COMPENSATION: Refund credits if email failed but credits were deducted
+                        if (creditsDeducted) {
+                            console.log(`Refunding credits to ${logId} due to send failure`);
+                            try {
+                                await docClient.send(new UpdateCommand({
+                                    TableName: process.env.USERS_TABLE,
+                                    Key: { userId },
+                                    UpdateExpression: 'SET credits = credits + :cost, updatedAt = :now',
+                                    ExpressionAttributeValues: {
+                                        ':cost': emailCost,
+                                        ':now': new Date().toISOString()
+                                    }
+                                }));
+                            } catch (refundErr) {
+                                console.error(`CRITICAL: Failed to refund credits to ${logId}`, refundErr);
+                            }
+                        }
+                    }
                 }
             }
         } else {

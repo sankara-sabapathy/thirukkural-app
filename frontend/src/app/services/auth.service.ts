@@ -1,5 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { getCurrentUser, signInWithRedirect, signOut, fetchUserAttributes } from 'aws-amplify/auth';
 import { Hub } from 'aws-amplify/utils';
 
@@ -9,6 +10,7 @@ import { Hub } from 'aws-amplify/utils';
 export class AuthService {
     private userSubject = new BehaviorSubject<any>(null);
     user$ = this.userSubject.asObservable();
+    isAuthenticated$ = this.userSubject.asObservable().pipe(map(user => !!user));
 
     constructor(private zone: NgZone) {
         // Listen for auth events
@@ -31,7 +33,8 @@ export class AuthService {
     }
 
     async checkUser() {
-        if (this.isLocalhost()) {
+        // Allow real auth on localhost if 'real_auth' is set in localStorage
+        if (this.isLocalhost() && !localStorage.getItem('real_auth')) {
             const storedUser = localStorage.getItem('dummy_user');
             if (storedUser) {
                 this.zone.run(() => this.userSubject.next(JSON.parse(storedUser)));
@@ -57,7 +60,7 @@ export class AuthService {
     }
 
     async login() {
-        if (this.isLocalhost()) {
+        if (this.isLocalhost() && !localStorage.getItem('real_auth')) {
             const dummyUser = {
                 username: 'dummy_user',
                 attributes: {
@@ -79,7 +82,7 @@ export class AuthService {
     }
 
     async logout() {
-        if (this.isLocalhost()) {
+        if (this.isLocalhost() && !localStorage.getItem('real_auth')) {
             localStorage.removeItem('dummy_user');
             this.zone.run(() => this.userSubject.next(null));
             return;

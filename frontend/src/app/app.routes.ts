@@ -1,5 +1,8 @@
-import { Routes } from '@angular/router';
+import { Routes, Router } from '@angular/router';
 import { HomeComponent } from './pages/home/home.component';
+import { inject } from '@angular/core';
+import { AuthService } from './services/auth.service';
+import { map, take } from 'rxjs/operators';
 
 export const routes: Routes = [
     { path: '', component: HomeComponent },
@@ -16,6 +19,19 @@ export const routes: Routes = [
     {
         path: 'unsubscribe',
         loadComponent: () => import('./pages/unsubscribe/unsubscribe.component').then(m => m.UnsubscribeComponent)
+    },
+    { path: 'pricing', loadComponent: () => import('./pages/pricing/pricing.component').then(m => m.PricingComponent) },
+    {
+        path: 'profile',
+        loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent),
+        canActivate: [() => {
+            const auth = inject(AuthService);
+            const router = inject(Router);
+            return auth.isAuthenticated$.pipe(
+                take(1),
+                map(isAuth => isAuth ? true : router.createUrlTree(['/']))
+            );
+        }]
     },
     {
         path: '**',

@@ -1,0 +1,49 @@
+export interface UserProfile {
+    userId: string;
+    email: string;
+    // Preferences
+    receiveDailyEmail: boolean;
+    // Payment & Credits
+    credits: number; // Supports decimals
+    region: 'IN' | 'ROW';
+    currency: 'INR' | 'USD';
+    // Subscription
+    subscriptionStatus: 'active' | 'created' | 'authenticated' | 'past_due' | 'paused' | 'cancelled' | 'completed' | 'expired' | 'inactive';
+    subscriptionPlan?: 'monthly' | 'yearly';
+    subscriptionId?: string; // Razorpay Sub ID
+    razorpayCustomerId?: string;
+    nextBillingAt?: number; // Unix timestamp
+    subscriptionExpiry?: string; // ISO Date
+    // Meta
+    createdAt: string;
+    updatedAt?: string;
+}
+
+export interface RazorpayOrderRequest {
+    amount: number; // In smallest currency unit (paise/cents)
+    currency: 'INR' | 'USD';
+    receipt?: string;
+}
+
+export interface RazorpaySubscriptionRequest {
+    planId: string; // Internal Plan ID ('monthly-inr', 'yearly-usd', etc.)
+}
+
+export const PRICING_CONFIG = {
+    IN: {
+        currency: 'INR',
+        creditCost: 1.0, // 1 Credit = 1 INR
+        plans: {
+            monthly: { amount: 15, razorpayPlanId: process.env.RAZORPAY_PLAN_MONTHLY_INR || 'plan_SCB8cdaYV5UXEP' },
+            yearly: { amount: 150, razorpayPlanId: process.env.RAZORPAY_PLAN_YEARLY_INR || 'plan_SCB8dBVUs1Jmmw' }
+        }
+    },
+    ROW: {
+        currency: 'USD',
+        creditCost: 0.02,
+        plans: {
+            monthly: { amount: 0.99, razorpayPlanId: process.env.RAZORPAY_PLAN_MONTHLY_USD || 'plan_monthly_usd' },
+            yearly: { amount: 9.99, razorpayPlanId: process.env.RAZORPAY_PLAN_YEARLY_USD || 'plan_yearly_usd' }
+        }
+    }
+};

@@ -13,7 +13,7 @@
                 </p>
 
                 <div class="hero-cta">
-                    <button class="btn btn-primary" (click)="scrollToSubscribe()">
+                    <button class="btn btn-primary" (click)="onStartJourney()">
                         Start Daily Wisdom
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                             <path d="M10 4l6 6-6 6M4 10h12" stroke="currentColor" stroke-width="2"
@@ -175,10 +175,7 @@
                             <h2>Ready to get started?</h2>
                             <p>Sign in with your Google account to begin your journey of wisdom.</p>
                             <div class="cta-actions">
-                                <div class="status-badge">
-                                    <span class="status-dot"></span>
-                                    Sign in required
-                                </div>
+                                <button class="btn btn-primary" (click)="onStartJourney()">Sign In to Subscribe</button>
                             </div>
                         </div>
                     </div>

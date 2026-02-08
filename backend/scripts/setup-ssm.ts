@@ -69,6 +69,9 @@ const CONFIG: StringMap = {
         'cloudflare_secret_key',
         'unsubscribe_secret',
         'brevo_api_key',
+        'razorpay_key_id',
+        'razorpay_key_secret',
+        'razorpay_webhook_secret',
     ]
 };
 

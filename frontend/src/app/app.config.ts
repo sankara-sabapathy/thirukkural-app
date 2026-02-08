@@ -4,6 +4,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideServiceWorker } from '@angular/service-worker';
 import { routes } from './app.routes';
+import { authInterceptor } from './core/auth.interceptor';
+import { withInterceptors } from '@angular/common/http';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -12,7 +14,7 @@ export const appConfig: ApplicationConfig = {
       scrollPositionRestoration: 'top',
       anchorScrolling: 'enabled'
     })),
-    provideHttpClient(),
+    provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimations(),
     provideServiceWorker('ngsw-worker.js', {
       enabled: true,

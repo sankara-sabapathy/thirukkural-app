@@ -76,7 +76,7 @@ describe('Send Daily Email Handler', () => {
     it('should send emails to subscribed users', async () => {
         // Mock DB Scan for Users
         ddbMock.on(ScanCommand, { TableName: 'UsersTable' }).resolves({
-            Items: [{ email: 'user1@test.com' }, { email: 'user2@test.com' }]
+            Items: [{ email: 'user1@test.com', subscriptionStatus: 'active' }, { email: 'user2@test.com', credits: 10 }]
         });
 
         // Mock DB Scan for Push (empty)

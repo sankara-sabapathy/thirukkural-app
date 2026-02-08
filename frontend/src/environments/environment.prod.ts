@@ -1,19 +1,23 @@
 export const environment = {
     production: true,
+    enablePayments: false,
     cognito: {
-        userPoolId: 'ap-south-1_g6cAch9nf',
-        userPoolWebClientId: '5bjct26m4mgt914kp0rmjfaad4',
-        domain: 'thirukkural-app-612850243659.auth.ap-south-1.amazoncognito.com',
-        redirectSignIn: 'https://thirukkural.site/callback',
-        redirectSignOut: 'https://thirukkural.site/',
+        userPoolId: '${COGNITO_USER_POOL_ID}',
+        userPoolWebClientId: '${COGNITO_WEB_CLIENT_ID}',
+        domain: '${COGNITO_DOMAIN}',
+        redirectSignIn: '${COGNITO_REDIRECT_SIGNIN}',
+        redirectSignOut: '${COGNITO_REDIRECT_SIGNOUT}',
     },
     api: {
-        baseUrl: 'https://api.thirukkural.site',
+        baseUrl: '${API_BASE_URL}',
         endpoints: {
             profile: '/profile',
             sampleEmail: '/sample-email',
             subscribe: '/subscribe'
         }
     },
-    vapidPublicKey: 'undefined'
+    razorpay: {
+        keyId: '${RAZORPAY_KEY_ID}'
+    },
+    vapidPublicKey: '${VAPID_PUBLIC_KEY}'
 };

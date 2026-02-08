@@ -126,19 +126,35 @@ jobs:
         USER_POOL_ID=$(get_output 'UserPoolId')
         CLIENT_ID=$(get_output 'UserPoolClientId')
         USER_POOL_DOMAIN=$(get_output 'UserPoolDomain')
+        # Strip https:// prefix as Amplify expects just the domain
+        USER_POOL_DOMAIN=${USER_POOL_DOMAIN#https://}
         BUCKET_NAME=$(get_output 'WebsiteBucketName')
         
         # SSM Parameters
         VAPID_KEY=$(aws ssm get-parameter --name "/$STAGE/thirukkural/vapid_public_key" --query "Parameter.Value" --output text)
         BASE_DOMAIN=$(aws ssm get-parameter --name "/$STAGE/thirukkural/base_domain" --query "Parameter.Value" --output text)
+        RAZORPAY_KEY=$(aws ssm get-parameter --name "/$STAGE/thirukkural/razorpay_key_id" --with-decryption --query "Parameter.Value" --output text)
 
         echo "API_BASE_URL=$API_URL" >> $GITHUB_ENV
         echo "COGNITO_USER_POOL_ID=$USER_POOL_ID" >> $GITHUB_ENV
         echo "COGNITO_WEB_CLIENT_ID=$CLIENT_ID" >> $GITHUB_ENV
         echo "COGNITO_DOMAIN=$USER_POOL_DOMAIN" >> $GITHUB_ENV
         echo "VAPID_PUBLIC_KEY=$VAPID_KEY" >> $GITHUB_ENV
+        echo "RAZORPAY_KEY_ID=$RAZORPAY_KEY" >> $GITHUB_ENV
         echo "S3_BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
         echo "APP_BASE_DOMAIN=$BASE_DOMAIN" >> $GITHUB_ENV
+        
+        # Validation
+        validate_var() {
+          if [ -z "$2" ]; then
+            echo "Error: $1 is not set or empty"
+            exit 1
+          fi
+        }
+
+        validate_var "RAZORPAY_KEY" "$RAZORPAY_KEY"
+        validate_var "VAPID_KEY" "$VAPID_KEY"
+        validate_var "BASE_DOMAIN" "$BASE_DOMAIN"
         
         # Site Domain for Dev (subdomain)
         SITE_DOMAIN="dev.$BASE_DOMAIN"
@@ -148,7 +164,9 @@ jobs:
         echo "COGNITO_REDIRECT_SIGNOUT=https://$SITE_DOMAIN/" >> $GITHUB_ENV
 
     - name: Generate Environment File
-      run: node scripts/set-env.js
+      run: |
+        # Replace placeholders in environment.dev.ts (used by 'development' config)
+        envsubst < src/environments/environment.dev.ts > src/environments/environment.dev.ts.tmp && mv src/environments/environment.dev.ts.tmp src/environments/environment.dev.ts
 
     - name: Build (Development Config)
       run: npm run build -- --configuration development

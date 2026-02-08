@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "npm run config && ng serve --ssl",
+    "start": "ng serve --ssl",
     "config": "node scripts/set-env.js",
-    "build": "npm run config && ng build",
+    "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",

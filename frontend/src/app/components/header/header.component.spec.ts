@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { HeaderComponent } from './header.component';
 import { AuthService } from '../../services/auth.service';
 import { provideRouter } from '@angular/router';
@@ -24,7 +25,7 @@ describe('HeaderComponent', () => {
         pwaServiceMock = { showInstallBanner$: of(false), installPwa: vi.fn() };
 
         await TestBed.configureTestingModule({
-            imports: [HeaderComponent, MatButtonModule],
+            imports: [HeaderComponent, MatButtonModule, NoopAnimationsModule],
             providers: [
                 provideRouter([]),
                 { provide: AuthService, useValue: authServiceMock },

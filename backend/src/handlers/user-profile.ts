@@ -19,32 +19,69 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const method = event.httpMethod;
 
         if (method === 'GET') {
-            const result = await docClient.send(new GetCommand({
+            console.log('Fetching profile from', TABLE_NAME);
+            const params = {
                 TableName: TABLE_NAME,
                 Key: { userId },
-            }));
+            };
+            // console.log('DynamoDB Get Params:', JSON.stringify(params)); // Redacted PII
+
+            const result = await docClient.send(new GetCommand(params));
+            // console.log('DynamoDB Get Result:', result); // Redacted PII
 
             if (!result.Item) {
+                console.log('User not found, creating default profile...');
                 // If user doesn't exist in DB but is authenticated, create a default profile
+                // Detect region from CloudFront headers (injected by CF)
+                const cfCountry = (event.headers?.['CloudFront-Viewer-Country'] || event.headers?.['cloudfront-viewer-country']) as string;
+
+                // Default to IN if not present (for now), but prefer detected country
+                const region = (cfCountry && cfCountry.toUpperCase() === 'IN') ? 'IN' : (cfCountry ? 'ROW' : 'IN');
+                const currency = region === 'IN' ? 'INR' : 'USD';
+
+                // TODO: [TK-101] Improve region detection accuracy and support more currencies if needed.
+                // Currently assuming IN = INR, Everything else = USD (ROW).
+
                 const newProfile = {
                     userId,
                     email,
                     isPaid: false, // Default to free
                     receiveDailyEmail: false, // Default to false
+                    credits: 0,
+                    subscriptionStatus: 'inactive',
+                    region,
+                    currency,
                     createdAt: new Date().toISOString(),
                 };
-                await docClient.send(new PutCommand({
-                    TableName: TABLE_NAME,
-                    Item: newProfile,
-                }));
-                return createResponse(200, newProfile, origin);
+
+                try {
+                    await docClient.send(new PutCommand({
+                        TableName: TABLE_NAME,
+                        Item: newProfile,
+                        ConditionExpression: 'attribute_not_exists(userId)'
+                    }));
+                    console.log('Default profile created');
+                    return createResponse(200, newProfile, origin);
+                } catch (putErr: any) {
+                    if (putErr.name === 'ConditionalCheckFailedException') {
+                        console.log('Profile created concurrently, fetching existing...');
+                        const retryResult = await docClient.send(new GetCommand(params));
+                        return createResponse(200, retryResult.Item, origin);
+                    }
+                    throw putErr;
+                }
             }
 
             return createResponse(200, result.Item, origin);
         }
 
         if (method === 'PUT') {
-            const body = JSON.parse(event.body ?? '{}');
+            let body;
+            try {
+                body = JSON.parse(event.body ?? '{}');
+            } catch (e) {
+                return createResponse(400, { message: 'Invalid JSON body' }, origin);
+            }
 
             // Validate allowed fields
             const { receiveDailyEmail } = body;
