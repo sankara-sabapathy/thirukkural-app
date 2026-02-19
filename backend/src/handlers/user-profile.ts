@@ -47,7 +47,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     email,
                     isPaid: false, // Default to free
                     receiveDailyEmail: false, // Default to false
-                    credits: 0,
+                    credits: 10,
                     subscriptionStatus: 'inactive',
                     region,
                     currency,

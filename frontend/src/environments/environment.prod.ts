@@ -1,6 +1,6 @@
 export const environment = {
     production: true,
-    enablePayments: false,
+    enablePayments: true,
     cognito: {
         userPoolId: '${COGNITO_USER_POOL_ID}',
         userPoolWebClientId: '${COGNITO_WEB_CLIENT_ID}',
