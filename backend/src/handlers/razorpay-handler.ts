@@ -223,6 +223,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // 4. Verify Payment Signature (Frontend Callback)
         if (path.endsWith('/verify') && method === 'POST') {
             const body = safeJsonParse(event.body);
+            const userId = event.requestContext.authorizer?.claims?.sub; // Ensure we know WHO is verifying
             const { razorpay_order_id, razorpay_payment_id, razorpay_signature, razorpay_subscription_id } = body;
 
             if (!razorpay_payment_id || !razorpay_signature) {
@@ -234,13 +235,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
             let generated_signature = '';
             if (razorpay_subscription_id) {
-                // Subscription Verification: payment_id + "|" + subscription_id
+                // Subscription Verification
                 generated_signature = crypto
                     .createHmac('sha256', keySecret)
                     .update(razorpay_payment_id + "|" + razorpay_subscription_id)
                     .digest('hex');
             } else if (razorpay_order_id) {
-                // Order Verification: order_id + "|" + payment_id
+                // Order Verification
                 generated_signature = crypto
                     .createHmac('sha256', keySecret)
                     .update(razorpay_order_id + "|" + razorpay_payment_id)
@@ -253,6 +254,35 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             console.log('Received Signature:', razorpay_signature);
 
             if (generated_signature === razorpay_signature) {
+                // SUCCESS! 
+                // Now, if it's a subscription, let's fetch details and update DB immediately 
+                // to avoid race condition where UI redirects before Webhook arrives.
+
+                if (razorpay_subscription_id && userId) {
+                    try {
+                        const sub = await rzp.subscriptions.fetch(razorpay_subscription_id);
+                        if (sub.status === 'active') {
+                            console.log(`[Verify] Immediate update for subscription ${razorpay_subscription_id}`);
+                            await docClient.send(new UpdateCommand({
+                                TableName: USERS_TABLE,
+                                Key: { userId },
+                                UpdateExpression: 'SET subscriptionStatus = :status, subscriptionId = :subId, subscriptionExpiry = :expiry, subscriptionPlan = :plan, updatedAt = :now',
+                                ExpressionAttributeValues: {
+                                    ':status': 'active',
+                                    ':subId': sub.id,
+                                    ':expiry': new Date(sub.current_end * 1000).toISOString(),
+                                    ':plan': sub.plan_id.includes('monthly') ? 'monthly' : 'yearly',
+                                    ':now': new Date().toISOString()
+                                }
+                            }));
+                        }
+                    } catch (e: any) {
+                        console.error('[Verify] Failed to fetch/update subscription', e);
+                        // Convert ReferenceError/Auth error to non-blocking? 
+                        // If this fails, we still return valid signature, letting Webhook handle it.
+                    }
+                }
+
                 return createResponse(200, { status: 'valid' }, origin);
             } else {
                 return createResponse(400, { message: 'Invalid signature' }, origin);
