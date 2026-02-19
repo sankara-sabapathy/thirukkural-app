@@ -17,7 +17,17 @@ export const environment = {
         }
     },
     razorpay: {
-        keyId: 'rzp_test_SC6SfzckFW4xe0'
+        keyId: 'rzp_test_SC6SfzckFW4xe0',
+        plans: {
+            INR: {
+                monthly: 'plan_test_monthly_inr',
+                yearly: 'plan_test_yearly_inr'
+            },
+            USD: {
+                monthly: 'plan_test_monthly_usd',
+                yearly: 'plan_test_yearly_usd'
+            }
+        }
     },
     vapidPublicKey: undefined
 };
