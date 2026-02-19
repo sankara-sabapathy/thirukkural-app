@@ -20,12 +20,12 @@ export const environment = {
         keyId: 'rzp_test_SC6SfzckFW4xe0',
         plans: {
             INR: {
-                monthly: 'plan_test_monthly_inr',
-                yearly: 'plan_test_yearly_inr'
+                monthly: 'plan_SCB8cdaYV5UXEP', // Test Monthly INR
+                yearly: 'plan_SCB8dBVUs1Jmmw' // Test Yearly INR
             },
             USD: {
-                monthly: 'plan_test_monthly_usd',
-                yearly: 'plan_test_yearly_usd'
+                monthly: 'plan_SI3YOmJ7D1tH5g',
+                yearly: 'plan_SI3YOpTWnhtNiK'
             }
         }
     },
