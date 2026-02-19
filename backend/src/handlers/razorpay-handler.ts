@@ -261,20 +261,25 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 if (razorpay_subscription_id && userId) {
                     try {
                         const sub = await rzp.subscriptions.fetch(razorpay_subscription_id);
-                        if (sub.status === 'active') {
+                        console.log(`[Verify] Fetched Subscription ${sub.id} Status: ${sub.status}`);
+
+                        // Accept 'authenticated' as it means the auth transaction (payment) succeeded
+                        if (sub.status === 'active' || sub.status === 'authenticated') {
                             console.log(`[Verify] Immediate update for subscription ${razorpay_subscription_id}`);
                             await docClient.send(new UpdateCommand({
                                 TableName: USERS_TABLE,
                                 Key: { userId },
                                 UpdateExpression: 'SET subscriptionStatus = :status, subscriptionId = :subId, subscriptionExpiry = :expiry, subscriptionPlan = :plan, updatedAt = :now',
                                 ExpressionAttributeValues: {
-                                    ':status': 'active',
+                                    ':status': 'active', // Force active in our DB if authenticated
                                     ':subId': sub.id,
                                     ':expiry': new Date(sub.current_end * 1000).toISOString(),
                                     ':plan': sub.plan_id.includes('monthly') ? 'monthly' : 'yearly',
                                     ':now': new Date().toISOString()
                                 }
                             }));
+                        } else {
+                            console.warn(`[Verify] Subscription status '${sub.status}' not active/authenticated. DB not updated immediately.`);
                         }
                     } catch (e: any) {
                         console.error('[Verify] Failed to fetch/update subscription', e);
