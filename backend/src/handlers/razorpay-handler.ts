@@ -90,7 +90,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             const sub = await rzp.subscriptions.create({
                 plan_id: planId,
                 customer_notify: 1,
-                total_count: total_count || 1200, // Default to 1200 if not provided (fallback for old clients?) 
+                total_count: total_count || 60, // Default to 5 years (60 months)
                 // Creating indefinite sub:
                 // total_count: 12 (1 year) or large number.
                 notes: {
@@ -266,7 +266,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                         // Accept 'authenticated' as it means the auth transaction (payment) succeeded
                         if (sub.status === 'active' || sub.status === 'authenticated') {
                             console.log(`[Verify] Immediate update for subscription ${razorpay_subscription_id}`);
-                            await docClient.send(new UpdateCommand({
+                            const updateResult = await docClient.send(new UpdateCommand({
                                 TableName: USERS_TABLE,
                                 Key: { userId },
                                 UpdateExpression: 'SET subscriptionStatus = :status, subscriptionId = :subId, subscriptionExpiry = :expiry, subscriptionPlan = :plan, updatedAt = :now',
@@ -276,8 +276,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                                     ':expiry': new Date(sub.current_end * 1000).toISOString(),
                                     ':plan': sub.plan_id.includes('monthly') ? 'monthly' : 'yearly',
                                     ':now': new Date().toISOString()
-                                }
+                                },
+                                ReturnValues: 'ALL_NEW'
                             }));
+
+                            // Return the updated attributes so frontend can update local state
+                            return createResponse(200, { status: 'valid', updatedUser: updateResult.Attributes }, origin);
                         } else {
                             console.warn(`[Verify] Subscription status '${sub.status}' not active/authenticated. DB not updated immediately.`);
                         }
