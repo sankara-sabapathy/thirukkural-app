@@ -50,7 +50,9 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
     // Helper to extract text from array format [Title, Content, ...MoreContent]
     const getCommentary = (arr?: string[]) => {
         if (!arr || !Array.isArray(arr) || arr.length < 2) return '';
-        return arr.slice(1).join('<br/><br/>');
+        // Fix: Only take the 2nd element (index 1) which is the content.
+        // Previously it was joining all subsequent elements, causing duplication if English meaning was present.
+        return arr[1];
     };
 
     const parimelaText = getCommentary(parimela);
@@ -60,6 +62,11 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
     const subject = `Thirukkural #${kuralId}: ${translation.substring(0, 50)}...`;
 
     const kuralLink = `https://thirukkural.site/kural/${kuralId}`;
+
+    // WhatsApp Share Link
+    // WhatsApp Share Link
+    const whatsAppText = encodeURIComponent(`Thirukkural #${kuralId}\n\n${line1}\n${line2}\n\nTranslation: ${translation}\n\nRead more: ${kuralLink}`);
+    const whatsAppLink = `https://wa.me/?text=${whatsAppText}`;
 
     // Unsubscribe text logic
     const unsubscribeText = isSample
@@ -102,6 +109,17 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
                 line-height: 1.6;
                 color: ${secondaryColor};
                 margin-bottom: 8px;
+            }
+            .btn-whatsapp {
+                display: inline-block;
+                background-color: #25D366;
+                color: #ffffff;
+                text-decoration: none;
+                padding: 10px 20px;
+                border-radius: 20px;
+                font-weight: 600;
+                font-size: 14px;
+                margin-top: 20px;
             }
         </style>
     </head>
@@ -146,6 +164,13 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
                      ${transliteration?.replace(/\n/g, '<br/>')}
                 </div>
                 ` : ''}
+
+                <!-- WhatsApp Share Button -->
+                <div style="margin-top: 25px;">
+                    <a href="${whatsAppLink}" class="btn-whatsapp" style="color: #ffffff; text-decoration: none;">
+                        Share on WhatsApp
+                    </a>
+                </div>
             </div>
 
             <!-- English Meaning Section -->
@@ -195,19 +220,19 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
                 ${hasContent(parimelaText) ? `
                 <div style="margin-bottom: 25px; border-top: 1px dashed #e2e8f0; padding-top: 20px;">
                     <strong style="color: ${primaryColor}; display: block; margin-bottom: 8px; font-size: 14px; font-family: 'Noto Sans Tamil', sans-serif;">பரிமேலழகர்</strong>
-                     <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #334155; font-family: 'Noto Sans Tamil', sans-serif;">${parimelaText}</p>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #334155; font-family: 'Noto Sans Tamil', sans-serif;">${parimelaText}</p>
                 </div>` : ''}
 
                 ${hasContent(manikudavarText) ? `
                 <div style="margin-bottom: 25px; border-top: 1px dashed #e2e8f0; padding-top: 20px;">
                     <strong style="color: ${primaryColor}; display: block; margin-bottom: 8px; font-size: 14px; font-family: 'Noto Sans Tamil', sans-serif;">மணக்குடவர்</strong>
-                     <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #334155; font-family: 'Noto Sans Tamil', sans-serif;">${manikudavarText}</p>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #334155; font-family: 'Noto Sans Tamil', sans-serif;">${manikudavarText}</p>
                 </div>` : ''}
 
                  ${hasContent(vMunusamiText) ? `
                 <div style="margin-bottom: 25px; border-top: 1px dashed #e2e8f0; padding-top: 20px;">
                     <strong style="color: ${primaryColor}; display: block; margin-bottom: 8px; font-size: 14px; font-family: 'Noto Sans Tamil', sans-serif;">திருக்குறளார் வீ. முனிசாமி</strong>
-                     <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #334155; font-family: 'Noto Sans Tamil', sans-serif;">${vMunusamiText}</p>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #334155; font-family: 'Noto Sans Tamil', sans-serif;">${vMunusamiText}</p>
                 </div>` : ''}
             </div>
 

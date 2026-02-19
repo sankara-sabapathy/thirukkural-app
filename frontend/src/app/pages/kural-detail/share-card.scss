@@ -1,0 +1,122 @@
+// Hidden Share Card Styles
+.share-card-hidden {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    width: 1080px;
+    background-color: #ffffff;
+    font-family: 'Inter', sans-serif;
+    color: #1e293b;
+    overflow: hidden;
+
+    .share-card-content {
+        padding: 60px;
+        display: flex;
+        flex-direction: column;
+        gap: 40px;
+        border: 20px solid #f1f5f9;
+    }
+
+    .share-header {
+        text-align: center;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 30px;
+
+        .kural-number {
+            display: block;
+            font-size: 24px;
+            font-weight: 700;
+            color: #6366f1;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .share-categories {
+            font-size: 18px;
+            color: #64748b;
+            font-weight: 500;
+            text-transform: uppercase;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+        }
+    }
+
+    .share-body {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+
+        .tamil-text-large {
+            text-align: center;
+            background-color: #f8fafc;
+            padding: 40px;
+            border-radius: 16px;
+
+            p {
+                font-family: 'Noto Sans Tamil', sans-serif;
+                font-size: 36px;
+                font-weight: 700;
+                line-height: 1.6;
+                color: #0f172a;
+                margin: 0;
+
+                &:first-child {
+                    margin-bottom: 15px;
+                }
+            }
+        }
+
+        .share-section {
+            .share-label {
+                display: block;
+                font-size: 16px;
+                font-weight: 700;
+                color: #94a3b8;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                margin-bottom: 8px;
+            }
+
+            .share-text {
+                font-size: 24px;
+                line-height: 1.5;
+                color: #334155;
+                margin: 0;
+            }
+
+            .share-text-italic {
+                font-size: 20px;
+                line-height: 1.5;
+                color: #475569;
+                font-style: italic;
+                margin: 0;
+            }
+        }
+    }
+
+    .share-footer {
+        margin-top: 20px;
+        padding-top: 30px;
+        border-top: 2px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .watermark {
+            font-size: 20px;
+            font-weight: 600;
+            color: #6366f1;
+        }
+
+        .app-brand {
+            font-size: 18px;
+            color: #94a3b8;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    }
+}
