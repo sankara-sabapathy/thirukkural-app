@@ -130,7 +130,7 @@
                     </div>
 
                     <!-- Explanation -->
-                    <div class="content-section">
+                    <div class="content-section" *ngIf="kural.explanation">
                         <h3>
                             <mat-icon>description</mat-icon>
                             Explanation
@@ -146,7 +146,7 @@
                             Tamil Commentaries (தமிழ் உரைகள்)
                         </h2>
 
-                        <!-- Commentaries content... I'll keep existing ones -->
+
                         <div class="content-section tamil-content"
                             *ngIf="kural.mu_varatha && kural.mu_varatha.length > 1">
                             <h3><mat-icon>account_circle</mat-icon> {{ kural.mu_varatha[0] }}</h3>

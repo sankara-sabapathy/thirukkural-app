@@ -51,7 +51,6 @@
     "@angular/cli": "21.0.0",
     "@angular/compiler-cli": "21.0.0",
     "@playwright/test": "^1.57.0",
-    "@types/html2canvas": "^0.5.35",
     "@types/node": "^24.10.1",
     "@types/uuid": "^10.0.0",
     "@vitest/coverage-v8": "^4.0.14",

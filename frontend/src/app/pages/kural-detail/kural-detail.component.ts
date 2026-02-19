@@ -95,13 +95,8 @@ export class KuralDetailComponent implements OnInit {
         const title = `Thirukkural #${kural.number} - ${kural.translation.substring(0, 50)}...`;
         this.titleService.setTitle(title);
 
-        const description = `${kural.line1} ${kural.line2} - ${kural.translation}`;
-
-        this.metaService.updateTag({ property: 'og:title', content: `Thirukkural #${kural.number}` });
-        this.metaService.updateTag({ property: 'og:description', content: description });
-        this.metaService.updateTag({ property: 'og:url', content: window.location.href });
-        // Ensure we have a valid image URL. If none, keep default or use a specific dynamic generator if available
-        // this.metaService.updateTag({ property: 'og:image', content: '...' }); 
+        // Client-side meta updates are removed as they are ineffective for social crawlers (which need SSR).
+        // Static tags in index.html serve as the fallback.
     }
 
     previousKural(): void {
@@ -116,7 +111,7 @@ export class KuralDetailComponent implements OnInit {
         }
     }
 
-    copyToClipboard(kural: Kural): void {
+    copyToClipboard(kural: Kural, silent: boolean = false): void {
         let text = `Thirukkural ${kural.number}\n\n`;
         text += `${kural.line1}\n${kural.line2}\n\n`;
         text += `Category: ${kural.pal_tr} › ${kural.iyal_tr} › ${kural.adikaram_tr}\n\n`;
@@ -130,7 +125,9 @@ export class KuralDetailComponent implements OnInit {
         text += `Read more: ${window.location.href}`;
 
         navigator.clipboard.writeText(text).then(() => {
-            this.snackBar.open('Copied to clipboard!', 'Close', { duration: 2000 });
+            if (!silent) {
+                this.snackBar.open('Copied to clipboard!', 'Close', { duration: 2000 });
+            }
         });
     }
 
@@ -170,40 +167,47 @@ export class KuralDetailComponent implements OnInit {
                 windowWidth: 1080
             });
 
-            canvas.toBlob(async (blob) => {
-                if (!blob) {
-                    this.snackBar.open('Failed to generate image', 'Close', { duration: 3000 });
+            // Wrap toBlob in a promise with timeout prevention
+            const blobPromise = new Promise<Blob | null>((resolve) => {
+                canvas.toBlob((blob) => resolve(blob), 'image/png');
+                // Safety timeout if toBlob doesn't fire callback
+                setTimeout(() => resolve(null), 5000);
+            });
+
+            const blob = await blobPromise;
+
+            if (!blob) {
+                this.snackBar.open('Failed to generate image', 'Close', { duration: 3000 });
+                this.isSharing = false;
+                return;
+            }
+
+            const file = new File([blob], `thirukkural-${this.currentNumber}.png`, { type: 'image/png' });
+            const shareData = {
+                files: [file],
+                title: `Thirukkural #${this.currentNumber}`,
+                text: `Thirukkural #${this.currentNumber}\n\n${window.location.href}`
+            };
+
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share(shareData);
                     this.isSharing = false;
-                    return;
-                }
-
-                const file = new File([blob], `thirukkural-${this.currentNumber}.png`, { type: 'image/png' });
-                const shareData = {
-                    files: [file],
-                    title: `Thirukkural #${this.currentNumber}`,
-                    text: `Thirukkural #${this.currentNumber}\n\n${window.location.href}`
-                };
-
-                if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                    try {
-                        await navigator.share(shareData);
-                        this.isSharing = false;
-                    } catch (error: any) {
-                        if (error.name !== 'AbortError') {
-                            console.error('Error sharing file:', error);
-                            // Fallback to text share if file share fails but valid error
-                            this.shareTextOnly();
-                        }
-                        this.isSharing = false;
+                } catch (error: any) {
+                    if (error.name !== 'AbortError') {
+                        console.error('Error sharing file:', error);
+                        // Fallback to text share if file share fails but valid error
+                        this.shareTextOnly();
                     }
-                } else {
-                    // Fallback for desktop or unsupported browsers: Download image + Copy text
-                    this.downloadImage(blob);
-                    this.copyToClipboard(kural);
-                    this.snackBar.open('Image downloaded & Text copied!', 'Close', { duration: 3000 });
                     this.isSharing = false;
                 }
-            }, 'image/png');
+            } else {
+                // Fallback for desktop or unsupported browsers: Download image + Copy text
+                this.downloadImage(blob);
+                this.copyToClipboard(kural, true); // Silent copy
+                this.snackBar.open('Image downloaded & Text copied!', 'Close', { duration: 3000 });
+                this.isSharing = false;
+            }
 
         } catch (error) {
             console.error('Error capturing image:', error);

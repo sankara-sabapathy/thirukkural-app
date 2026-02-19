@@ -64,7 +64,6 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
     const kuralLink = `https://thirukkural.site/kural/${kuralId}`;
 
     // WhatsApp Share Link
-    // WhatsApp Share Link
     const whatsAppText = encodeURIComponent(`Thirukkural #${kuralId}\n\n${line1}\n${line2}\n\nTranslation: ${translation}\n\nRead more: ${kuralLink}`);
     const whatsAppLink = `https://wa.me/?text=${whatsAppText}`;
 
