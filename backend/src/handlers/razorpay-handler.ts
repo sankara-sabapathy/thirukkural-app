@@ -78,7 +78,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             if (!userId) return createResponse(401, { message: 'Unauthorized' }, origin);
 
             const body = safeJsonParse(event.body);
-            const { planId } = body as RazorpaySubscriptionRequest; // 'plan_monthly_inr' etc. provided by logic
+            const { planId, total_count } = body as RazorpaySubscriptionRequest; // 'plan_monthly_inr' etc. provided by logic
 
             if (!planId) return createResponse(400, { message: 'Missing planId' }, origin);
 
@@ -90,7 +90,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             const sub = await rzp.subscriptions.create({
                 plan_id: planId,
                 customer_notify: 1,
-                total_count: 1200, // 100 years? Or indefinite? Razorpay max count. 
+                total_count: total_count || 1200, // Default to 1200 if not provided (fallback for old clients?) 
                 // Creating indefinite sub:
                 // total_count: 12 (1 year) or large number.
                 notes: {

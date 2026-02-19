@@ -13,6 +13,7 @@ export interface OrderRequest {
 
 export interface SubscriptionRequest {
     planId: string;
+    total_count: number;
 }
 
 @Injectable({
@@ -32,8 +33,8 @@ export class PaymentService {
         return firstValueFrom(this.http.post(`${this.apiUrl}/order`, body));
     }
 
-    async createSubscription(planId: string): Promise<any> {
-        const body: SubscriptionRequest = { planId };
+    async createSubscription(planId: string, total_count: number): Promise<any> {
+        const body: SubscriptionRequest = { planId, total_count };
         return firstValueFrom(this.http.post(`${this.apiUrl}/subscription`, body));
     }
 

@@ -109,8 +109,12 @@ export class PricingComponent implements OnInit {
         // Hardcoding for MVP as per types.ts logic
         const planId = environment.razorpay.plans[this.currency][planType];
 
+        // 1200 months = 100 years
+        // 100 years = 100 years
+        const total_count = planType === 'monthly' ? 1200 : 100;
+
         try {
-            const sub = await this.paymentService.createSubscription(planId);
+            const sub = await this.paymentService.createSubscription(planId, total_count);
             this.paymentService.openCheckout({
                 key: environment.razorpay.keyId,
                 subscription_id: sub.id,
