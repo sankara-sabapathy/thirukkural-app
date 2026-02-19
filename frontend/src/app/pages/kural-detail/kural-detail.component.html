@@ -5,177 +5,216 @@
         </div>
 
         <div *ngIf="kural" class="kural-content">
-        <div class="kural-card">
-            <div class="card-header">
-                <div class="number-badge">{{ kural.number }}</div>
-                <h1>Thirukkural {{ kural.number }}</h1>
-                <div class="category-path">
-                    <span>{{ kural.pal_tr }}</span>
-                    <span>{{ kural.iyal_tr }}</span>
-                    <span>{{ kural.adikaram_tr }}</span>
-                </div>
-            </div>
+            <div class="kural-card">
 
-            <div class="card-body">
-                <!-- Tamil Text Section -->
-                <div class="tamil-section">
-                    <div class="tamil-text">
-                        <p>{{ kural.line1 }}</p>
-                        <p>{{ kural.line2 }}</p>
-                    </div>
-                    <div class="transliteration" *ngIf="kural.line1_tl || kural.line2_tl">
-                        <p class="transliteration-label">Transliteration:</p>
-                        <p *ngIf="kural.line1_tl">{{ kural.line1_tl }}</p>
-                        <p *ngIf="kural.line2_tl">{{ kural.line2_tl }}</p>
-                    </div>
-                </div>
+                <!-- Hidden Capture Area for High Quality Image -->
+                <div #captureArea class="share-card-hidden">
+                    <div class="share-card-content">
+                        <div class="share-header">
+                            <span class="kural-number">Thirukkural {{ kural.number }}</span>
+                            <div class="share-categories">
+                                <span>{{ kural.pal }} | {{ kural.pal_tl }} | {{ kural.pal_tr }}</span>
+                                <span>{{ kural.iyal }} | {{ kural.iyal_tl }} | {{ kural.iyal_tr }}</span>
+                                <span>{{ kural.adikaram }} | {{ kural.adikaram_tl }} | {{ kural.adikaram_tr }}</span>
+                            </div>
+                        </div>
 
-                <!-- Category Information -->
-                <div class="content-section category-info">
-                    <h3>
-                        <mat-icon>category</mat-icon>
-                        Category Information
-                    </h3>
-                    <div class="category-details">
-                        <div class="category-item">
-                            <strong>பால் (Section):</strong>
-                            <span class="tamil-text">{{ kural.pal }}</span>
-                            <span class="english-text">({{ kural.pal_tr }})</span>
-                            <span class="transliteration-text" *ngIf="kural.pal_tl">[{{ kural.pal_tl }}]</span>
+                        <div class="share-body">
+                            <div class="tamil-text-large">
+                                <p>{{ kural.line1 }}</p>
+                                <p>{{ kural.line2 }}</p>
+                            </div>
+
+                            <div class="share-section">
+                                <span class="share-label">Transliteration</span>
+                                <p class="share-text-italic" *ngIf="kural.line1_tl">{{ kural.line1_tl }}</p>
+                                <p class="share-text-italic" *ngIf="kural.line2_tl">{{ kural.line2_tl }}</p>
+                            </div>
+
+                            <div class="share-section">
+                                <span class="share-label">Explanation</span>
+                                <p class="share-text">{{ kural.explanation }}</p>
+                            </div>
+
+                            <div class="share-section" *ngIf="getBestExplanation(kural) as explanation">
+                                <span class="share-label">Explanation ({{ explanation.author }})</span>
+                                <p class="share-text">{{ explanation.text }}</p>
+                            </div>
                         </div>
-                        <div class="category-item">
-                            <strong>இயல் (Chapter):</strong>
-                            <span class="tamil-text">{{ kural.iyal }}</span>
-                            <span class="english-text">({{ kural.iyal_tr }})</span>
-                            <span class="transliteration-text" *ngIf="kural.iyal_tl">[{{ kural.iyal_tl }}]</span>
-                        </div>
-                        <div class="category-item">
-                            <strong>அதிகாரம் (Topic):</strong>
-                            <span class="tamil-text">{{ kural.adikaram }}</span>
-                            <span class="english-text">({{ kural.adikaram_tr }})</span>
-                            <span class="transliteration-text" *ngIf="kural.adikaram_tl">[{{ kural.adikaram_tl }}]</span>
+
+                        <div class="share-footer">
+                            <div class="watermark">thirukkural.site</div>
+                            <div class="app-brand">Thirukkural Daily</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- English Translation -->
-                <div class="content-section">
-                    <h3>
-                        <mat-icon>translate</mat-icon>
-                        English Translation
-                    </h3>
-                    <p>{{ kural.translation }}</p>
+                <div class="card-header">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <div class="number-badge">{{ kural.number }}</div>
+                            <h1>Thirukkural {{ kural.number }}</h1>
+                            <div class="category-path">
+                                <span>{{ kural.pal_tr }}</span>
+                                <span>{{ kural.iyal_tr }}</span>
+                                <span>{{ kural.adikaram_tr }}</span>
+                            </div>
+                        </div>
+                        <button mat-icon-button (click)="captureAndShare(kural)" [disabled]="isSharing"
+                            style="color: white; background: rgba(255,255,255,0.2);">
+                            <mat-icon>share</mat-icon>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Couplet -->
-                <div class="content-section" *ngIf="kural.couplet">
-                    <h3>
-                        <mat-icon>format_quote</mat-icon>
-                        Couplet
-                    </h3>
-                    <p>{{ kural.couplet }}</p>
+                <div class="card-body">
+                    <!-- Tamil Text Section -->
+                    <div class="tamil-section">
+                        <div class="tamil-text">
+                            <p>{{ kural.line1 }}</p>
+                            <p>{{ kural.line2 }}</p>
+                        </div>
+                        <div class="transliteration" *ngIf="kural.line1_tl || kural.line2_tl">
+                            <p class="transliteration-label">Transliteration:</p>
+                            <p *ngIf="kural.line1_tl">{{ kural.line1_tl }}</p>
+                            <p *ngIf="kural.line2_tl">{{ kural.line2_tl }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Category Information -->
+                    <div class="content-section category-info">
+                        <h3>
+                            <mat-icon>category</mat-icon>
+                            Category Information
+                        </h3>
+                        <div class="category-details">
+                            <div class="category-item">
+                                <strong>பால் (Section):</strong>
+                                <span class="tamil-text">{{ kural.pal }}</span>
+                                <span class="english-text">({{ kural.pal_tr }})</span>
+                                <span class="transliteration-text" *ngIf="kural.pal_tl">[{{ kural.pal_tl }}]</span>
+                            </div>
+                            <div class="category-item">
+                                <strong>இயல் (Chapter):</strong>
+                                <span class="tamil-text">{{ kural.iyal }}</span>
+                                <span class="english-text">({{ kural.iyal_tr }})</span>
+                                <span class="transliteration-text" *ngIf="kural.iyal_tl">[{{ kural.iyal_tl
+                                    }}]</span>
+                            </div>
+                            <div class="category-item">
+                                <strong>அதிகாரம் (Topic):</strong>
+                                <span class="tamil-text">{{ kural.adikaram }}</span>
+                                <span class="english-text">({{ kural.adikaram_tr }})</span>
+                                <span class="transliteration-text" *ngIf="kural.adikaram_tl">[{{ kural.adikaram_tl
+                                    }}]</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- English Translation -->
+                    <div class="content-section">
+                        <h3>
+                            <mat-icon>translate</mat-icon>
+                            English Translation
+                        </h3>
+                        <p>{{ kural.translation }}</p>
+                    </div>
+
+                    <!-- Couplet -->
+                    <div class="content-section" *ngIf="kural.couplet">
+                        <h3>
+                            <mat-icon>format_quote</mat-icon>
+                            Couplet
+                        </h3>
+                        <p>{{ kural.couplet }}</p>
+                    </div>
+
+                    <!-- Explanation -->
+                    <div class="content-section" *ngIf="kural.explanation">
+                        <h3>
+                            <mat-icon>description</mat-icon>
+                            Explanation
+                        </h3>
+                        <p>{{ kural.explanation }}</p>
+                    </div>
+
+                    <!-- Tamil Commentaries Section -->
+                    <div class="commentaries-section"
+                        *ngIf="kural.mu_varatha || kural.parimela || kural.salaman || kural.manikudavar || kural.v_munusami || kural.mu_karu">
+                        <h2 class="section-title">
+                            <mat-icon>menu_book</mat-icon>
+                            Tamil Commentaries (தமிழ் உரைகள்)
+                        </h2>
+
+
+                        <div class="content-section tamil-content"
+                            *ngIf="kural.mu_varatha && kural.mu_varatha.length > 1">
+                            <h3><mat-icon>account_circle</mat-icon> {{ kural.mu_varatha[0] }}</h3>
+                            <p>{{ kural.mu_varatha[1] }}</p>
+                        </div>
+                        <div class="content-section tamil-content" *ngIf="kural.mu_karu && kural.mu_karu.length > 1">
+                            <h3><mat-icon>account_circle</mat-icon> {{ kural.mu_karu[0] }}</h3>
+                            <p>{{ kural.mu_karu[1] }}</p>
+                        </div>
+                        <div class="content-section tamil-content" *ngIf="kural.salaman && kural.salaman.length > 1">
+                            <h3><mat-icon>account_circle</mat-icon> {{ kural.salaman[0] }}</h3>
+                            <p>{{ kural.salaman[1] }}</p>
+                        </div>
+                        <div class="content-section tamil-content" *ngIf="kural.parimela && kural.parimela.length > 1">
+                            <h3><mat-icon>account_circle</mat-icon> {{ kural.parimela[0] }}</h3>
+                            <p>{{ kural.parimela[1] }}</p>
+                            <p *ngIf="kural.parimela.length > 2" class="detailed-commentary">{{ kural.parimela[2] }}</p>
+                        </div>
+                        <div class="content-section tamil-content"
+                            *ngIf="kural.manikudavar && kural.manikudavar.length > 1">
+                            <h3><mat-icon>account_circle</mat-icon> {{ kural.manikudavar[0] }}</h3>
+                            <p>{{ kural.manikudavar[1] }}</p>
+                        </div>
+                        <div class="content-section tamil-content"
+                            *ngIf="kural.v_munusami && kural.v_munusami.length > 1">
+                            <h3><mat-icon>account_circle</mat-icon> {{ kural.v_munusami[0] }}</h3>
+                            <p>{{ kural.v_munusami[1] }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Branding Watermark -->
+                    <div class="branding-watermark"
+                        style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px dashed #e0e0e0; color: #1868db; font-weight: 600; font-family: 'Inter', sans-serif;">
+                        thirukkural.site
+                    </div>
                 </div>
 
-                <!-- Explanation -->
-                <div class="content-section">
-                    <h3>
-                        <mat-icon>description</mat-icon>
-                        Explanation
-                    </h3>
-                    <p>{{ kural.explanation }}</p>
-                </div>
-
-                <!-- Tamil Commentaries Section -->
-                <div class="commentaries-section" *ngIf="kural.mu_varatha || kural.parimela || kural.salaman || kural.manikudavar || kural.v_munusami || kural.mu_karu">
-                    <h2 class="section-title">
-                        <mat-icon>menu_book</mat-icon>
-                        Tamil Commentaries (தமிழ் உரைகள்)
-                    </h2>
-
-                    <!-- மு.வரதராசனார் (Mu. Varatharasanar) -->
-                    <div class="content-section tamil-content" *ngIf="kural.mu_varatha && kural.mu_varatha.length > 1">
-                        <h3>
-                            <mat-icon>account_circle</mat-icon>
-                            {{ kural.mu_varatha[0] }}
-                        </h3>
-                        <p>{{ kural.mu_varatha[1] }}</p>
+                <div class="card-footer">
+                    <div class="nav-buttons">
+                        <button mat-raised-button color="primary" (click)="previousKural()"
+                            [disabled]="currentNumber <= 1">
+                            <mat-icon>chevron_left</mat-icon> Previous
+                        </button>
+                        <button mat-raised-button color="primary" (click)="nextKural()"
+                            [disabled]="currentNumber >= 1330">
+                            Next <mat-icon>chevron_right</mat-icon>
+                        </button>
                     </div>
 
-                    <!-- மு.கருணாநிதி (Mu. Karunanidhi) -->
-                    <div class="content-section tamil-content" *ngIf="kural.mu_karu && kural.mu_karu.length > 1">
-                        <h3>
-                            <mat-icon>account_circle</mat-icon>
-                            {{ kural.mu_karu[0] }}
-                        </h3>
-                        <p>{{ kural.mu_karu[1] }}</p>
+                    <div class="action-buttons">
+                        <button mat-icon-button (click)="copyToClipboard(kural)" title="Copy Text">
+                            <mat-icon>content_copy</mat-icon>
+                        </button>
+                        <button mat-fab extended color="accent" (click)="captureAndShare(kural)" [disabled]="isSharing">
+                            <mat-icon>share</mat-icon>
+                            <span *ngIf="!isSharing">Share</span>
+                            <span *ngIf="isSharing">Preparing...</span>
+                        </button>
                     </div>
 
-                    <!-- சாலமன் பாப்பையா (Salaman Pappaiya) -->
-                    <div class="content-section tamil-content" *ngIf="kural.salaman && kural.salaman.length > 1">
-                        <h3>
-                            <mat-icon>account_circle</mat-icon>
-                            {{ kural.salaman[0] }}
-                        </h3>
-                        <p>{{ kural.salaman[1] }}</p>
-                    </div>
-
-                    <!-- பரிமேலழகர் (Parimelazhagar) -->
-                    <div class="content-section tamil-content" *ngIf="kural.parimela && kural.parimela.length > 1">
-                        <h3>
-                            <mat-icon>account_circle</mat-icon>
-                            {{ kural.parimela[0] }}
-                        </h3>
-                        <p>{{ kural.parimela[1] }}</p>
-                        <p *ngIf="kural.parimela.length > 2" class="detailed-commentary">{{ kural.parimela[2] }}</p>
-                    </div>
-
-                    <!-- மணக்குடவர் (Manikudavar) -->
-                    <div class="content-section tamil-content" *ngIf="kural.manikudavar && kural.manikudavar.length > 1">
-                        <h3>
-                            <mat-icon>account_circle</mat-icon>
-                            {{ kural.manikudavar[0] }}
-                        </h3>
-                        <p>{{ kural.manikudavar[1] }}</p>
-                    </div>
-
-                    <!-- திருக்குறளார் வீ. முனிசாமி (V. Munisami) -->
-                    <div class="content-section tamil-content" *ngIf="kural.v_munusami && kural.v_munusami.length > 1">
-                        <h3>
-                            <mat-icon>account_circle</mat-icon>
-                            {{ kural.v_munusami[0] }}
-                        </h3>
-                        <p>{{ kural.v_munusami[1] }}</p>
+                    <div class="back-to-list">
+                        <button mat-button routerLink="/kurals">
+                            <mat-icon>list</mat-icon>
+                            Back to Library
+                        </button>
                     </div>
                 </div>
             </div>
-
-            <div class="card-footer">
-                <div class="nav-buttons">
-                    <button mat-raised-button color="primary" (click)="previousKural()" [disabled]="currentNumber <= 1">
-                        <mat-icon>chevron_left</mat-icon> Previous
-                    </button>
-                    <button mat-raised-button color="primary" (click)="nextKural()" [disabled]="currentNumber >= 1330">
-                        Next <mat-icon>chevron_right</mat-icon>
-                    </button>
-                </div>
-
-                <div class="action-buttons">
-                    <button mat-icon-button (click)="copyToClipboard(kural)" title="Copy Kural">
-                        <mat-icon>content_copy</mat-icon>
-                    </button>
-                    <button mat-icon-button (click)="shareKural(kural)" title="Share Kural">
-                        <mat-icon>share</mat-icon>
-                    </button>
-                </div>
-
-                <div class="back-to-list">
-                    <button mat-button routerLink="/kurals">
-                        <mat-icon>list</mat-icon>
-                        Back to Library
-                    </button>
-                </div>
-            </div>
-        </div>
         </div>
 
         <div *ngIf="!loading && !kural" class="error-message">
