@@ -23,6 +23,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             const params = {
                 TableName: TABLE_NAME,
                 Key: { userId },
+                ConsistentRead: true, // Ensure we see latest payment updates immediately
             };
             // console.log('DynamoDB Get Params:', JSON.stringify(params)); // Redacted PII
 

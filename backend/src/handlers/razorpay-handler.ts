@@ -78,9 +78,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             if (!userId) return createResponse(401, { message: 'Unauthorized' }, origin);
 
             const body = safeJsonParse(event.body);
-            const { planId } = body as RazorpaySubscriptionRequest; // 'plan_monthly_inr' etc. provided by logic
+            const { planId, totalCount } = body as RazorpaySubscriptionRequest; // 'plan_monthly_inr' etc. provided by logic
 
             if (!planId) return createResponse(400, { message: 'Missing planId' }, origin);
+
+            // Validate totalCount
+            let safeTotalCount = Number(totalCount);
+            if (!Number.isInteger(safeTotalCount) || safeTotalCount < 1 || safeTotalCount > 1200) {
+                console.warn(`[Create Sub] Invalid totalCount '${totalCount}', defaulting to 60`);
+                safeTotalCount = 60; // Default to 5 years
+            }
 
             // TODO: Create Customer if strictly needed, but Razorpay allows creating sub without cust ID initially 
             // strictly for simple flows, but for recurring, it auto-creates or we pass it? 
@@ -90,7 +97,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             const sub = await rzp.subscriptions.create({
                 plan_id: planId,
                 customer_notify: 1,
-                total_count: 1200, // 100 years? Or indefinite? Razorpay max count. 
+                total_count: safeTotalCount,
                 // Creating indefinite sub:
                 // total_count: 12 (1 year) or large number.
                 notes: {
@@ -223,6 +230,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // 4. Verify Payment Signature (Frontend Callback)
         if (path.endsWith('/verify') && method === 'POST') {
             const body = safeJsonParse(event.body);
+            const userId = event.requestContext.authorizer?.claims?.sub; // Ensure we know WHO is verifying
             const { razorpay_order_id, razorpay_payment_id, razorpay_signature, razorpay_subscription_id } = body;
 
             if (!razorpay_payment_id || !razorpay_signature) {
@@ -234,13 +242,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
             let generated_signature = '';
             if (razorpay_subscription_id) {
-                // Subscription Verification: payment_id + "|" + subscription_id
+                // Subscription Verification
                 generated_signature = crypto
                     .createHmac('sha256', keySecret)
                     .update(razorpay_payment_id + "|" + razorpay_subscription_id)
                     .digest('hex');
             } else if (razorpay_order_id) {
-                // Order Verification: order_id + "|" + payment_id
+                // Order Verification
                 generated_signature = crypto
                     .createHmac('sha256', keySecret)
                     .update(razorpay_order_id + "|" + razorpay_payment_id)
@@ -249,10 +257,67 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 return createResponse(400, { message: 'Missing order_id or subscription_id' }, origin);
             }
 
-            console.log('Generated Signature:', generated_signature);
-            console.log('Received Signature:', razorpay_signature);
+            // Non-secret logging for signature verification
+            console.log(`[Verify] Validating signature for payment: ${razorpay_payment_id}`);
 
-            if (generated_signature === razorpay_signature) {
+            let isValidSignature = false;
+            try {
+                if (generated_signature.length === razorpay_signature.length) {
+                    isValidSignature = crypto.timingSafeEqual(
+                        Buffer.from(generated_signature),
+                        Buffer.from(razorpay_signature)
+                    );
+                }
+            } catch (e) {
+                console.error('[Verify] Signature comparison error', e);
+            }
+
+            if (isValidSignature) {
+                // SUCCESS! 
+                // Now, if it's a subscription, let's fetch details and update DB immediately 
+                // to avoid race condition where UI redirects before Webhook arrives.
+
+                if (razorpay_subscription_id && userId) {
+                    try {
+                        const sub = await rzp.subscriptions.fetch(razorpay_subscription_id);
+                        console.log(`[Verify] Fetched Subscription ${sub.id} Status: ${sub.status}`);
+
+                        // Verify ownership to prevent account takeover via subscription ID reassignment
+                        if (sub.notes?.userId !== userId) {
+                            console.error(`[Verify] Ownership mismatch! Subscription userId ${sub.notes?.userId} !== Request userId ${userId}`);
+                            return createResponse(403, { message: 'Subscription ownership mismatch' }, origin);
+                        }
+
+                        // Accept 'authenticated' as it means the auth transaction (payment) succeeded
+                        if (sub.status === 'active' || sub.status === 'authenticated') {
+                            console.log(`[Verify] Immediate update for subscription ${razorpay_subscription_id}`);
+                            const updateResult = await docClient.send(new UpdateCommand({
+                                TableName: USERS_TABLE,
+                                Key: { userId },
+                                UpdateExpression: 'SET subscriptionStatus = :status, subscriptionId = :subId, subscriptionExpiry = :expiry, subscriptionPlan = :plan, updatedAt = :now',
+                                ExpressionAttributeValues: {
+                                    ':status': 'active', // Force active in our DB if authenticated
+                                    ':subId': sub.id,
+                                    ':expiry': sub.current_end ? new Date(sub.current_end * 1000).toISOString() : null,
+                                    ':plan': sub.plan_id ? (sub.plan_id.includes('monthly') ? 'monthly' : 'yearly') : 'yearly',
+                                    ':now': new Date().toISOString()
+                                },
+                                ReturnValues: 'UPDATED_NEW'
+                            }));
+
+                            // Clean response logic: Return only non-PII fields.
+                            // The attributes object from 'UPDATED_NEW' already contains only the fields that were updated.
+                            return createResponse(200, { status: 'valid', updatedUser: updateResult.Attributes }, origin);
+                        } else {
+                            console.warn(`[Verify] Subscription status '${sub.status}' not active/authenticated. DB not updated immediately.`);
+                        }
+                    } catch (e: any) {
+                        console.error('[Verify] Failed to fetch/update subscription', e);
+                        // Convert ReferenceError/Auth error to non-blocking? 
+                        // If this fails, we still return valid signature, letting Webhook handle it.
+                    }
+                }
+
                 return createResponse(200, { status: 'valid' }, origin);
             } else {
                 return createResponse(400, { message: 'Invalid signature' }, origin);

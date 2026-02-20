@@ -17,7 +17,17 @@ export const environment = {
         }
     },
     razorpay: {
-        keyId: '${RAZORPAY_KEY_ID}'
+        keyId: '${RAZORPAY_KEY_ID}',
+        plans: {
+            INR: {
+                monthly: 'plan_SCB8cdaYV5UXEP', // Test Monthly INR
+                yearly: 'plan_SCB8dBVUs1Jmmw' // Test Yearly INR
+            },
+            USD: {
+                monthly: 'plan_SI3YOmJ7D1tH5g',
+                yearly: 'plan_SI3YOpTWnhtNiK'
+            }
+        }
     },
     vapidPublicKey: '${VAPID_PUBLIC_KEY}'
 };

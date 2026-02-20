@@ -95,9 +95,7 @@ export class PricingComponent implements OnInit {
             // Save intent for seamless flow
             // Plan IDs need to be consistent. 
             // We'll resolve strict PlanID here to save in intent
-            const planId = this.currency === 'INR'
-                ? (planType === 'monthly' ? 'plan_SCB8cdaYV5UXEP' : 'plan_SCB8dBVUs1Jmmw')
-                : (planType === 'monthly' ? 'plan_monthly_usd' : 'plan_yearly_usd');
+            const planId = environment.razorpay.plans[this.currency][planType];
 
             const intent = { type: 'subscription', planId, planType, currency: this.currency };
             localStorage.setItem('paymentIntent', JSON.stringify(intent));
@@ -109,12 +107,13 @@ export class PricingComponent implements OnInit {
         // Map planType + currency to Plan ID
         // Config logic duplicated here or fetched?
         // Hardcoding for MVP as per types.ts logic
-        const planId = this.currency === 'INR'
-            ? (planType === 'monthly' ? 'plan_SCB8cdaYV5UXEP' : 'plan_SCB8dBVUs1Jmmw')
-            : (planType === 'monthly' ? 'plan_monthly_usd' : 'plan_yearly_usd');
+        const planId = environment.razorpay.plans[this.currency][planType];
+
+        // Derive total count using shared utility
+        const totalCount = this.paymentService.getSubscriptionCycleCount(planType);
 
         try {
-            const sub = await this.paymentService.createSubscription(planId);
+            const sub = await this.paymentService.createSubscription(planId, totalCount);
             this.paymentService.openCheckout({
                 key: environment.razorpay.keyId,
                 subscription_id: sub.id,

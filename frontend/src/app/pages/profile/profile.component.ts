@@ -101,7 +101,8 @@ export class ProfileComponent implements OnInit {
                     theme: { color: '#1868db' }
                 }, 'credits');
             } else if (intent.type === 'subscription') {
-                const sub = await this.paymentService.createSubscription(intent.planId);
+                const totalCount = this.paymentService.getSubscriptionCycleCount(intent.planType);
+                const sub = await this.paymentService.createSubscription(intent.planId, totalCount);
                 this.openCheckout({
                     key: environment.razorpay.keyId,
                     subscription_id: sub.id,
