@@ -13,7 +13,7 @@ export interface OrderRequest {
 
 export interface SubscriptionRequest {
     planId: string;
-    total_count: number;
+    totalCount: number;
 }
 
 @Injectable({
@@ -24,6 +24,10 @@ export class PaymentService {
 
     constructor(private http: HttpClient) { }
 
+    getSubscriptionCycleCount(planType: string): number {
+        return planType === 'monthly' ? 60 : 5;
+    }
+
     async createOrder(amountMain: number, currency: 'INR' | 'USD' = 'INR'): Promise<any> {
         // Convert to smallest currency unit (paise/cents)
         // INR: 1 = 100 paise
@@ -33,8 +37,8 @@ export class PaymentService {
         return firstValueFrom(this.http.post(`${this.apiUrl}/order`, body));
     }
 
-    async createSubscription(planId: string, total_count: number): Promise<any> {
-        const body: SubscriptionRequest = { planId, total_count };
+    async createSubscription(planId: string, totalCount: number): Promise<any> {
+        const body: SubscriptionRequest = { planId, totalCount };
         return firstValueFrom(this.http.post(`${this.apiUrl}/subscription`, body));
     }
 

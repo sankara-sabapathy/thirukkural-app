@@ -78,9 +78,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             if (!userId) return createResponse(401, { message: 'Unauthorized' }, origin);
 
             const body = safeJsonParse(event.body);
-            const { planId, total_count } = body as RazorpaySubscriptionRequest; // 'plan_monthly_inr' etc. provided by logic
+            const { planId, totalCount } = body as RazorpaySubscriptionRequest; // 'plan_monthly_inr' etc. provided by logic
 
             if (!planId) return createResponse(400, { message: 'Missing planId' }, origin);
+
+            // Validate totalCount
+            let safeTotalCount = Number(totalCount);
+            if (!Number.isInteger(safeTotalCount) || safeTotalCount < 1 || safeTotalCount > 1200) {
+                console.warn(`[Create Sub] Invalid totalCount '${totalCount}', defaulting to 60`);
+                safeTotalCount = 60; // Default to 5 years
+            }
 
             // TODO: Create Customer if strictly needed, but Razorpay allows creating sub without cust ID initially 
             // strictly for simple flows, but for recurring, it auto-creates or we pass it? 
@@ -90,7 +97,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             const sub = await rzp.subscriptions.create({
                 plan_id: planId,
                 customer_notify: 1,
-                total_count: total_count || 60, // Default to 5 years (60 months)
+                total_count: safeTotalCount,
                 // Creating indefinite sub:
                 // total_count: 12 (1 year) or large number.
                 notes: {
@@ -250,10 +257,22 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 return createResponse(400, { message: 'Missing order_id or subscription_id' }, origin);
             }
 
-            console.log('Generated Signature:', generated_signature);
-            console.log('Received Signature:', razorpay_signature);
+            // Non-secret logging for signature verification
+            console.log(`[Verify] Validating signature for payment: ${razorpay_payment_id}`);
 
-            if (generated_signature === razorpay_signature) {
+            let isValidSignature = false;
+            try {
+                if (generated_signature.length === razorpay_signature.length) {
+                    isValidSignature = crypto.timingSafeEqual(
+                        Buffer.from(generated_signature),
+                        Buffer.from(razorpay_signature)
+                    );
+                }
+            } catch (e) {
+                console.error('[Verify] Signature comparison error', e);
+            }
+
+            if (isValidSignature) {
                 // SUCCESS! 
                 // Now, if it's a subscription, let's fetch details and update DB immediately 
                 // to avoid race condition where UI redirects before Webhook arrives.
@@ -262,6 +281,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     try {
                         const sub = await rzp.subscriptions.fetch(razorpay_subscription_id);
                         console.log(`[Verify] Fetched Subscription ${sub.id} Status: ${sub.status}`);
+
+                        // Verify ownership to prevent account takeover via subscription ID reassignment
+                        if (sub.notes?.userId !== userId) {
+                            console.error(`[Verify] Ownership mismatch! Subscription userId ${sub.notes?.userId} !== Request userId ${userId}`);
+                            return createResponse(403, { message: 'Subscription ownership mismatch' }, origin);
+                        }
 
                         // Accept 'authenticated' as it means the auth transaction (payment) succeeded
                         if (sub.status === 'active' || sub.status === 'authenticated') {
@@ -273,14 +298,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                                 ExpressionAttributeValues: {
                                     ':status': 'active', // Force active in our DB if authenticated
                                     ':subId': sub.id,
-                                    ':expiry': new Date(sub.current_end * 1000).toISOString(),
-                                    ':plan': sub.plan_id.includes('monthly') ? 'monthly' : 'yearly',
+                                    ':expiry': sub.current_end ? new Date(sub.current_end * 1000).toISOString() : null,
+                                    ':plan': sub.plan_id ? (sub.plan_id.includes('monthly') ? 'monthly' : 'yearly') : 'yearly',
                                     ':now': new Date().toISOString()
                                 },
-                                ReturnValues: 'ALL_NEW'
+                                ReturnValues: 'UPDATED_NEW'
                             }));
 
-                            // Return the updated attributes so frontend can update local state
+                            // Clean response logic: Return only non-PII fields.
+                            // The attributes object from 'UPDATED_NEW' already contains only the fields that were updated.
                             return createResponse(200, { status: 'valid', updatedUser: updateResult.Attributes }, origin);
                         } else {
                             console.warn(`[Verify] Subscription status '${sub.status}' not active/authenticated. DB not updated immediately.`);

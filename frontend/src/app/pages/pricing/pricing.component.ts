@@ -109,13 +109,11 @@ export class PricingComponent implements OnInit {
         // Hardcoding for MVP as per types.ts logic
         const planId = environment.razorpay.plans[this.currency][planType];
 
-        // 5 Years (60 Months)
-        // Monthly: 60 cycles
-        // Yearly: 5 cycles
-        const total_count = planType === 'monthly' ? 60 : 5;
+        // Derive total count using shared utility
+        const totalCount = this.paymentService.getSubscriptionCycleCount(planType);
 
         try {
-            const sub = await this.paymentService.createSubscription(planId, total_count);
+            const sub = await this.paymentService.createSubscription(planId, totalCount);
             this.paymentService.openCheckout({
                 key: environment.razorpay.keyId,
                 subscription_id: sub.id,
