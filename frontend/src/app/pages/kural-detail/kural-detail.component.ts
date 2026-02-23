@@ -9,8 +9,12 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { KuralService, Kural } from '../../services/kural.service';
 import { switchMap, map, tap, catchError, distinctUntilChanged, shareReplay } from 'rxjs/operators';
 import { Observable, of, merge } from 'rxjs';
-import { Title, Meta } from '@angular/platform-browser';
+import { Meta, Title } from '@angular/platform-browser';
 import html2canvas from 'html2canvas';
+
+// Helper for JSON-LD structured data
+import { DOCUMENT } from '@angular/common';
+import { Inject } from '@angular/core';
 
 @Component({
     selector: 'app-kural-detail',
@@ -42,7 +46,8 @@ export class KuralDetailComponent implements OnInit {
         private snackBar: MatSnackBar,
         private cdr: ChangeDetectorRef,
         private titleService: Title,
-        private metaService: Meta
+        private metaService: Meta,
+        @Inject(DOCUMENT) private doc: Document
     ) { }
 
     ngOnInit(): void {
@@ -92,11 +97,75 @@ export class KuralDetailComponent implements OnInit {
     }
 
     updateMetaTags(kural: Kural): void {
-        const title = `Thirukkural #${kural.number} - ${kural.translation.substring(0, 50)}...`;
+        const title = `Thirukkural #${kural.number} - ${kural.translation.substring(0, 50)}... | Thirukkural Daily`;
         this.titleService.setTitle(title);
 
-        // Client-side meta updates are removed as they are ineffective for social crawlers (which need SSR).
-        // Static tags in index.html serve as the fallback.
+        const description = `Read Thirukkural ${kural.number} with Tamil text, English translation, and meanings by Mu. Varadarajan, Kalaignar, and Solomon Pappaiya.`;
+        const keywords = `Thirukkural ${kural.number}, Tirukkural ${kural.number}, ${kural.pal_tr}, ${kural.iyal_tr}, ${kural.adikaram_tr}, Thiruvalluvar, Tamil wisdom`;
+        const url = `https://thirukkural.site/kural/${kural.number}`;
+
+        this.metaService.updateTag({ name: 'description', content: description });
+        this.metaService.updateTag({ name: 'keywords', content: keywords });
+
+        // OpenGraph Meta Tags
+        this.metaService.updateTag({ property: 'og:title', content: title });
+        this.metaService.updateTag({ property: 'og:description', content: description });
+        this.metaService.updateTag({ property: 'og:url', content: url });
+
+        // Twitter Meta Tags
+        this.metaService.updateTag({ property: 'twitter:title', content: title });
+        this.metaService.updateTag({ property: 'twitter:description', content: description });
+
+        this.injectStructuredData(kural);
+    }
+
+    injectStructuredData(kural: Kural): void {
+        const scriptId = 'structured-data-kural';
+        let scriptTag = this.doc.getElementById(scriptId) as HTMLScriptElement;
+
+        if (!scriptTag) {
+            scriptTag = this.doc.createElement('script');
+            scriptTag.id = scriptId;
+            scriptTag.setAttribute('type', 'application/ld+json');
+            this.doc.head.appendChild(scriptTag);
+        }
+
+        const explanation = this.getBestExplanation(kural);
+
+        const jsonLd = {
+            "@context": "https://schema.org",
+            "@type": "CreativeWork",
+            "name": `Thirukkural ${kural.number}`,
+            "author": {
+                "@type": "Person",
+                "name": "Thiruvalluvar"
+            },
+            "inLanguage": ["ta", "en"],
+            "genre": "Poetry",
+            "abstract": kural.translation,
+            "text": `${kural.line1}\n${kural.line2}`,
+            "about": [
+                { "@type": "Thing", "name": kural.pal_tr },
+                { "@type": "Thing", "name": kural.iyal_tr },
+                { "@type": "Thing", "name": kural.adikaram_tr }
+            ],
+            "translationOfWork": {
+                "@type": "CreativeWork",
+                "name": "Thirukkural",
+                "author": { "@type": "Person", "name": "Thiruvalluvar" }
+            },
+            "url": `https://thirukkural.site/kural/${kural.number}`
+        };
+
+        if (explanation) {
+            (jsonLd as any)["comment"] = {
+                "@type": "Comment",
+                "author": { "@type": "Person", "name": explanation.author },
+                "text": explanation.text
+            };
+        }
+
+        scriptTag.text = JSON.stringify(jsonLd);
     }
 
     previousKural(): void {

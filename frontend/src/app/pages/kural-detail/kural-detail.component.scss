@@ -1,9 +1,11 @@
 @import './share-card';
 
 .kural-container {
-    max-width: 900px;
+    max-width: 1000px;
+    /* Increased from 900px to use more space */
     margin: 0 auto;
-    padding: 2rem 1rem;
+    padding: 3rem 1.5rem;
+    /* More breathing room */
     min-height: 80vh;
 }
 
@@ -20,48 +22,142 @@
 
 .kural-card {
     background: var(--bg-card);
-    border-radius: 16px;
-    box-shadow: var(--shadow-lg);
-    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    box-shadow: 0 16px 48px rgba(24, 104, 219, 0.08);
+    border: none;
     overflow: hidden;
+    position: relative;
 
-    .card-header {
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
-        color: white;
-        padding: 2rem 2.5rem;
+    /* High Skill Deep Background Implementation */
+    .ultra-bg-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        pointer-events: none;
+        overflow: hidden;
 
-        .number-badge {
-            display: inline-flex;
+        /* Base subtle gradient covering the whole card */
+        background: radial-gradient(circle at center, rgba(24, 104, 219, 0.04) 0%, transparent 80%);
+
+        .bg-thiruvalluvar {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            /* Full bleed */
+            height: 100%;
+            background-image: url('/assets/logo.jpg');
+            background-size: cover;
+            /* Cover more ground */
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.05;
+            /* Slightly more visible */
+            filter: grayscale(100%) contrast(1.1);
+            mix-blend-mode: multiply;
+            -webkit-mask-image: radial-gradient(ellipse at center, black 15%, transparent 75%);
+            /* Wider mask spread */
+            mask-image: radial-gradient(ellipse at center, black 15%, transparent 75%);
+        }
+
+        .floating-alphabet {
+            position: absolute;
+            font-family: var(--font-tamil);
+            font-size: 5rem;
+            /* Larger */
+            color: var(--primary);
+            opacity: 0.08;
+            /* More visible */
+            left: var(--x);
+            top: var(--y);
+            animation: float-tamil 15s infinite ease-in-out alternate;
+            /* Faster */
+            animation-delay: var(--delay);
+            filter: blur(1px);
+            /* Sharpen slightly */
+        }
+    }
+
+    .ultra-card-header {
+        position: relative;
+        z-index: 1;
+        /* Stay above background */
+        padding: 4rem 2.5rem 3rem;
+        text-align: center;
+        border-bottom: 1px solid rgba(24, 104, 219, 0.05);
+
+        .header-main-content {
+            .kural-eyebrow {
+                font-size: 1rem;
+                font-weight: 600;
+                color: var(--primary);
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                opacity: 0.8;
+                margin-bottom: 0.5rem;
+            }
+
+            .majestic-title {
+                font-size: 2.8rem;
+                font-weight: 800;
+                line-height: 1;
+                margin: 0 0 1rem 0;
+                color: var(--text-primary);
+                letter-spacing: -1.5px;
+            }
+
+            .category-path {
+                display: flex;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 0.75rem;
+                font-size: 0.95rem;
+                color: var(--text-secondary);
+                font-weight: 500;
+
+                span {
+                    &:not(:last-child)::after {
+                        content: '—';
+                        margin-left: 0.75rem;
+                        opacity: 0.5;
+                    }
+                }
+            }
+        }
+
+        .standalone-share-btn {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            width: 3rem;
+            height: 3rem;
+            background: rgba(24, 104, 219, 0.05);
+            border: 1px solid rgba(24, 104, 219, 0.15);
+            border-radius: 50%;
+            display: flex;
             align-items: center;
             justify-content: center;
-            width: 3.5rem;
-            height: 3.5rem;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            backdrop-filter: blur(10px);
-        }
+            transition: all 0.25s ease;
 
-        h1 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
+            mat-icon {
+                color: var(--primary);
+                font-size: 1.3rem;
+                width: 1.3rem;
+                height: 1.3rem;
+            }
 
-        .category-path {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            font-size: 0.9rem;
-            opacity: 0.9;
-            margin-top: 0.75rem;
+            &:hover {
+                transform: translateY(-2px);
+                background: var(--primary);
+                box-shadow: 0 8px 24px rgba(24, 104, 219, 0.25);
+                border-color: var(--primary);
 
-            span {
-                &:not(:last-child)::after {
-                    content: '›';
-                    margin-left: 0.5rem;
+                mat-icon {
+                    color: white;
                 }
             }
         }
@@ -69,20 +165,39 @@
 
     .card-body {
         padding: 2.5rem;
+        position: relative;
+        z-index: 1;
+        /* Stay above background */
 
         .tamil-section {
-            background: var(--bg-surface);
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 2rem;
+            background: rgba(24, 104, 219, 0.015);
+            border: 1px solid rgba(24, 104, 219, 0.05);
+            border-radius: 20px;
+            padding: 2.5rem 1.5rem;
+            margin-bottom: 2.5rem;
             text-align: center;
+            position: relative;
+
+            &::before {
+                content: '“';
+                position: absolute;
+                top: -1.5rem;
+                left: 50%;
+                transform: translateX(-50%);
+                font-size: 5rem;
+                font-family: serif;
+                color: rgba(24, 104, 219, 0.08);
+                line-height: 1;
+            }
 
             .tamil-text {
                 font-family: var(--font-tamil);
-                font-size: 1.5rem;
+                font-size: 1.6rem;
                 font-weight: 600;
-                line-height: 2;
+                line-height: 1.8;
                 color: var(--text-primary);
+                position: relative;
+                z-index: 1;
 
                 p {
                     margin: 0.5rem 0;
@@ -92,15 +207,20 @@
             .transliteration {
                 margin-top: 1.5rem;
                 padding-top: 1.5rem;
-                border-top: 1px solid var(--border-color);
+                border-top: 1px dashed rgba(24, 104, 219, 0.15);
                 font-size: 0.95rem;
                 color: var(--text-secondary);
                 font-style: italic;
 
                 .transliteration-label {
+                    font-size: 0.85rem;
                     font-weight: 600;
                     margin-bottom: 0.5rem;
                     font-style: normal;
+                    color: var(--primary);
+                    opacity: 0.8;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
                 }
 
                 p {
@@ -109,156 +229,197 @@
             }
         }
 
-        .category-info {
-            .category-details {
+        .ultra-categories-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+
+            .category-pill {
+                flex: 1;
+                background: rgba(24, 104, 219, 0.02);
+                border: 1px solid rgba(24, 104, 219, 0.08);
+                border-radius: 12px;
+                padding: 1rem 0.5rem;
                 display: flex;
                 flex-direction: column;
-                gap: 1rem;
-            }
+                align-items: center;
+                text-align: center;
+                transition: transform 0.2s ease;
 
-            .category-item {
-                padding: 1rem;
-                background: var(--bg-surface);
-                border-radius: 8px;
-                border-left: 3px solid var(--primary);
-
-                strong {
-                    display: block;
-                    margin-bottom: 0.5rem;
-                    color: var(--primary);
-                    font-size: 0.9rem;
+                &:hover {
+                    transform: translateY(-2px);
+                    background: rgba(24, 104, 219, 0.05);
                 }
 
-                .tamil-text {
+                .pill-label {
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    color: var(--text-tertiary);
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    margin-bottom: 0.5rem;
+                }
+
+                .pill-value {
                     font-family: var(--font-tamil);
                     font-size: 1.1rem;
-                    font-weight: 500;
-                    margin-right: 0.5rem;
+                    font-weight: 600;
+                    color: var(--primary);
+                    margin-bottom: 0.15rem;
                 }
 
-                .english-text {
-                    color: var(--text-secondary);
-                    font-size: 0.95rem;
-                }
-
-                .transliteration-text {
-                    color: var(--text-secondary);
+                .pill-sub {
                     font-size: 0.85rem;
-                    font-style: italic;
-                    margin-left: 0.5rem;
+                    color: var(--text-secondary);
                 }
-            }
-        }
-
-        .commentaries-section {
-            margin-top: 3rem;
-            padding-top: 2rem;
-            border-top: 2px solid var(--border-color);
-
-            .section-title {
-                font-size: 1.3rem;
-                color: var(--primary);
-                margin-bottom: 2rem;
-                display: flex;
-                align-items: center;
-                gap: 0.75rem;
-                font-weight: 600;
-
-                mat-icon {
-                    font-size: 1.5rem;
-                    width: 1.5rem;
-                    height: 1.5rem;
-                }
-            }
-
-            .detailed-commentary {
-                margin-top: 1rem;
-                padding: 1rem;
-                background: var(--bg-surface);
-                border-radius: 8px;
-                font-size: 0.95rem;
-                line-height: 1.8;
             }
         }
 
         .content-section {
             margin-bottom: 2rem;
 
-            &:last-child {
-                margin-bottom: 0;
-            }
-
             h3 {
-                font-size: 1.1rem;
+                font-size: 1.05rem;
+                /* Slightly smaller */
                 color: var(--primary);
-                margin-bottom: 1rem;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                font-weight: 600;
+                margin-bottom: 0.75rem;
+                margin-top: 3.5rem;
+                padding-top: 3rem;
+                border-top: 1px solid rgba(24, 104, 219, 0.1);
 
-                mat-icon {
-                    font-size: 1.25rem;
-                    width: 1.25rem;
-                    height: 1.25rem;
+                .section-title {
+                    font-size: 1.3rem;
+                    color: var(--primary);
+                    margin-bottom: 2rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    font-weight: 600;
+
+                    mat-icon {
+                        font-size: 1.5rem;
+                        width: 1.5rem;
+                        height: 1.5rem;
+                    }
+                }
+
+                .detailed-commentary {
+                    margin-top: 1rem;
+                    padding: 1rem;
+                    background: var(--bg-surface);
+                    border-radius: 8px;
+                    font-size: 0.95rem;
+                    line-height: 1.8;
                 }
             }
 
-            p {
-                line-height: 1.8;
-                color: var(--text-secondary);
-                font-size: 1rem;
-            }
+            .content-section {
+                margin-bottom: 2rem;
 
-            &.tamil-content p {
-                font-family: var(--font-tamil);
-                font-size: 1.05rem;
+                &:last-child {
+                    margin-bottom: 0;
+                }
+
+                h3 {
+                    font-size: 1.1rem;
+                    color: var(--primary);
+                    margin-bottom: 1rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    font-weight: 600;
+
+                    mat-icon {
+                        font-size: 1.25rem;
+                        width: 1.25rem;
+                        height: 1.25rem;
+                    }
+                }
+
+                p {
+                    line-height: 1.8;
+                    color: var(--text-secondary);
+                    font-size: 1.05rem;
+                }
+
+                &.tamil-content p {
+                    font-family: var(--font-tamil);
+                    font-size: 1.1rem;
+                    color: var(--text-primary);
+                }
             }
         }
     }
 
     .card-footer {
-        padding: 1.5rem 2.5rem;
-        border-top: 1px solid var(--border-color);
+        position: relative;
+        z-index: 1;
+        padding: 1.5rem 2rem;
+        border-top: 1px solid rgba(24, 104, 219, 0.08);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: var(--bg-surface);
+        background: rgba(24, 104, 219, 0.015);
 
-        .nav-buttons {
+        .nav-buttons,
+        .action-buttons {
             display: flex;
-            gap: 1rem;
+            align-items: center;
+            gap: 0.75rem;
 
             button {
-                min-width: 120px;
+                min-width: 100px;
                 font-weight: 500;
-
-                &:disabled {
-                    opacity: 0.5;
-                    cursor: not-allowed;
-                }
+                border-radius: 8px;
             }
         }
 
-        .action-buttons {
-            display: flex;
-            gap: 0.5rem;
+        .action-icon {
+            color: var(--text-secondary);
 
-            button {
-                color: var(--text-secondary);
-
-                &:hover {
-                    color: var(--primary);
-                    background-color: var(--bg-surface);
-                }
+            &:hover {
+                color: var(--primary);
+                background: rgba(24, 104, 219, 0.05);
             }
+        }
+
+        .rounded-share-btn {
+            border-radius: 24px;
+            padding: 0 1.5rem;
+            box-shadow: 0 4px 12px rgba(24, 104, 219, 0.15);
         }
 
         .back-to-list {
-            mat-icon {
-                margin-right: 0.25rem;
+            button {
+                border-radius: 8px;
+                color: var(--text-secondary);
+
+                &:hover {
+                    background: rgba(24, 104, 219, 0.05);
+                    color: var(--primary);
+                }
             }
         }
+    }
+}
+
+/* Keyframes for roaming alphabets */
+@keyframes float-tamil {
+    0% {
+        transform: translate(0, 0) rotate(0deg) scale(1);
+    }
+
+    33% {
+        transform: translate(30px, -40px) rotate(15deg) scale(1.15);
+        /* More movement */
+    }
+
+    66% {
+        transform: translate(-25px, 30px) rotate(-15deg) scale(0.9);
+    }
+
+    100% {
+        transform: translate(0, 0) rotate(0deg) scale(1);
     }
 }
 
@@ -288,21 +449,25 @@
     }
 
     .kural-card {
-        .card-header {
-            padding: 1.5rem 1.25rem;
+        .ultra-card-header {
+            padding: 3rem 1.5rem 2rem;
 
-            .number-badge {
-                width: 3rem;
-                height: 3rem;
-                font-size: 1.1rem;
+            .header-main-content {
+                .majestic-title {
+                    font-size: 2.8rem;
+                    /* Scaled down for mobile */
+                }
+
+                .category-path {
+                    font-size: 0.9rem;
+                }
             }
 
-            h1 {
-                font-size: 1.25rem;
-            }
-
-            .category-path {
-                font-size: 0.85rem;
+            .standalone-share-btn {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin-top: 1.5rem;
             }
         }
 
@@ -310,11 +475,16 @@
             padding: 1.5rem 1.25rem;
 
             .tamil-section {
-                padding: 1.5rem;
+                padding: 2.5rem 1.5rem;
 
                 .tamil-text {
-                    font-size: 1.25rem;
+                    font-size: 1.4rem;
                 }
+            }
+
+            .ultra-categories-row {
+                flex-direction: column;
+                gap: 1rem;
             }
 
             .content-section {

@@ -9,6 +9,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
 import { KuralService, SearchIndexItem } from '../../services/kural.service';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
@@ -25,7 +26,8 @@ import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
         MatListModule,
         MatPaginatorModule,
         MatProgressSpinnerModule,
-        MatButtonModule
+        MatButtonModule,
+        MatSelectModule
     ],
     templateUrl: './kural-list.component.html',
     styleUrls: ['./kural-list.component.scss']
@@ -36,6 +38,16 @@ export class KuralListComponent implements OnInit {
     displayedKurals: SearchIndexItem[] = [];
     loading = true;
     searchQuery = '';
+
+    // Filter Options
+    palOptions: string[] = [];
+    iyalOptions: string[] = [];
+    adikaramOptions: string[] = [];
+
+    // Selected Filters
+    selectedPal: string = '';
+    selectedIyal: string = '';
+    selectedAdikaram: string = '';
 
     // Pagination
     pageSize = 10;
@@ -60,9 +72,52 @@ export class KuralListComponent implements OnInit {
         this.kuralService.getSearchIndex().subscribe(index => {
             this.allKurals = index;
             this.filteredKurals = index;
+            this.extractFilterOptions();
             this.updateDisplayedKurals();
             this.loading = false;
         });
+    }
+
+    extractFilterOptions(): void {
+        this.palOptions = [...new Set(this.allKurals.map(k => k.p))];
+        this.updateIyalOptions();
+    }
+
+    onPalChange(): void {
+        this.selectedIyal = '';
+        this.selectedAdikaram = '';
+        this.updateIyalOptions();
+        this.applyFilters();
+    }
+
+    onIyalChange(): void {
+        this.selectedAdikaram = '';
+        this.updateAdikaramOptions();
+        this.applyFilters();
+    }
+
+    onAdikaramChange(): void {
+        this.applyFilters();
+    }
+
+    updateIyalOptions(): void {
+        let kurals = this.allKurals;
+        if (this.selectedPal) {
+            kurals = kurals.filter(k => k.p === this.selectedPal);
+        }
+        this.iyalOptions = [...new Set(kurals.map(k => k.i))];
+        this.updateAdikaramOptions();
+    }
+
+    updateAdikaramOptions(): void {
+        let kurals = this.allKurals;
+        if (this.selectedPal) {
+            kurals = kurals.filter(k => k.p === this.selectedPal);
+        }
+        if (this.selectedIyal) {
+            kurals = kurals.filter(k => k.i === this.selectedIyal);
+        }
+        this.adikaramOptions = [...new Set(kurals.map(k => k.a))];
     }
 
     onSearch(query: string): void {
@@ -70,13 +125,27 @@ export class KuralListComponent implements OnInit {
     }
 
     filterKurals(query: string): void {
+        this.applyFilters(query);
+    }
+
+    applyFilters(query: string = this.searchQuery): void {
         this.pageIndex = 0; // Reset to first page on search
 
-        if (!query || query.trim() === '') {
-            this.filteredKurals = this.allKurals;
-        } else {
+        let result = this.allKurals;
+
+        if (this.selectedPal) {
+            result = result.filter(k => k.p === this.selectedPal);
+        }
+        if (this.selectedIyal) {
+            result = result.filter(k => k.i === this.selectedIyal);
+        }
+        if (this.selectedAdikaram) {
+            result = result.filter(k => k.a === this.selectedAdikaram);
+        }
+
+        if (query && query.trim() !== '') {
             const lowerQuery = query.toLowerCase();
-            this.filteredKurals = this.allKurals.filter(k =>
+            result = result.filter(k =>
                 k.n.toString().includes(lowerQuery) ||
                 k.t.toLowerCase().includes(lowerQuery) ||
                 k.l1.toLowerCase().includes(lowerQuery) ||
@@ -86,6 +155,8 @@ export class KuralListComponent implements OnInit {
                 k.a.toLowerCase().includes(lowerQuery)
             );
         }
+
+        this.filteredKurals = result;
         this.updateDisplayedKurals();
     }
 

@@ -78,18 +78,19 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.625rem 1.25rem !important;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+    background: var(--primary) !important;
     color: white !important;
-    border-radius: 10px !important;
-    font-weight: 600;
+    border-radius: 8px !important;
+    font-weight: 500;
     font-size: 0.875rem;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     text-transform: none !important;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 2px 4px rgba(24, 104, 219, 0.2);
 
     &:hover {
         transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+        box-shadow: 0 4px 8px rgba(24, 104, 219, 0.3);
+        background: #1456b3 !important; /* Darker shade of primary */
     }
 }
 
@@ -103,11 +104,11 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    background: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
+    font-weight: 600;
     font-size: 0.875rem;
     color: white;
 }
@@ -138,8 +139,8 @@
     position: relative;
 
     &:hover {
-        background: rgba(99, 102, 241, 0.15);
-        border-color: rgba(99, 102, 241, 0.3);
+        background: rgba(24, 104, 219, 0.05); /* very light blue hint */
+        border-color: rgba(24, 104, 219, 0.2);
         transform: scale(1.05);
     }
 
@@ -148,8 +149,8 @@
     }
 
     &.active {
-        background: rgba(99, 102, 241, 0.2);
-        border-color: rgba(99, 102, 241, 0.4);
+        background: rgba(24, 104, 219, 0.1);
+        border-color: rgba(24, 104, 219, 0.3);
 
         .hamburger-line {
             background: var(--primary);
@@ -231,11 +232,11 @@
     }
 
     &::-webkit-scrollbar-thumb {
-        background: rgba(99, 102, 241, 0.3);
+        background: rgba(24, 104, 219, 0.2);
         border-radius: 3px;
 
         &:hover {
-            background: rgba(99, 102, 241, 0.5);
+            background: rgba(24, 104, 219, 0.4);
         }
     }
 
@@ -298,10 +299,10 @@
     }
 
     &:hover {
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12));
+        background: rgba(24, 104, 219, 0.05);
         color: var(--primary);
         transform: translateX(6px);
-        border-color: rgba(99, 102, 241, 0.2);
+        border-color: rgba(24, 104, 219, 0.1);
 
         svg {
             opacity: 1;
@@ -314,10 +315,10 @@
     }
 
     &.active {
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(139, 92, 246, 0.18));
+        background: rgba(24, 104, 219, 0.08);
         color: var(--primary);
-        border-color: rgba(99, 102, 241, 0.3);
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+        border-color: rgba(24, 104, 219, 0.2);
+        box-shadow: 0 2px 8px rgba(24, 104, 219, 0.05);
 
         svg {
             opacity: 1;
@@ -331,9 +332,9 @@
             transform: translateY(-50%);
             width: 4px;
             height: 70%;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: var(--primary);
             border-radius: 0 4px 4px 0;
-            box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 8px rgba(24, 104, 219, 0.2);
         }
     }
 }
@@ -351,17 +352,17 @@
     align-items: center;
     gap: 1rem;
     padding: 1.25rem;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12));
-    border: 1px solid rgba(99, 102, 241, 0.2);
+    background: rgba(24, 104, 219, 0.05);
+    border: 1px solid rgba(24, 104, 219, 0.1);
     border-radius: 14px;
     margin-bottom: 1rem;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 
     .user-avatar {
         width: 52px;
         height: 52px;
         font-size: 1.25rem;
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        box-shadow: 0 2px 8px rgba(24, 104, 219, 0.2);
     }
 
     .user-email {
