@@ -11,6 +11,7 @@ import { switchMap, map, tap, catchError, distinctUntilChanged, shareReplay } fr
 import { Observable, of, merge } from 'rxjs';
 import { Meta, Title } from '@angular/platform-browser';
 import html2canvas from 'html2canvas';
+import { KURAL_FILTER_MAPPING } from '../kural-list/kural-filter-mapping';
 
 // Helper for JSON-LD structured data
 import { DOCUMENT } from '@angular/common';
@@ -36,6 +37,7 @@ export class KuralDetailComponent implements OnInit {
     loading = true;
     currentNumber = 1;
     isSharing = false;
+    isCopied = false;
 
     @ViewChild('captureArea') captureArea!: ElementRef;
 
@@ -198,6 +200,27 @@ export class KuralDetailComponent implements OnInit {
                 this.snackBar.open('Copied to clipboard!', 'Close', { duration: 2000 });
             }
         });
+    }
+
+    copyTamilTextOnly(kural: Kural): void {
+        const textToCopy = `${kural.line1}\n${kural.line2}\n\n- திருக்குறள் (${kural.number})`;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            this.isCopied = true;
+            this.cdr.markForCheck();
+            this.snackBar.open('Tamil couplet copied to clipboard!', 'Close', { duration: 2000 });
+            setTimeout(() => {
+                this.isCopied = false;
+                this.cdr.markForCheck();
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            this.snackBar.open('Failed to copy. Please try again.', 'Close', { duration: 2000 });
+        });
+    }
+
+    getTamilCategory(type: 'pal' | 'iyal' | 'adikaram', value: string): string {
+        const mappedValue = KURAL_FILTER_MAPPING[type]?.[value as keyof typeof KURAL_FILTER_MAPPING[typeof type]];
+        return mappedValue || value;
     }
 
     getBestExplanation(kural: Kural): { author: string, text: string } | null {

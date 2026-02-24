@@ -104,19 +104,61 @@
             gap: 1.5rem;
             background: rgba(24, 104, 219, 0.01);
 
-            .filter-label {
+            .filter-header-group {
                 display: flex;
-                align-items: center;
+                flex-direction: column;
                 gap: 0.5rem;
-                color: var(--text-secondary);
-                font-weight: 600;
-                font-size: 0.95rem;
+                min-width: 120px;
 
-                mat-icon {
-                    font-size: 1.2rem;
-                    width: 1.2rem;
-                    height: 1.2rem;
-                    color: var(--primary);
+                .filter-label {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    color: var(--text-secondary);
+                    font-weight: 600;
+                    font-size: 0.95rem;
+
+                    mat-icon {
+                        font-size: 1.2rem;
+                        width: 1.2rem;
+                        height: 1.2rem;
+                        color: var(--primary);
+                    }
+                }
+
+                .lang-toggle-btn {
+                    padding: 0 0.75rem;
+                    height: 28px;
+                    border-radius: 14px;
+                    background: rgba(24, 104, 219, 0.05);
+                    color: var(--text-secondary);
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    letter-spacing: 0.02em;
+                    transition: all 0.2s ease;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-width: fit-content;
+
+                    &:hover {
+                        background: rgba(24, 104, 219, 0.1);
+                        color: var(--primary);
+                    }
+
+                    span {
+                        transition: color 0.2s ease;
+
+                        &.active {
+                            color: var(--primary);
+                        }
+
+                        &.divider {
+                            margin: 0 6px;
+                            opacity: 0.3;
+                            font-weight: 400;
+                        }
+                    }
                 }
             }
 

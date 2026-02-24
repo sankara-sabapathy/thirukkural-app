@@ -6,6 +6,7 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PushNotificationService } from '../../services/push-notification.service';
 import { PwaService } from '../../services/pwa.service';
+import { ThemeService } from '../../services/theme.service';
 import { Observable, firstValueFrom } from 'rxjs';
 
 @Component({
@@ -19,16 +20,19 @@ export class HeaderComponent {
     user$: Observable<any>;
     isMobileMenuOpen = false;
     showInstallButton$: Observable<boolean>;
+    isDarkMode$: Observable<boolean>;
 
     constructor(
         private authService: AuthService,
         private pushService: PushNotificationService,
         private pwaService: PwaService,
+        private themeService: ThemeService,
         private snackBar: MatSnackBar,
         private router: Router
     ) {
         this.user$ = this.authService.user$;
         this.showInstallButton$ = this.pwaService.showInstallBanner$;
+        this.isDarkMode$ = this.themeService.isDarkMode$;
     }
 
     onLogoClick() {
@@ -37,6 +41,10 @@ export class HeaderComponent {
 
     installPwa() {
         this.pwaService.installPwa();
+    }
+
+    toggleTheme() {
+        this.themeService.toggleTheme();
     }
 
     async subscribeToNotifications() {

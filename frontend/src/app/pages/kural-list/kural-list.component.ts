@@ -12,6 +12,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { KuralService, SearchIndexItem } from '../../services/kural.service';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { KURAL_FILTER_MAPPING } from './kural-filter-mapping';
 
 @Component({
     selector: 'app-kural-list',
@@ -53,6 +54,9 @@ export class KuralListComponent implements OnInit {
     pageSize = 10;
     pageIndex = 0;
     pageSizeOptions = [10, 25, 50, 100];
+
+    // Language Toggle
+    filterLanguage: 'ta' | 'en' = 'ta';
 
     private searchSubject = new Subject<string>();
 
@@ -175,5 +179,18 @@ export class KuralListComponent implements OnInit {
     goToRandomKural(): void {
         const randomId = Math.floor(Math.random() * 1330) + 1;
         this.router.navigate(['/kural', randomId]);
+    }
+
+    toggleFilterLanguage(): void {
+        this.filterLanguage = this.filterLanguage === 'ta' ? 'en' : 'ta';
+    }
+
+    getTranslatedOption(type: 'pal' | 'iyal' | 'adikaram', value: string): string {
+        if (this.filterLanguage === 'en') {
+            return value;
+        }
+
+        const mappedValue = KURAL_FILTER_MAPPING[type]?.[value as keyof typeof KURAL_FILTER_MAPPING[typeof type]];
+        return mappedValue || value; // Fallback to English if translation is missing
     }
 }

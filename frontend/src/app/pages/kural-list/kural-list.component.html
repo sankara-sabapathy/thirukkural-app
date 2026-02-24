@@ -18,32 +18,49 @@
             <div class="hub-divider"></div>
 
             <div class="filter-row">
-                <div class="filter-label">
-                    <mat-icon>tune</mat-icon> Filters
+                <div class="filter-header-group">
+                    <div class="filter-label">
+                        <mat-icon>tune</mat-icon> Filters
+                    </div>
+
+                    <button mat-button class="lang-toggle-btn" (click)="toggleFilterLanguage()"
+                        aria-label="Toggle Filter Language">
+                        <span [class.active]="filterLanguage === 'en'">Eng</span>
+                        <span class="divider">|</span>
+                        <span [class.active]="filterLanguage === 'ta'">தமிழ்</span>
+                    </button>
                 </div>
 
                 <mat-form-field class="ultra-filter" subscriptSizing="dynamic">
-                    <mat-select [(ngModel)]="selectedPal" (selectionChange)="onPalChange()" placeholder="பால் (Section)"
+                    <mat-select [(ngModel)]="selectedPal" (selectionChange)="onPalChange()"
+                        [placeholder]="filterLanguage === 'ta' ? 'பால் (Section)' : 'Section'"
                         panelClass="ultra-select-panel">
-                        <mat-option value="">All Sections</mat-option>
-                        <mat-option *ngFor="let pal of palOptions" [value]="pal">{{ pal }}</mat-option>
+                        <mat-option value="">{{ filterLanguage === 'ta' ? 'அனைத்து பால்களும்' : 'All Sections'
+                            }}</mat-option>
+                        <mat-option *ngFor="let pal of palOptions" [value]="pal">{{ getTranslatedOption('pal', pal)
+                            }}</mat-option>
                     </mat-select>
                 </mat-form-field>
 
                 <mat-form-field class="ultra-filter" subscriptSizing="dynamic">
                     <mat-select [(ngModel)]="selectedIyal" (selectionChange)="onIyalChange()"
-                        placeholder="இயல் (Chapter)" panelClass="ultra-select-panel">
-                        <mat-option value="">All Chapters</mat-option>
-                        <mat-option *ngFor="let iyal of iyalOptions" [value]="iyal">{{ iyal }}</mat-option>
+                        [placeholder]="filterLanguage === 'ta' ? 'இயல் (Chapter)' : 'Chapter'"
+                        panelClass="ultra-select-panel">
+                        <mat-option value="">{{ filterLanguage === 'ta' ? 'அனைத்து இயல்களும்' : 'All Chapters'
+                            }}</mat-option>
+                        <mat-option *ngFor="let iyal of iyalOptions" [value]="iyal">{{ getTranslatedOption('iyal', iyal)
+                            }}</mat-option>
                     </mat-select>
                 </mat-form-field>
 
                 <mat-form-field class="ultra-filter" subscriptSizing="dynamic">
                     <mat-select [(ngModel)]="selectedAdikaram" (selectionChange)="onAdikaramChange()"
-                        placeholder="அதிகாரம் (Topic)" panelClass="ultra-select-panel">
-                        <mat-option value="">All Topics</mat-option>
-                        <mat-option *ngFor="let adikaram of adikaramOptions" [value]="adikaram">{{ adikaram
+                        [placeholder]="filterLanguage === 'ta' ? 'அதிகாரம் (Topic)' : 'Topic'"
+                        panelClass="ultra-select-panel">
+                        <mat-option value="">{{ filterLanguage === 'ta' ? 'அனைத்து அதிகாரங்களும்' : 'All Topics'
                             }}</mat-option>
+                        <mat-option *ngFor="let adikaram of adikaramOptions" [value]="adikaram">{{
+                            getTranslatedOption('adikaram', adikaram) }}</mat-option>
                     </mat-select>
                 </mat-form-field>
             </div>

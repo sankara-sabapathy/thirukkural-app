@@ -178,6 +178,26 @@
             text-align: center;
             position: relative;
 
+            .quick-copy-text-btn {
+                position: absolute;
+                top: 1rem;
+                right: 1rem;
+                color: var(--text-tertiary);
+                transition: all 0.2s ease;
+                z-index: 2;
+
+                &:hover {
+                    color: var(--primary);
+                    background: rgba(24, 104, 219, 0.05);
+                }
+
+                &.copied {
+                    color: #10b981;
+                    /* Success Green */
+                    background: rgba(16, 185, 129, 0.1);
+                }
+            }
+
             &::before {
                 content: '“';
                 position: absolute;
@@ -277,76 +297,92 @@
 
         .content-section {
             margin-bottom: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(24, 104, 219, 0.05);
+
+            &:first-of-type {
+                padding-top: 0;
+                border-top: none;
+            }
 
             h3 {
-                font-size: 1.05rem;
-                /* Slightly smaller */
+                font-size: 1.1rem;
                 color: var(--primary);
                 margin-bottom: 0.75rem;
-                margin-top: 3.5rem;
-                padding-top: 3rem;
-                border-top: 1px solid rgba(24, 104, 219, 0.1);
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-weight: 600;
 
-                .section-title {
-                    font-size: 1.3rem;
-                    color: var(--primary);
-                    margin-bottom: 2rem;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.75rem;
-                    font-weight: 600;
-
-                    mat-icon {
-                        font-size: 1.5rem;
-                        width: 1.5rem;
-                        height: 1.5rem;
-                    }
+                mat-icon {
+                    font-size: 1.25rem;
+                    width: 1.25rem;
+                    height: 1.25rem;
                 }
+            }
 
-                .detailed-commentary {
-                    margin-top: 1rem;
-                    padding: 1rem;
-                    background: var(--bg-surface);
-                    border-radius: 8px;
-                    font-size: 0.95rem;
-                    line-height: 1.8;
+            p {
+                line-height: 1.8;
+                color: var(--text-secondary);
+                font-size: 1.05rem;
+                margin: 0;
+            }
+
+            &.tamil-content p {
+                font-family: var(--font-tamil);
+                font-size: 1.1rem;
+                color: var(--text-primary);
+            }
+        }
+
+        .commentaries-section {
+            margin-top: 1rem;
+            padding-top: 2.5rem;
+            border-top: 1px dashed rgba(24, 104, 219, 0.15);
+
+            .section-title {
+                font-size: 1.2rem;
+                color: var(--primary);
+                margin-bottom: 1.5rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-weight: 600;
+
+                mat-icon {
+                    font-size: 1.4rem;
+                    width: 1.4rem;
+                    height: 1.4rem;
                 }
             }
 
             .content-section {
-                margin-bottom: 2rem;
-
-                &:last-child {
-                    margin-bottom: 0;
-                }
+                padding-top: 0;
+                border-top: none;
+                margin-bottom: 1.5rem;
 
                 h3 {
-                    font-size: 1.1rem;
-                    color: var(--primary);
-                    margin-bottom: 1rem;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                    font-weight: 600;
-
-                    mat-icon {
-                        font-size: 1.25rem;
-                        width: 1.25rem;
-                        height: 1.25rem;
-                    }
+                    font-size: 1rem;
+                    margin-bottom: 0.5rem;
+                    color: var(--text-secondary);
+                    opacity: 0.9;
+                    font-weight: bold;
+                    font-family: var(--font-tamil);
                 }
 
                 p {
-                    line-height: 1.8;
-                    color: var(--text-secondary);
-                    font-size: 1.05rem;
+                    margin-bottom: 0.5rem;
                 }
+            }
 
-                &.tamil-content p {
-                    font-family: var(--font-tamil);
-                    font-size: 1.1rem;
-                    color: var(--text-primary);
-                }
+            .detailed-commentary {
+                margin-top: 0.5rem;
+                padding: 1rem;
+                background: rgba(24, 104, 219, 0.02);
+                border: 1px solid rgba(24, 104, 219, 0.05);
+                border-radius: 8px;
+                font-size: 0.95rem;
+                line-height: 1.7;
             }
         }
     }
@@ -464,10 +500,10 @@
             }
 
             .standalone-share-btn {
-                position: relative;
-                top: auto;
-                right: auto;
-                margin-top: 1.5rem;
+                position: absolute;
+                top: 1rem;
+                right: 1rem;
+                margin-top: 0;
             }
         }
 

@@ -33,21 +33,19 @@
 }
 
 /* Dark Mode */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --bg-body: #0f172a;
-        --bg-card: #1e293b;
-        --bg-surface: #334155;
+[data-theme="dark"] {
+    --bg-body: #0f172a;
+    --bg-card: #1e293b;
+    --bg-surface: #334155;
 
-        --text-primary: #f8fafc;
-        --text-secondary: #cbd5e1;
-        --text-tertiary: #94a3b8;
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-tertiary: #94a3b8;
 
-        --border-color: #334155;
+    --border-color: #334155;
 
-        --header-bg: rgba(15, 15, 30, 0.8);
-        --mobile-menu-bg: linear-gradient(180deg, rgba(15, 15, 30, 0.98) 0%, rgba(20, 20, 35, 0.98) 100%);
-    }
+    --header-bg: rgba(15, 15, 30, 0.8);
+    --mobile-menu-bg: linear-gradient(180deg, rgba(15, 15, 30, 0.98) 0%, rgba(20, 20, 35, 0.98) 100%);
 }
 
 html,

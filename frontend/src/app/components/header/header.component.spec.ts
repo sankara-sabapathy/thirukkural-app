@@ -7,6 +7,7 @@ import { of } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { PushNotificationService } from '../../services/push-notification.service';
 import { PwaService } from '../../services/pwa.service';
+import { ThemeService } from '../../services/theme.service';
 
 describe('HeaderComponent', () => {
     let component: HeaderComponent;
@@ -14,6 +15,7 @@ describe('HeaderComponent', () => {
     let authServiceMock: any;
     let pushServiceMock: any;
     let pwaServiceMock: any;
+    let themeServiceMock: any;
 
     beforeEach(async () => {
         authServiceMock = {
@@ -23,6 +25,7 @@ describe('HeaderComponent', () => {
         };
         pushServiceMock = { subscribeToNotifications: vi.fn().mockResolvedValue(true) };
         pwaServiceMock = { showInstallBanner$: of(false), installPwa: vi.fn() };
+        themeServiceMock = { isDarkMode$: of(false), toggleTheme: vi.fn() };
 
         await TestBed.configureTestingModule({
             imports: [HeaderComponent, MatButtonModule, NoopAnimationsModule],
@@ -30,7 +33,8 @@ describe('HeaderComponent', () => {
                 provideRouter([]),
                 { provide: AuthService, useValue: authServiceMock },
                 { provide: PushNotificationService, useValue: pushServiceMock },
-                { provide: PwaService, useValue: pwaServiceMock }
+                { provide: PwaService, useValue: pwaServiceMock },
+                { provide: ThemeService, useValue: themeServiceMock }
             ]
         }).compileComponents();
 
