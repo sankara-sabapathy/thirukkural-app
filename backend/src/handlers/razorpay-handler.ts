@@ -346,9 +346,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 await rzp.subscriptions.cancel(user.subscriptionId, false);
             } catch (rzpErr: any) {
                 console.error('Razorpay Cancellation Failed:', rzpErr);
-                // Even if Razorpay fails (e.g. already cancelled), we might want to sync local state?
-                // But safer to return error.
-                return createResponse(500, { message: 'Failed to cancel subscription with provider', details: rzpErr.error }, origin);
+
+                // UNHAPPY PATH: If Razorpay says it's already cancelled (400) or not found (404), 
+                // we should NOT block the user. We must proceed to sync the local DB state.
+                const errStatus = rzpErr?.statusCode;
+                if (errStatus === 400 || errStatus === 404 || rzpErr?.error?.code === 'BAD_REQUEST_ERROR') {
+                    console.log(`[Cancel Failsafe] Provider returned ${errStatus}. Proceeding to sync local database to 'cancelled' anyway.`);
+                } else {
+                    return createResponse(500, { message: 'Failed to cancel subscription with provider', details: rzpErr?.error }, origin);
+                }
             }
 
             // Update DB Status immediately

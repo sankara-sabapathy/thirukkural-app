@@ -121,13 +121,24 @@ export class ProfileComponent implements OnInit {
     openCheckout(options: any, type: string) {
         options.handler = async (response: any) => {
             try {
-                await this.paymentService.verifyPayment(response);
+                const verifyRes = await this.paymentService.verifyPayment(response);
                 this.snackBar.open(
                     type === 'subscription' ? 'Welcome to Plus!' : 'Credits added!',
                     'Awesome',
                     { duration: 5000, panelClass: ['snackbar-success'], verticalPosition: 'top' }
                 );
-                this.fetchProfile(); // Refresh data
+
+                // CRITICAL RACE CONDITION FIX:
+                // Instantly inject the authoritative backend DB state to skip the Webhook lag
+                if (verifyRes && verifyRes.updatedUser) {
+                    this.profile = { ...this.profile, ...verifyRes.updatedUser };
+                }
+
+                // Artificial failsafe delay: give DynamoDB and Webhooks 1.5 seconds to settle
+                // before pulling fresh data from the server.
+                setTimeout(() => {
+                    this.fetchProfile();
+                }, 1500);
             } catch (e) {
                 console.error('Verification failed', e);
                 alert('Payment verification failed.');

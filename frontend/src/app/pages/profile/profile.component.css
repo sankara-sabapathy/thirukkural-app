@@ -3,18 +3,18 @@
     margin: 40px auto;
     padding: 0 20px;
     font-family: 'Inter', sans-serif;
-    color: #1e293b;
+    color: var(--text-primary);
 }
 
 .loading {
     text-align: center;
     padding: 40px;
-    color: #64748b;
+    color: var(--text-secondary);
 }
 
 .header {
     margin-bottom: 40px;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border-color);
     padding-bottom: 20px;
 }
 
@@ -25,7 +25,7 @@
 
 .header p {
     margin: 0;
-    color: #64748b;
+    color: var(--text-secondary);
 }
 
 .stats-grid {
@@ -36,8 +36,8 @@
 }
 
 .stat-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 25px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
@@ -46,7 +46,7 @@
 .stat-card h3 {
     margin: 0 0 15px;
     font-size: 0.9rem;
-    color: #64748b;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -54,7 +54,7 @@
 .stat-card .value {
     font-size: 2.5rem;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--text-primary);
     margin-bottom: 5px;
 }
 
@@ -65,12 +65,12 @@
 
 .stat-card .subtext {
     font-size: 0.9rem;
-    color: #64748b;
+    color: var(--text-secondary);
     margin: 0 0 20px;
 }
 
 .action-link {
-    color: #1868db;
+    color: var(--primary);
     text-decoration: none;
     font-weight: 600;
     font-size: 0.9rem;
@@ -92,19 +92,19 @@
 }
 
 .btn.primary {
-    background: #1868db;
+    background: var(--primary);
     color: white;
 }
 
 .btn.text {
     background: transparent;
-    color: #64748b;
+    color: var(--text-secondary);
     padding: 0;
     text-decoration: underline;
 }
 
 .settings-section {
-    background: #f8fafc;
+    background: var(--bg-surface);
     border-radius: 12px;
     padding: 30px;
 }
@@ -126,14 +126,14 @@
     margin-left: 24px;
     /* Align with text */
     font-size: 0.85rem;
-    color: #94a3b8;
+    color: var(--text-tertiary);
     margin-top: 5px;
 }
 
 .error-state {
     text-align: center;
     padding: 40px;
-    color: #64748b;
+    color: var(--text-secondary);
 }
 
 .retry-btn {
