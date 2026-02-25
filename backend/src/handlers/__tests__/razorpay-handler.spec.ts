@@ -111,6 +111,7 @@ describe('Razorpay Handler', () => {
                         entity: {
                             id: 'sub_123',
                             current_end: 1700000000,
+                            paid_count: 1,
                             plan_id: 'plan_monthly',
                             notes: { userId: 'usr2' }
                         }
@@ -132,6 +133,38 @@ describe('Razorpay Handler', () => {
             to: ['sub@test.com'],
             subject: expect.stringContaining('Welcome to Thirukkural Plus')
         }));
+    });
+
+    it('should handle subscription.charged webhook on renewal and NOT send WELCOME_PLUS email', async () => {
+        const event = {
+            path: '/payment/webhook',
+            httpMethod: 'POST',
+            headers: { 'x-razorpay-signature': 'valid_sig' },
+            body: JSON.stringify({
+                event: 'subscription.charged',
+                payload: {
+                    subscription: {
+                        entity: {
+                            id: 'sub_123',
+                            current_end: 1700000000,
+                            paid_count: 2, // Renewal
+                            plan_id: 'plan_monthly',
+                            notes: { userId: 'usr2_renew' }
+                        }
+                    },
+                    payment: { entity: { id: 'pay_sub_renew' } }
+                }
+            })
+        } as any;
+
+        ddbMock.on(UpdateCommand).resolves({
+            Attributes: { email: 'sub_renew@test.com' }
+        });
+
+        const result = await handler(event);
+        expect(result.statusCode).toBe(200);
+
+        expect(sendEmail).toHaveBeenCalledTimes(0);
     });
 
     it('should handle subscription.halted webhook and send PAYMENT_FAILED email', async () => {

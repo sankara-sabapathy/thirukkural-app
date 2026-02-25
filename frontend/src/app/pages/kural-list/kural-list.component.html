@@ -8,7 +8,7 @@
             <div class="search-main-row">
                 <mat-icon class="search-hero-icon">search</mat-icon>
                 <input class="hero-search-input" [(ngModel)]="searchQuery" (ngModelChange)="onSearch($event)"
-                    placeholder="Search by number, Tamil text, or meaning...">
+                    placeholder="Search by number, Tamil text, or meaning..." aria-label="Search Kurals">
 
                 <button mat-flat-button color="primary" (click)="goToRandomKural()" class="hero-random-btn">
                     <mat-icon>shuffle</mat-icon> Random

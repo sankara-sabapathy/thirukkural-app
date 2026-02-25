@@ -14,6 +14,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // Get userId from Cognito Authorizer
         const userId = event.requestContext.authorizer?.claims?.sub;
         const email = event.requestContext.authorizer?.claims?.email;
+        const email_verified = event.requestContext.authorizer?.claims?.email_verified;
 
         if (!userId) {
             return createResponse(401, { message: 'Unauthorized' }, origin);
@@ -87,7 +88,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 let actualUserIdToUse = crypto.randomUUID();
                 let isNewUser = true;
 
-                if (email) {
+                if (email && (email_verified === 'true' || email_verified === true)) {
                     const emailResult = await docClient.send(new QueryCommand({
                         TableName: TABLE_NAME,
                         IndexName: 'EmailIndex',
@@ -100,7 +101,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                         const foundItem = emailResult.Items.find(item => item.type === 'PROFILE' || !item.type);
 
                         if (foundItem) {
-                            console.log(`Matching email found for ${email}, merging identity...`);
+                            const maskedEmail = email.replace(/(.{2})(.*)(?=@)/, (gp1: string, gp2: string, gp3: string) => gp1 + gp3.replace(/./g, '*'));
+                            console.log(`Matching email found for ${maskedEmail}, merging identity...`);
                             isNewUser = false;
                             actualUserIdToUse = foundItem.userId; // Will be internal ID or legacy sub
 
@@ -112,7 +114,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                                     type: 'AUTH_LINK',
                                     linkedUserId: actualUserIdToUse,
                                     createdAt: new Date().toISOString()
-                                }
+                                },
+                                ConditionExpression: 'attribute_not_exists(userId)' // Protect against concurrent link overwrites
                             }));
 
                             // Fetch and return the target profile
@@ -162,7 +165,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                                 type: 'AUTH_LINK',
                                 linkedUserId: actualUserIdToUse,
                                 createdAt: new Date().toISOString()
-                            }
+                            },
+                            ConditionExpression: 'attribute_not_exists(userId)'
                         }));
 
                         console.log('Default profile and Auth Link created');

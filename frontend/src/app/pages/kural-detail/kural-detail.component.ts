@@ -115,8 +115,8 @@ export class KuralDetailComponent implements OnInit {
         this.metaService.updateTag({ property: 'og:url', content: url });
 
         // Twitter Meta Tags
-        this.metaService.updateTag({ property: 'twitter:title', content: title });
-        this.metaService.updateTag({ property: 'twitter:description', content: description });
+        this.metaService.updateTag({ name: 'twitter:title', content: title });
+        this.metaService.updateTag({ name: 'twitter:description', content: description });
 
         this.injectStructuredData(kural);
     }
@@ -195,16 +195,37 @@ export class KuralDetailComponent implements OnInit {
 
         text += `Read more: ${window.location.href}`;
 
-        navigator.clipboard.writeText(text).then(() => {
-            if (!silent) {
-                this.snackBar.open('Copied to clipboard!', 'Close', { duration: 2000 });
+        const onSuccess = () => {
+            if (!silent) this.snackBar.open('Copied to clipboard!', 'Close', { duration: 2000 });
+        };
+        const onError = (err: any) => {
+            console.error('Failed to copy text: ', err);
+            if (!silent) this.snackBar.open('Failed to copy. Please try again.', 'Close', { duration: 2000 });
+        };
+
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            navigator.clipboard.writeText(text).then(onSuccess).catch(onError);
+        } else {
+            try {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                if (successful) onSuccess();
+                else onError(new Error('execCommand copy failed'));
+            } catch (err) {
+                onError(err);
             }
-        });
+        }
     }
 
     copyTamilTextOnly(kural: Kural): void {
         const textToCopy = `${kural.line1}\n${kural.line2}\n\n- திருக்குறள் (${kural.number})`;
-        navigator.clipboard.writeText(textToCopy).then(() => {
+        const onSuccess = () => {
             this.isCopied = true;
             this.cdr.markForCheck();
             this.snackBar.open('Tamil couplet copied to clipboard!', 'Close', { duration: 2000 });
@@ -212,10 +233,30 @@ export class KuralDetailComponent implements OnInit {
                 this.isCopied = false;
                 this.cdr.markForCheck();
             }, 2000);
-        }).catch(err => {
+        };
+        const onError = (err: any) => {
             console.error('Failed to copy text: ', err);
             this.snackBar.open('Failed to copy. Please try again.', 'Close', { duration: 2000 });
-        });
+        };
+
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            navigator.clipboard.writeText(textToCopy).then(onSuccess).catch(onError);
+        } else {
+            try {
+                const textArea = document.createElement('textarea');
+                textArea.value = textToCopy;
+                textArea.style.position = 'fixed';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                if (successful) onSuccess();
+                else onError(new Error('execCommand copy failed'));
+            } catch (err) {
+                onError(err);
+            }
+        }
     }
 
     getTamilCategory(type: 'pal' | 'iyal' | 'adikaram', value: string): string {

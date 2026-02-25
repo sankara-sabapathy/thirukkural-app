@@ -101,6 +101,9 @@ export class ProfileComponent implements OnInit {
                     theme: { color: '#1868db' }
                 }, 'credits');
             } else if (intent.type === 'subscription') {
+                if (!intent.planType) {
+                    throw new Error('Missing planType in subscription checkout intent.');
+                }
                 const totalCount = this.paymentService.getSubscriptionCycleCount(intent.planType);
                 const sub = await this.paymentService.createSubscription(intent.planId, intent.planType, totalCount);
                 this.openCheckout({
@@ -134,11 +137,16 @@ export class ProfileComponent implements OnInit {
                     this.profile = { ...this.profile, ...verifyRes.updatedUser };
                 }
 
-                // Artificial failsafe delay: give DynamoDB and Webhooks 1.5 seconds to settle
-                // before pulling fresh data from the server.
-                setTimeout(() => {
-                    this.fetchProfile();
-                }, 1500);
+                // Artificial failsafe delay: give DynamoDB and Webhooks time to settle
+                // Poll the server recursively with a backoff strategy.
+                const pollProfile = (attempt: number) => {
+                    if (attempt > 4) return; // Give up after 4 attempts (1s, 2s, 3s, 4s)
+                    setTimeout(() => {
+                        this.fetchProfile();
+                        pollProfile(attempt + 1);
+                    }, attempt * 1000);
+                };
+                pollProfile(1);
             } catch (e) {
                 console.error('Verification failed', e);
                 alert('Payment verification failed.');

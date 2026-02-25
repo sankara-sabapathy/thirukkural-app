@@ -82,4 +82,9 @@ describe('HeaderComponent', () => {
         await component.subscribeToNotifications();
         expect(pushServiceMock.subscribeToNotifications).toHaveBeenCalled();
     });
+
+    it('should toggle theme', () => {
+        component.toggleTheme();
+        expect(themeServiceMock.toggleTheme).toHaveBeenCalled();
+    });
 });

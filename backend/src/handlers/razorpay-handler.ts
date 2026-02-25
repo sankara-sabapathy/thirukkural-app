@@ -12,6 +12,21 @@ import * as crypto from 'crypto';
 
 const USERS_TABLE = process.env.USERS_TABLE;
 
+// Shared Helper: Resolves Cognito JWT subs to internal Profile IDs via AUTH_LINK
+async function resolveAuthLinkUserId(jwtSub?: string): Promise<string | undefined> {
+    if (!jwtSub) return undefined;
+
+    let userId = jwtSub;
+    const linkCheckRes = await docClient.send(new GetCommand({
+        TableName: USERS_TABLE,
+        Key: { userId: jwtSub }
+    }));
+    if (linkCheckRes.Item && linkCheckRes.Item.type === 'AUTH_LINK') {
+        userId = linkCheckRes.Item.linkedUserId;
+    }
+    return userId;
+}
+
 // Initialize Razorpay lazily to ensure secrets are fetched
 let razorpay: Razorpay | null = null;
 let webhookSecret: string | null = null;
@@ -22,6 +37,10 @@ const getRazorpayClient = async () => {
     const keyId = await getSecret('PARAM_RAZORPAY_KEY_ID');
     const keySecret = await getSecret('PARAM_RAZORPAY_KEY_SECRET');
     webhookSecret = await getSecret('PARAM_RAZORPAY_WEBHOOK_SECRET') || null;
+
+    if (!webhookSecret) {
+        console.warn('[WARNING] PARAM_RAZORPAY_WEBHOOK_SECRET is missing or empty. Webhooks will fail validation.');
+    }
 
     if (!keyId || !keySecret) {
         throw new Error('Razorpay credentials not configured');
@@ -47,15 +66,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             const sub = event.requestContext.authorizer?.claims?.sub;
             if (!sub) return createResponse(401, { message: 'Unauthorized' }, origin);
 
-            // Resolve real internal ID from AUTH_LINK
-            let userId = sub;
-            const linkCheckRes = await docClient.send(new GetCommand({
-                TableName: USERS_TABLE,
-                Key: { userId: sub }
-            }));
-            if (linkCheckRes.Item && linkCheckRes.Item.type === 'AUTH_LINK') {
-                userId = linkCheckRes.Item.linkedUserId;
-            }
+            const userId = await resolveAuthLinkUserId(sub);
+            if (!userId) return createResponse(401, { message: 'Unauthorized' }, origin);
 
             const body = safeJsonParse(event.body);
             const { amount, currency } = body as RazorpayOrderRequest;
@@ -89,15 +101,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             const jwtSub = event.requestContext.authorizer?.claims?.sub;
             if (!jwtSub) return createResponse(401, { message: 'Unauthorized' }, origin);
 
-            // Resolve real internal ID from AUTH_LINK
-            let userId = jwtSub;
-            const linkCheckRes = await docClient.send(new GetCommand({
-                TableName: USERS_TABLE,
-                Key: { userId: jwtSub }
-            }));
-            if (linkCheckRes.Item && linkCheckRes.Item.type === 'AUTH_LINK') {
-                userId = linkCheckRes.Item.linkedUserId;
-            }
+            const userId = await resolveAuthLinkUserId(jwtSub);
+            if (!userId) return createResponse(401, { message: 'Unauthorized' }, origin);
 
             const body = safeJsonParse(event.body);
             const { planId, planType, totalCount } = body as RazorpaySubscriptionRequest; // 'plan_monthly_inr' etc. provided by logic
@@ -173,7 +178,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     let creditsToAdd = 0;
                     if (currency === 'INR') {
                         creditsToAdd = amountPaid; // 1 INR = 1 Credit
-                        if (amountPaid >= 100) creditsToAdd *= 1.05; // 5% Bonus logic
+                        if (amountPaid >= 100) creditsToAdd = Math.floor(creditsToAdd * 1.05); // 5% Bonus logic
                     } else if (currency === 'USD') {
                         creditsToAdd = amountPaid * 50; // $1 = 50 Credits
                     }
@@ -187,7 +192,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                             // Atomic add credits AND record payment ID to prevent double processing.
                             // CRITICAL: Reset the threshold alerting flags so they can be alerted again if they drop low in the future.
                             UpdateExpression: 'ADD processedPayments :pid_set SET credits = if_not_exists(credits, :zero) + :val, updatedAt = :now, lowCreditAlertSent = :f, outOfCreditAlertSent = :f',
-                            ConditionExpression: 'NOT contains(processedPayments, :pid)',
+                            ConditionExpression: 'attribute_not_exists(processedPayments) OR NOT contains(processedPayments, :pid)',
                             ExpressionAttributeValues: {
                                 ':zero': 0,
                                 ':val': creditsToAdd,
@@ -244,7 +249,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 }));
 
                 const userEmail = updateResult.Attributes?.email;
-                if (userEmail) {
+                if (userEmail && sub.paid_count === 1) {
                     try {
                         const systemEmail = generateSystemEmail({ type: 'WELCOME_PLUS' });
                         await sendEmail({ to: [userEmail], subject: systemEmail.subject, text: systemEmail.text, html: systemEmail.html });
@@ -374,15 +379,21 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                                     ':status': 'active', // Force active in our DB if authenticated
                                     ':subId': sub.id,
                                     ':expiry': sub.current_end ? new Date(sub.current_end * 1000).toISOString() : null,
-                                    ':plan': sub.plan_id ? (sub.plan_id.includes('monthly') ? 'monthly' : 'yearly') : 'yearly',
+                                    ':plan': sub.notes?.planType || (sub.plan_id ? (sub.plan_id.includes('monthly') ? 'monthly' : 'yearly') : 'yearly'),
                                     ':now': new Date().toISOString()
                                 },
                                 ReturnValues: 'UPDATED_NEW'
                             }));
 
                             // Clean response logic: Return only non-PII fields.
-                            // The attributes object from 'UPDATED_NEW' already contains only the fields that were updated.
-                            return createResponse(200, { status: 'valid', updatedUser: updateResult.Attributes }, origin);
+                            const safeUpdatedUser = {
+                                subscriptionStatus: updateResult.Attributes?.subscriptionStatus,
+                                subscriptionId: updateResult.Attributes?.subscriptionId,
+                                subscriptionExpiry: updateResult.Attributes?.subscriptionExpiry,
+                                subscriptionPlan: updateResult.Attributes?.subscriptionPlan,
+                                updatedAt: updateResult.Attributes?.updatedAt
+                            };
+                            return createResponse(200, { status: 'valid', updatedUser: safeUpdatedUser }, origin);
                         } else {
                             console.warn(`[Verify] Subscription status '${sub.status}' not active/authenticated. DB not updated immediately.`);
                         }
@@ -404,15 +415,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             const jwtSub = event.requestContext.authorizer?.claims?.sub;
             if (!jwtSub) return createResponse(401, { message: 'Unauthorized' }, origin);
 
-            // Resolve real internal ID from AUTH_LINK
-            let userId = jwtSub;
-            const linkCheckRes = await docClient.send(new GetCommand({
-                TableName: USERS_TABLE,
-                Key: { userId: jwtSub }
-            }));
-            if (linkCheckRes.Item && linkCheckRes.Item.type === 'AUTH_LINK') {
-                userId = linkCheckRes.Item.linkedUserId;
-            }
+            const userId = await resolveAuthLinkUserId(jwtSub);
 
             // Fetch user's subscription ID from DB
             const userResult = await docClient.send(new GetCommand({
@@ -453,6 +456,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 }
             }));
 
+            if (user.email) {
+                try {
+                    const systemEmail = generateSystemEmail({ type: 'SUBSCRIPTION_CANCELLED' });
+                    await sendEmail({ to: [user.email], subject: systemEmail.subject, text: systemEmail.text, html: systemEmail.html });
+                    console.log(`[SUBSCRIPTION_CANCELLED Email] Dispatch success to ${userId} (Manual Cancel Failsafe)`);
+                } catch (e) {
+                    console.error(`[SUBSCRIPTION_CANCELLED Email] Delivery failed for ${userId}:`, e);
+                }
+            }
+
             return createResponse(200, { status: 'cancelled' }, origin);
         }
 
@@ -460,7 +473,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     } catch (err: any) {
         console.error('Razorpay Handler Error:', err);
-        return createResponse(500, { message: err.message }, origin);
+        return createResponse(500, { message: 'Internal Server Error' }, origin);
     }
 };
 

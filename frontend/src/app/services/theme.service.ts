@@ -20,39 +20,39 @@ export class ThemeService {
   private initTheme() {
     // Check local storage first
     const savedTheme = localStorage.getItem(this.THEME_KEY);
-    
+
     if (savedTheme) {
-      this.setTheme(savedTheme === 'dark');
+      this.setTheme(savedTheme === 'dark', false); // Already saved, no need to overwrite
     } else {
       // Fall back to system preference
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      this.setTheme(prefersDark);
+      this.setTheme(prefersDark, false); // Do not write to localStorage yet to allow system changes
     }
 
     // Optional: Listen for system theme changes if not manually set
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
       if (!localStorage.getItem(this.THEME_KEY)) {
-        this.setTheme(e.matches);
+        this.setTheme(e.matches, false);
       }
     });
   }
 
   public toggleTheme() {
     if (isPlatformBrowser(this.platformId)) {
-      this.setTheme(!this.isDarkModeSubject.value);
+      this.setTheme(!this.isDarkModeSubject.value, true);
     }
   }
 
-  private setTheme(isDark: boolean) {
+  private setTheme(isDark: boolean, save: boolean = true) {
     this.isDarkModeSubject.next(isDark);
-    
+
     if (isPlatformBrowser(this.platformId)) {
       if (isDark) {
         document.documentElement.setAttribute('data-theme', 'dark');
-        localStorage.setItem(this.THEME_KEY, 'dark');
+        if (save) localStorage.setItem(this.THEME_KEY, 'dark');
       } else {
         document.documentElement.removeAttribute('data-theme');
-        localStorage.setItem(this.THEME_KEY, 'light');
+        if (save) localStorage.setItem(this.THEME_KEY, 'light');
       }
     }
   }

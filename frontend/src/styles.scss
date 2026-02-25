@@ -212,7 +212,7 @@ a {
             color: white !important;
             border-radius: 8px !important;
 
-            .mat-mdc-button-persistent-ripple::before {
+            &:not(:focus-visible) .mat-mdc-button-persistent-ripple::before {
                 display: none !important;
             }
 
@@ -242,7 +242,7 @@ a {
             color: white !important;
             border-radius: 8px !important;
 
-            .mat-mdc-button-persistent-ripple::before {
+            &:not(:focus-visible) .mat-mdc-button-persistent-ripple::before {
                 display: none !important;
             }
 
@@ -272,7 +272,7 @@ a {
             color: white !important;
             border-radius: 8px !important;
 
-            .mat-mdc-button-persistent-ripple::before {
+            &:not(:focus-visible) .mat-mdc-button-persistent-ripple::before {
                 display: none !important;
             }
 

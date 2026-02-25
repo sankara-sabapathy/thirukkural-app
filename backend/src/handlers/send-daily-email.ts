@@ -117,24 +117,48 @@ export const handler = async (): Promise<void> => {
 
                             // Logic: Out of Credit Alert (Delivery Skipped)
                             if (!user.outOfCreditAlertSent) {
-                                console.log(`Triggering Out of Credit Alert for ${logId}`);
+                                console.log(`Attempting to claim and send Out of Credit Alert for ${logId}`);
                                 try {
-                                    const alertEmail = generateSystemEmail({ type: 'OUT_OF_CREDITS' });
-                                    await sendEmail({
-                                        to: [email],
-                                        subject: alertEmail.subject,
-                                        text: alertEmail.text,
-                                        html: alertEmail.html
-                                    });
-                                    // Lock to prevent spam tomorrow (Only after successful SES send)
+                                    // 1. Atomic Claim: Lock to prevent spam across concurrent worker lambda invocations
                                     await docClient.send(new UpdateCommand({
                                         TableName: process.env.USERS_TABLE,
                                         Key: { userId },
-                                        UpdateExpression: 'SET outOfCreditAlertSent = :t',
-                                        ExpressionAttributeValues: { ':t': true }
+                                        UpdateExpression: 'SET outOfCreditAlertSent = :t, updatedAt = :now',
+                                        ConditionExpression: 'attribute_not_exists(outOfCreditAlertSent) OR outOfCreditAlertSent = :f',
+                                        ExpressionAttributeValues: {
+                                            ':t': true,
+                                            ':f': false,
+                                            ':now': new Date().toISOString()
+                                        }
                                     }));
-                                } catch (alertErr) {
-                                    console.error(`Failed to send Out of Credit alert to ${logId}`, alertErr);
+
+                                    // 2. Dispatch Email
+                                    try {
+                                        const alertEmail = generateSystemEmail({ type: 'OUT_OF_CREDITS' });
+                                        await sendEmail({
+                                            to: [email],
+                                            subject: alertEmail.subject,
+                                            text: alertEmail.text,
+                                            html: alertEmail.html
+                                        });
+                                        console.log(`Successfully dispatched Out of Credit Alert for ${logId}`);
+                                    } catch (alertErr) {
+                                        console.error(`Failed to send Out of Credit alert to ${logId}. Rolling back flag.`, alertErr);
+                                        // 3. Rollback if dispatch fails so it can be retried tomorrow
+                                        await docClient.send(new UpdateCommand({
+                                            TableName: process.env.USERS_TABLE,
+                                            Key: { userId },
+                                            UpdateExpression: 'SET outOfCreditAlertSent = :f',
+                                            ExpressionAttributeValues: { ':f': false }
+                                        }));
+                                    }
+
+                                } catch (claimErr: any) {
+                                    if (claimErr.name === 'ConditionalCheckFailedException') {
+                                        console.log(`Alert already claimed by another worker for ${logId}. Skipping.`);
+                                    } else {
+                                        console.error(`Failed atomic claim for Out of Credit alert on ${logId}`, claimErr);
+                                    }
                                 }
                             }
 

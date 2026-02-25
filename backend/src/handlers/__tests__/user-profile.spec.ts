@@ -14,6 +14,7 @@ describe('User Profile Handler', () => {
     const originalEnv = process.env;
 
     beforeEach(() => {
+        vi.clearAllMocks();
         ddbMock.reset();
         process.env = { ...originalEnv, USERS_TABLE: 'TestUsersTable' };
     });
@@ -37,7 +38,8 @@ describe('User Profile Handler', () => {
                 authorizer: {
                     claims: {
                         sub: 'test-user-id',
-                        email: 'test@example.com'
+                        email: 'test@example.com',
+                        email_verified: true
                     }
                 }
             }
@@ -103,7 +105,8 @@ describe('User Profile Handler', () => {
                 authorizer: {
                     claims: {
                         sub: 'existing-user',
-                        email: 'existing@example.com'
+                        email: 'existing@example.com',
+                        email_verified: true
                     }
                 }
             }
@@ -117,5 +120,7 @@ describe('User Profile Handler', () => {
         // Should not call PutCommand
         const putCalls = ddbMock.calls().filter(call => call.args[0] instanceof PutCommand);
         expect(putCalls).toHaveLength(0);
+
+        expect(sendEmail).toHaveBeenCalledTimes(0);
     });
 });
