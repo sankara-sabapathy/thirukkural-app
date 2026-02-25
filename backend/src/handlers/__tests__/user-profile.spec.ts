@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mockClient } from 'aws-sdk-client-mock';
 import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { handler } from '../user-profile';
+import { sendEmail } from '../../shared/email-service';
+
+vi.mock('../../shared/email-service', () => ({
+    sendEmail: vi.fn(),
+}));
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
 
@@ -20,7 +25,7 @@ describe('User Profile Handler', () => {
     it('should create new user with daily email disabled by default', async () => {
         // Mock GetCommand to return empty (user not found)
         ddbMock.on(GetCommand).resolves({});
-        
+
         // Mock PutCommand
         ddbMock.on(PutCommand).resolves({});
 
@@ -40,18 +45,25 @@ describe('User Profile Handler', () => {
         const result = await handler(event);
 
         expect(result.statusCode).toBe(200);
-        
+
         // Verify PutCommand was called with correct default
         expect(ddbMock.calls()).toHaveLength(2); // Get + Put
         const putCalls = ddbMock.calls().filter(call => call.args[0] instanceof PutCommand);
         expect(putCalls).toHaveLength(1);
-        
+
         const putInput = putCalls[0].args[0].input as any;
         expect(putInput.Item.userId).toBe('test-user-id');
         expect(putInput.Item.receiveDailyEmail).toBe(false); // crucial check
-        
+
         const body = JSON.parse(result.body);
         expect(body.receiveDailyEmail).toBe(false);
+
+        // Verify that the WELCOME_NEW_USER system email was dispatched
+        expect(sendEmail).toHaveBeenCalledTimes(1);
+        expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
+            to: ['test@example.com'],
+            subject: expect.stringContaining('Welcome to Thirukkural Daily')
+        }));
     });
 
     it('should return existing user profile without modifying it', async () => {
@@ -81,7 +93,7 @@ describe('User Profile Handler', () => {
 
         expect(result.statusCode).toBe(200);
         expect(JSON.parse(result.body)).toEqual(existingUser);
-        
+
         // Should not call PutCommand
         const putCalls = ddbMock.calls().filter(call => call.args[0] instanceof PutCommand);
         expect(putCalls).toHaveLength(0);

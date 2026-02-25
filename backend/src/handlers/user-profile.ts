@@ -2,6 +2,8 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { docClient } from '../shared/dynamo';
 import { createResponse } from '../shared/utils';
+import { sendEmail } from '../shared/email-service';
+import { generateSystemEmail } from '../shared/email-templates';
 
 const TABLE_NAME = process.env.USERS_TABLE;
 
@@ -62,6 +64,24 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                         ConditionExpression: 'attribute_not_exists(userId)'
                     }));
                     console.log('Default profile created');
+
+                    // Synchronously fire the Welcome Email. If SES fails, we swallow it 
+                    // to prevent throwing a 500 error on the user's critical auth path.
+                    if (email) {
+                        try {
+                            const systemEmail = generateSystemEmail({ type: 'WELCOME_NEW_USER' });
+                            await sendEmail({
+                                to: [email],
+                                subject: systemEmail.subject,
+                                text: systemEmail.text,
+                                html: systemEmail.html
+                            });
+                            console.log(`[Welcome Email] Successfully dispatched to ${userId}`);
+                        } catch (emailErr) {
+                            console.error(`[Welcome Email] SES Delivery failed for ${userId}:`, emailErr);
+                        }
+                    }
+
                     return createResponse(200, newProfile, origin);
                 } catch (putErr: any) {
                     if (putErr.name === 'ConditionalCheckFailedException') {

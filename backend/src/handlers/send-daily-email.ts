@@ -114,6 +114,30 @@ export const handler = async (): Promise<void> => {
                     } catch (err: any) {
                         if (err.name === 'ConditionalCheckFailedException') {
                             console.log(`Skipping ${logId}: Insufficient credits (${credits})`);
+
+                            // Logic: Out of Credit Alert (Delivery Skipped)
+                            if (!user.outOfCreditAlertSent) {
+                                console.log(`Triggering Out of Credit Alert for ${logId}`);
+                                try {
+                                    const alertEmail = generateSystemEmail({ type: 'OUT_OF_CREDITS' });
+                                    await sendEmail({
+                                        to: [email],
+                                        subject: alertEmail.subject,
+                                        text: alertEmail.text,
+                                        html: alertEmail.html
+                                    });
+                                    // Lock to prevent spam tomorrow (Only after successful SES send)
+                                    await docClient.send(new UpdateCommand({
+                                        TableName: process.env.USERS_TABLE,
+                                        Key: { userId },
+                                        UpdateExpression: 'SET outOfCreditAlertSent = :t',
+                                        ExpressionAttributeValues: { ':t': true }
+                                    }));
+                                } catch (alertErr) {
+                                    console.error(`Failed to send Out of Credit alert to ${logId}`, alertErr);
+                                }
+                            }
+
                         } else {
                             console.error(`Error deducting credits for ${logId}`, err);
                         }
@@ -139,19 +163,29 @@ export const handler = async (): Promise<void> => {
                         console.log(`Sent email to ${logId}`);
 
                         // Logic: Low Credit Alert (Post-Send)
-                        if (creditsDeducted && newBalance !== undefined && newBalance < LOW_CREDIT_THRESHOLD && (newBalance + emailCost) >= LOW_CREDIT_THRESHOLD) {
+                        if (creditsDeducted && newBalance !== undefined && newBalance < LOW_CREDIT_THRESHOLD && !user.lowCreditAlertSent) {
                             console.log(`Triggering Low Credit Alert for ${logId}`);
-                            const alertEmail = generateSystemEmail({
-                                type: 'LOW_CREDITS',
-                                data: { credits: newBalance }
-                            });
-                            // Best effort alert
-                            await sendEmail({
-                                to: [email],
-                                subject: alertEmail.subject,
-                                text: alertEmail.text,
-                                html: alertEmail.html
-                            }).catch(e => console.error(`Failed to send alert to ${logId}`, e));
+                            try {
+                                const alertEmail = generateSystemEmail({
+                                    type: 'LOW_CREDITS',
+                                    data: { credits: newBalance }
+                                });
+                                await sendEmail({
+                                    to: [email],
+                                    subject: alertEmail.subject,
+                                    text: alertEmail.text,
+                                    html: alertEmail.html
+                                });
+                                // Lock to prevent spam tomorrow (Only after successful SES send)
+                                await docClient.send(new UpdateCommand({
+                                    TableName: process.env.USERS_TABLE,
+                                    Key: { userId },
+                                    UpdateExpression: 'SET lowCreditAlertSent = :t',
+                                    ExpressionAttributeValues: { ':t': true }
+                                }));
+                            } catch (e) {
+                                console.error(`Failed to send Low Credit alert to ${logId}`, e);
+                            }
                         }
 
                         // Wait 1 second to respect limits

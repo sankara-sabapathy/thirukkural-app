@@ -6,6 +6,8 @@ import { createResponse, safeJsonParse } from '../shared/utils';
 import { docClient } from '../shared/dynamo';
 import { GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { PRICING_CONFIG, RazorpayOrderRequest, RazorpaySubscriptionRequest, UserProfile } from '../shared/types';
+import { sendEmail } from '../shared/email-service';
+import { generateSystemEmail } from '../shared/email-templates';
 import * as crypto from 'crypto';
 
 const USERS_TABLE = process.env.USERS_TABLE;
@@ -158,20 +160,34 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     console.log(`Adding ${creditsToAdd} credits to user ${userId} for payment ${paymentId}`);
 
                     try {
-                        await docClient.send(new UpdateCommand({
+                        const updateResult = await docClient.send(new UpdateCommand({
                             TableName: USERS_TABLE,
                             Key: { userId },
-                            // Atomic add credits AND record payment ID to prevent double processing
-                            UpdateExpression: 'ADD processedPayments :pid_set SET credits = if_not_exists(credits, :zero) + :val, updatedAt = :now',
+                            // Atomic add credits AND record payment ID to prevent double processing.
+                            // CRITICAL: Reset the threshold alerting flags so they can be alerted again if they drop low in the future.
+                            UpdateExpression: 'ADD processedPayments :pid_set SET credits = if_not_exists(credits, :zero) + :val, updatedAt = :now, lowCreditAlertSent = :f, outOfCreditAlertSent = :f',
                             ConditionExpression: 'NOT contains(processedPayments, :pid)',
                             ExpressionAttributeValues: {
                                 ':zero': 0,
                                 ':val': creditsToAdd,
                                 ':now': new Date().toISOString(),
                                 ':pid': paymentId,
-                                ':pid_set': new Set([paymentId])
-                            }
+                                ':pid_set': new Set([paymentId]),
+                                ':f': false
+                            },
+                            ReturnValues: 'ALL_NEW'
                         }));
+
+                        const userEmail = updateResult.Attributes?.email;
+                        if (userEmail) {
+                            try {
+                                const systemEmail = generateSystemEmail({ type: 'CREDITS_ADDED', data: { credits: creditsToAdd } });
+                                await sendEmail({ to: [userEmail], subject: systemEmail.subject, text: systemEmail.text, html: systemEmail.html });
+                                console.log(`[Credits Added Email] Dispatch success to ${userId}`);
+                            } catch (e) {
+                                console.error(`[Credits Added Email] Delivery failed for ${userId}:`, e);
+                            }
+                        }
                     } catch (err: any) {
                         if (err.name === 'ConditionalCheckFailedException') {
                             console.log(`Payment ${paymentId} already processed for user ${userId}`);
@@ -192,7 +208,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
                 console.log(`Subscription charged for user ${userId}`);
 
-                await docClient.send(new UpdateCommand({
+                const updateResult = await docClient.send(new UpdateCommand({
                     TableName: USERS_TABLE,
                     Key: { userId },
                     UpdateExpression: 'SET subscriptionStatus = :status, subscriptionId = :subId, subscriptionExpiry = :expiry, subscriptionPlan = :plan, updatedAt = :now',
@@ -202,8 +218,20 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                         ':expiry': new Date(sub.current_end * 1000).toISOString(), // Razorpay sends unix timestamp
                         ':plan': sub.plan_id.includes('monthly') ? 'monthly' : 'yearly', // Simple heuristic
                         ':now': new Date().toISOString()
-                    }
+                    },
+                    ReturnValues: 'ALL_NEW'
                 }));
+
+                const userEmail = updateResult.Attributes?.email;
+                if (userEmail) {
+                    try {
+                        const systemEmail = generateSystemEmail({ type: 'WELCOME_PLUS' });
+                        await sendEmail({ to: [userEmail], subject: systemEmail.subject, text: systemEmail.text, html: systemEmail.html });
+                        console.log(`[Welcome Plus Email] Dispatch success to ${userId}`);
+                    } catch (e) {
+                        console.error(`[Welcome Plus Email] Delivery failed for ${userId}:`, e);
+                    }
+                }
             } else if (eventType === 'subscription.cancelled' || eventType === 'subscription.halted') {
                 const sub = data.subscription.entity;
                 const userId = sub.notes?.userId;
@@ -213,15 +241,28 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     return createResponse(200, { status: 'ignored_missing_user' });
                 }
 
-                await docClient.send(new UpdateCommand({
+                const updateResult = await docClient.send(new UpdateCommand({
                     TableName: USERS_TABLE,
                     Key: { userId },
                     UpdateExpression: 'SET subscriptionStatus = :status, updatedAt = :now',
                     ExpressionAttributeValues: {
                         ':status': sub.status, // cancelled/halted
                         ':now': new Date().toISOString()
-                    }
+                    },
+                    ReturnValues: 'ALL_NEW'
                 }));
+
+                // Only send failure email on hard halt to avoid double-spamming on manual user cancellation
+                const userEmail = updateResult.Attributes?.email;
+                if (userEmail && eventType === 'subscription.halted') {
+                    try {
+                        const systemEmail = generateSystemEmail({ type: 'PAYMENT_FAILED' });
+                        await sendEmail({ to: [userEmail], subject: systemEmail.subject, text: systemEmail.text, html: systemEmail.html });
+                        console.log(`[Subscription Halted Email] Dispatch success to ${userId}`);
+                    } catch (e) {
+                        console.error(`[Subscription Halted Email] Delivery failed for ${userId}:`, e);
+                    }
+                }
             }
 
             return createResponse(200, { status: 'ok' });
