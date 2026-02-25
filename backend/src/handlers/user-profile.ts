@@ -46,8 +46,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                         return createResponse(500, { message: 'Profile data corrupted' }, origin);
                     }
                     return createResponse(200, realResult.Item, origin);
-                } else if (!profileItem.type || profileItem.type !== 'PROFILE') {
+                } else {
                     // It's a legacy profile using the old 'sub' as PK!
+                    // Even if its type is 'PROFILE', if it was fetched using the Cognito sub, it is strictly still coupled.
                     // Zero-Downtime Lazy Migration
                     const newInternalId = crypto.randomUUID();
                     const migratedProfile = {
@@ -79,9 +80,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
                     console.log(`Lazy migrated legacy user ${userId} to new ID ${newInternalId}`);
                     return createResponse(200, migratedProfile, origin);
-                } else {
-                    // It is already a migrated native PROFILE, possibly accessed directly or mapped manually.
-                    return createResponse(200, profileItem, origin);
                 }
             } else {
                 console.log('User not found by sub, checking EmailIndex for identity merging...');

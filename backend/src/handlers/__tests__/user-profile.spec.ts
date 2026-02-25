@@ -71,16 +71,30 @@ describe('User Profile Handler', () => {
         }));
     });
 
-    it('should return existing user profile without modifying it', async () => {
-        const existingUser = {
-            userId: 'existing-user',
+    it('should return existing already-migrated user profile without modifying it', async () => {
+        const authLink = {
+            userId: 'existing-user', // Cognito sub
+            type: 'AUTH_LINK',
+            linkedUserId: 'internal-uuid'
+        };
+
+        const existingProfile = {
+            userId: 'internal-uuid',
             email: 'existing@example.com',
             receiveDailyEmail: true, // User explicitly opted in previously
-            type: 'PROFILE', // Ensure it doesn't trigger lazy migration
+            type: 'PROFILE',
             createdAt: '2023-01-01T00:00:00.000Z'
         };
 
-        ddbMock.on(GetCommand).resolves({ Item: existingUser });
+        ddbMock.on(GetCommand).callsFake((params: any) => {
+            if (params.Key.userId === 'existing-user') {
+                return Promise.resolve({ Item: authLink });
+            }
+            if (params.Key.userId === 'internal-uuid') {
+                return Promise.resolve({ Item: existingProfile });
+            }
+            return Promise.resolve({});
+        });
 
         const event = {
             httpMethod: 'GET',
@@ -98,7 +112,7 @@ describe('User Profile Handler', () => {
         const result = await handler(event);
 
         expect(result.statusCode).toBe(200);
-        expect(JSON.parse(result.body)).toEqual(existingUser);
+        expect(JSON.parse(result.body)).toEqual(existingProfile);
 
         // Should not call PutCommand
         const putCalls = ddbMock.calls().filter(call => call.args[0] instanceof PutCommand);

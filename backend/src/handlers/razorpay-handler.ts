@@ -292,7 +292,20 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // 4. Verify Payment Signature (Frontend Callback)
         if (path.endsWith('/verify') && method === 'POST') {
             const body = safeJsonParse(event.body);
-            const userId = event.requestContext.authorizer?.claims?.sub; // Ensure we know WHO is verifying
+            const jwtSub = event.requestContext.authorizer?.claims?.sub; // Ensure we know WHO is verifying
+
+            // Resolve real internal ID from AUTH_LINK
+            let userId = jwtSub;
+            if (jwtSub) {
+                const linkCheckRes = await docClient.send(new GetCommand({
+                    TableName: USERS_TABLE,
+                    Key: { userId: jwtSub }
+                }));
+                if (linkCheckRes.Item && linkCheckRes.Item.type === 'AUTH_LINK') {
+                    userId = linkCheckRes.Item.linkedUserId;
+                }
+            }
+
             const { razorpay_order_id, razorpay_payment_id, razorpay_signature, razorpay_subscription_id } = body;
 
             if (!razorpay_payment_id || !razorpay_signature) {
@@ -388,8 +401,18 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // 5. Cancel Subscription
         if (path.endsWith('/cancel') && method === 'POST') {
-            const userId = event.requestContext.authorizer?.claims?.sub;
-            if (!userId) return createResponse(401, { message: 'Unauthorized' }, origin);
+            const jwtSub = event.requestContext.authorizer?.claims?.sub;
+            if (!jwtSub) return createResponse(401, { message: 'Unauthorized' }, origin);
+
+            // Resolve real internal ID from AUTH_LINK
+            let userId = jwtSub;
+            const linkCheckRes = await docClient.send(new GetCommand({
+                TableName: USERS_TABLE,
+                Key: { userId: jwtSub }
+            }));
+            if (linkCheckRes.Item && linkCheckRes.Item.type === 'AUTH_LINK') {
+                userId = linkCheckRes.Item.linkedUserId;
+            }
 
             // Fetch user's subscription ID from DB
             const userResult = await docClient.send(new GetCommand({
