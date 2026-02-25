@@ -254,7 +254,7 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
 };
 
 export interface SystemEmailOptions {
-    type: 'WELCOME_NEW_USER' | 'WELCOME_PLUS' | 'CREDITS_ADDED' | 'LOW_CREDITS' | 'OUT_OF_CREDITS' | 'PAYMENT_FAILED';
+    type: 'WELCOME_NEW_USER' | 'WELCOME_PLUS' | 'CREDITS_ADDED' | 'LOW_CREDITS' | 'OUT_OF_CREDITS' | 'PAYMENT_FAILED' | 'SUBSCRIPTION_CANCELLED';
     data?: any; // e.g. amount of credits, etc.
 }
 
@@ -307,6 +307,12 @@ export const generateSystemEmail = (options: SystemEmailOptions) => {
             headline = 'Payment Failed';
             message = "We were unable to process your subscription renewal after multiple attempts. Your Plus access has been paused, but don't worry—you can continue receiving emails using your Pay-As-You-Go credits. Please update your payment method to restore unlimited access.";
             ctaText = 'Manage Subscription';
+            break;
+        case 'SUBSCRIPTION_CANCELLED':
+            subject = 'Subscription Cancelled';
+            headline = 'Subscription Cancelled';
+            message = 'Your Thirukkural Plus subscription has been successfully cancelled. We are sorry to see you go! You will still have access to premium features until the end of your current billing cycle, after which your account will revert to the free tier.';
+            ctaText = 'Go to Dashboard';
             break;
     }
 

@@ -102,7 +102,7 @@ export class ProfileComponent implements OnInit {
                 }, 'credits');
             } else if (intent.type === 'subscription') {
                 const totalCount = this.paymentService.getSubscriptionCycleCount(intent.planType);
-                const sub = await this.paymentService.createSubscription(intent.planId, totalCount);
+                const sub = await this.paymentService.createSubscription(intent.planId, intent.planType, totalCount);
                 this.openCheckout({
                     key: environment.razorpay.keyId,
                     subscription_id: sub.id,

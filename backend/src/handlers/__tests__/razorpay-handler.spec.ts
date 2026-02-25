@@ -167,7 +167,7 @@ describe('Razorpay Handler', () => {
         }));
     });
 
-    it('should NOT send PAYMENT_FAILED email on subscription.cancelled (manual cancellation)', async () => {
+    it('should send SUBSCRIPTION_CANCELLED email on subscription.cancelled (manual cancellation)', async () => {
         const event = {
             path: '/payment/webhook',
             httpMethod: 'POST',
@@ -193,7 +193,11 @@ describe('Razorpay Handler', () => {
         const result = await handler(event);
         expect(result.statusCode).toBe(200);
 
-        // Verification: Email should NOT be sent because user initiated this
-        expect(sendEmail).not.toHaveBeenCalled();
+        // Verification: Email should be sent for manual cancellations now
+        expect(sendEmail).toHaveBeenCalledTimes(1);
+        expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
+            to: ['cancel@test.com'],
+            subject: expect.stringContaining('Subscription Cancelled')
+        }));
     });
 });

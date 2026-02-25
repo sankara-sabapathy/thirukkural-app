@@ -13,6 +13,7 @@ export interface OrderRequest {
 
 export interface SubscriptionRequest {
     planId: string;
+    planType: 'monthly' | 'yearly';
     totalCount: number;
 }
 
@@ -37,8 +38,8 @@ export class PaymentService {
         return firstValueFrom(this.http.post(`${this.apiUrl}/order`, body));
     }
 
-    async createSubscription(planId: string, totalCount: number): Promise<any> {
-        const body: SubscriptionRequest = { planId, totalCount };
+    async createSubscription(planId: string, planType: 'monthly' | 'yearly', totalCount: number): Promise<any> {
+        const body: SubscriptionRequest = { planId, planType, totalCount };
         return firstValueFrom(this.http.post(`${this.apiUrl}/subscription`, body));
     }
 

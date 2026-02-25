@@ -44,8 +44,18 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // 1. Create Order (Credits)
         if (path.endsWith('/order') && method === 'POST') {
-            const userId = event.requestContext.authorizer?.claims?.sub;
-            if (!userId) return createResponse(401, { message: 'Unauthorized' }, origin);
+            const sub = event.requestContext.authorizer?.claims?.sub;
+            if (!sub) return createResponse(401, { message: 'Unauthorized' }, origin);
+
+            // Resolve real internal ID from AUTH_LINK
+            let userId = sub;
+            const linkCheckRes = await docClient.send(new GetCommand({
+                TableName: USERS_TABLE,
+                Key: { userId: sub }
+            }));
+            if (linkCheckRes.Item && linkCheckRes.Item.type === 'AUTH_LINK') {
+                userId = linkCheckRes.Item.linkedUserId;
+            }
 
             const body = safeJsonParse(event.body);
             const { amount, currency } = body as RazorpayOrderRequest;
@@ -76,13 +86,23 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // 2. Create Subscription
         if (path.endsWith('/subscription') && method === 'POST') {
-            const userId = event.requestContext.authorizer?.claims?.sub;
-            if (!userId) return createResponse(401, { message: 'Unauthorized' }, origin);
+            const jwtSub = event.requestContext.authorizer?.claims?.sub;
+            if (!jwtSub) return createResponse(401, { message: 'Unauthorized' }, origin);
+
+            // Resolve real internal ID from AUTH_LINK
+            let userId = jwtSub;
+            const linkCheckRes = await docClient.send(new GetCommand({
+                TableName: USERS_TABLE,
+                Key: { userId: jwtSub }
+            }));
+            if (linkCheckRes.Item && linkCheckRes.Item.type === 'AUTH_LINK') {
+                userId = linkCheckRes.Item.linkedUserId;
+            }
 
             const body = safeJsonParse(event.body);
-            const { planId, totalCount } = body as RazorpaySubscriptionRequest; // 'plan_monthly_inr' etc. provided by logic
+            const { planId, planType, totalCount } = body as RazorpaySubscriptionRequest; // 'plan_monthly_inr' etc. provided by logic
 
-            if (!planId) return createResponse(400, { message: 'Missing planId' }, origin);
+            if (!planId || !planType) return createResponse(400, { message: 'Missing planId or planType' }, origin);
 
             // Validate totalCount
             let safeTotalCount = Number(totalCount);
@@ -103,6 +123,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 // Creating indefinite sub:
                 // total_count: 12 (1 year) or large number.
                 notes: {
+                    planType: planType,
                     userId: userId,
                     type: 'SUBSCRIPTION'
                 }
@@ -216,7 +237,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                         ':status': 'active',
                         ':subId': sub.id,
                         ':expiry': new Date(sub.current_end * 1000).toISOString(), // Razorpay sends unix timestamp
-                        ':plan': sub.plan_id.includes('monthly') ? 'monthly' : 'yearly', // Simple heuristic
+                        ':plan': sub.notes?.planType || (sub.plan_id.includes('monthly') ? 'monthly' : 'yearly'), // Read strictly from notes if present
                         ':now': new Date().toISOString()
                     },
                     ReturnValues: 'ALL_NEW'
@@ -252,15 +273,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     ReturnValues: 'ALL_NEW'
                 }));
 
-                // Only send failure email on hard halt to avoid double-spamming on manual user cancellation
                 const userEmail = updateResult.Attributes?.email;
-                if (userEmail && eventType === 'subscription.halted') {
+                if (userEmail) {
                     try {
-                        const systemEmail = generateSystemEmail({ type: 'PAYMENT_FAILED' });
+                        const templateType = eventType === 'subscription.halted' ? 'PAYMENT_FAILED' : 'SUBSCRIPTION_CANCELLED';
+                        const systemEmail = generateSystemEmail({ type: templateType });
                         await sendEmail({ to: [userEmail], subject: systemEmail.subject, text: systemEmail.text, html: systemEmail.html });
-                        console.log(`[Subscription Halted Email] Dispatch success to ${userId}`);
+                        console.log(`[${templateType} Email] Dispatch success to ${userId}`);
                     } catch (e) {
-                        console.error(`[Subscription Halted Email] Delivery failed for ${userId}:`, e);
+                        console.error(`[Subscription Cancelled/Halted Email] Delivery failed for ${userId}:`, e);
                     }
                 }
             }

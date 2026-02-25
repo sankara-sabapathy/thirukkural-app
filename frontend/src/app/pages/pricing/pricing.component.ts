@@ -113,7 +113,7 @@ export class PricingComponent implements OnInit {
         const totalCount = this.paymentService.getSubscriptionCycleCount(planType);
 
         try {
-            const sub = await this.paymentService.createSubscription(planId, totalCount);
+            const sub = await this.paymentService.createSubscription(planId, planType, totalCount);
             this.paymentService.openCheckout({
                 key: environment.razorpay.keyId,
                 subscription_id: sub.id,
