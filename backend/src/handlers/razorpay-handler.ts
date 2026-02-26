@@ -235,12 +235,24 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
                 console.log(`Subscription charged for user ${userId}`);
 
-                let planFallback = 'yearly';
-                if (sub.notes?.planType) {
+                let planFallback: 'monthly' | 'yearly' | null = null;
+                if (sub.notes?.planType && (sub.notes.planType === 'monthly' || sub.notes.planType === 'yearly')) {
                     planFallback = sub.notes.planType;
                 } else if (sub.plan_id) {
-                    console.warn(`[Webhook] Missing notes.planType in subscription ${sub.id}. Falling back to regex on plan_id.`);
-                    planFallback = /monthly/i.test(sub.plan_id) ? 'monthly' : 'yearly';
+                    const PLAN_ID_TO_TYPE: Record<string, 'monthly' | 'yearly'> = {
+                        [process.env.RAZORPAY_PLAN_MONTHLY_INR || 'plan_SCB8cdaYV5UXEP']: 'monthly',
+                        [process.env.RAZORPAY_PLAN_YEARLY_INR || 'plan_SCB8dBVUs1Jmmw']: 'yearly',
+                        [process.env.RAZORPAY_PLAN_MONTHLY_USD || 'plan_monthly_usd']: 'monthly',
+                        [process.env.RAZORPAY_PLAN_YEARLY_USD || 'plan_yearly_usd']: 'yearly'
+                    };
+                    planFallback = PLAN_ID_TO_TYPE[sub.plan_id] || null;
+                    if (!planFallback) {
+                        console.warn(`[Webhook] Unknown plan_id ${sub.plan_id} on subscription ${sub.id}. Falling back to default 'yearly'.`);
+                        planFallback = 'yearly';
+                    }
+                } else {
+                    console.warn(`[Webhook] Missing plan details entirely in subscription ${sub.id}. Falling back to default 'yearly'.`);
+                    planFallback = 'yearly';
                 }
 
                 const updateResult = await docClient.send(new UpdateCommand({

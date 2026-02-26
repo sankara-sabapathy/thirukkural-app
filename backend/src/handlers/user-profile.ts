@@ -59,14 +59,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                         migratedAt: new Date().toISOString()
                     };
 
-                    // Insert the new profile
-                    await docClient.send(new PutCommand({
-                        TableName: TABLE_NAME,
-                        Item: migratedProfile,
-                        ConditionExpression: 'attribute_not_exists(userId)'
-                    }));
-
-                    // Overwrite the old record to become an AUTH_LINK
+                    // Convert the old sub ID into an AUTH_LINK
                     const authLink = {
                         userId: userId, // the old sub
                         type: 'AUTH_LINK',
@@ -75,16 +68,29 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     };
 
                     try {
-                        await docClient.send(new PutCommand({
-                            TableName: TABLE_NAME,
-                            Item: authLink,
-                            ConditionExpression: 'attribute_not_exists(userId) OR #type = :profile',
-                            ExpressionAttributeNames: { '#type': 'type' },
-                            ExpressionAttributeValues: { ':profile': 'PROFILE' }
+                        await docClient.send(new TransactWriteCommand({
+                            TransactItems: [
+                                {
+                                    Put: {
+                                        TableName: TABLE_NAME,
+                                        Item: migratedProfile,
+                                        ConditionExpression: 'attribute_not_exists(userId)'
+                                    }
+                                },
+                                {
+                                    Put: {
+                                        TableName: TABLE_NAME,
+                                        Item: authLink,
+                                        ConditionExpression: 'attribute_not_exists(userId) OR #type = :profile',
+                                        ExpressionAttributeNames: { '#type': 'type' },
+                                        ExpressionAttributeValues: { ':profile': 'PROFILE' }
+                                    }
+                                }
+                            ]
                         }));
                     } catch (err: any) {
-                        if (err.name === 'ConditionalCheckFailedException') {
-                            console.log(`Auth link already migrated for ${userId}. Treating as success.`);
+                        if (err.name === 'TransactionCanceledException') {
+                            console.log(`Auth link transaction canceled for ${userId}. Likely concurrent modification. Treating as success and re-fetching.`);
                         } else {
                             throw err;
                         }

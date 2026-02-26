@@ -149,8 +149,11 @@ export const handler = async (): Promise<void> => {
                                             await docClient.send(new UpdateCommand({
                                                 TableName: process.env.USERS_TABLE,
                                                 Key: { userId },
-                                                UpdateExpression: 'SET outOfCreditAlertSent = :f',
-                                                ExpressionAttributeValues: { ':f': false }
+                                                UpdateExpression: 'SET outOfCreditAlertSent = :f, updatedAt = :u',
+                                                ExpressionAttributeValues: {
+                                                    ':f': false,
+                                                    ':u': new Date().toISOString()
+                                                }
                                             }));
                                         } catch (rollbackErr) {
                                             console.error(`Failed to rollback outOfCreditAlertSent for ${logId}`, rollbackErr);
@@ -226,8 +229,11 @@ export const handler = async (): Promise<void> => {
                                         await docClient.send(new UpdateCommand({
                                             TableName: process.env.USERS_TABLE,
                                             Key: { userId },
-                                            UpdateExpression: 'SET lowCreditAlertSent = :f',
-                                            ExpressionAttributeValues: { ':f': false }
+                                            UpdateExpression: 'SET lowCreditAlertSent = :f, updatedAt = :u',
+                                            ExpressionAttributeValues: {
+                                                ':f': false,
+                                                ':u': new Date().toISOString()
+                                            }
                                         }));
                                     } catch (rollbackErr) {
                                         console.error(`Failed to rollback lowCreditAlertSent for ${logId}`, rollbackErr);

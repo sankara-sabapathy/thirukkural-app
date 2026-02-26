@@ -42,7 +42,6 @@ describe('Razorpay Handler', () => {
         ddbMock.reset();
         vi.clearAllMocks();
         vi.resetModules(); // Hard wipe Razorpay client cache and global configs
-        vi.clearAllMocks();
 
         process.env = {
             ...originalEnv,
@@ -241,10 +240,14 @@ describe('Razorpay Handler', () => {
     });
 
     it('should proceed to sync local database to cancelled even if Razorpay cancel returns 400', async () => {
-        const RazorpayClient = (await import('razorpay')).default;
-        const mockRzpInt = new RazorpayClient({ key_id: '1', key_secret: '1' });
-
-        mockRzpInt.subscriptions.cancel = vi.fn().mockRejectedValue({ statusCode: 400, error: { code: 'BAD_REQUEST_ERROR' } });
+        const RazorpayClient = (await import('razorpay')).default as any;
+        RazorpayClient.mockImplementationOnce(function () {
+            return {
+                subscriptions: {
+                    cancel: vi.fn().mockRejectedValue({ statusCode: 400, error: { code: 'BAD_REQUEST_ERROR' } })
+                }
+            };
+        });
 
         const event = {
             path: '/payment/cancel',
