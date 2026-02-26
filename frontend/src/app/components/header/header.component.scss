@@ -74,22 +74,29 @@
 }
 
 .btn-login {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
     padding: 0.625rem 1.25rem !important;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+    background: var(--primary) !important;
     color: white !important;
-    border-radius: 10px !important;
-    font-weight: 600;
+    border-radius: 8px !important;
+    font-weight: 500;
     font-size: 0.875rem;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     text-transform: none !important;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 2px 4px rgba(24, 104, 219, 0.2);
+
+    /* Target inner framework wrapper to guarantee safe layout of SVG+Text */
+    ::ng-deep .mdc-button__label,
+    ::ng-deep .mat-button-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
 
     &:hover {
         transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+        box-shadow: 0 4px 8px rgba(24, 104, 219, 0.3);
+        background: #1456b3 !important;
+        /* Darker shade of primary */
     }
 }
 
@@ -103,11 +110,11 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    background: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
+    font-weight: 600;
     font-size: 0.875rem;
     color: white;
 }
@@ -138,8 +145,9 @@
     position: relative;
 
     &:hover {
-        background: rgba(99, 102, 241, 0.15);
-        border-color: rgba(99, 102, 241, 0.3);
+        background: rgba(24, 104, 219, 0.05);
+        /* very light blue hint */
+        border-color: rgba(24, 104, 219, 0.2);
         transform: scale(1.05);
     }
 
@@ -148,8 +156,8 @@
     }
 
     &.active {
-        background: rgba(99, 102, 241, 0.2);
-        border-color: rgba(99, 102, 241, 0.4);
+        background: transparent;
+        border-color: transparent;
 
         .hamburger-line {
             background: var(--primary);
@@ -231,11 +239,11 @@
     }
 
     &::-webkit-scrollbar-thumb {
-        background: rgba(99, 102, 241, 0.3);
+        background: rgba(24, 104, 219, 0.2);
         border-radius: 3px;
 
         &:hover {
-            background: rgba(99, 102, 241, 0.5);
+            background: rgba(24, 104, 219, 0.4);
         }
     }
 
@@ -298,10 +306,10 @@
     }
 
     &:hover {
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12));
+        background: rgba(24, 104, 219, 0.05);
         color: var(--primary);
         transform: translateX(6px);
-        border-color: rgba(99, 102, 241, 0.2);
+        border-color: rgba(24, 104, 219, 0.1);
 
         svg {
             opacity: 1;
@@ -314,10 +322,10 @@
     }
 
     &.active {
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(139, 92, 246, 0.18));
+        background: rgba(24, 104, 219, 0.04);
         color: var(--primary);
-        border-color: rgba(99, 102, 241, 0.3);
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+        border-color: transparent;
+        box-shadow: none;
 
         svg {
             opacity: 1;
@@ -331,9 +339,9 @@
             transform: translateY(-50%);
             width: 4px;
             height: 70%;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: var(--primary);
             border-radius: 0 4px 4px 0;
-            box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 8px rgba(24, 104, 219, 0.2);
         }
     }
 }
@@ -344,6 +352,9 @@
     border-top: 1px solid rgba(99, 102, 241, 0.15);
     background: transparent;
     margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
 .mobile-user-info {
@@ -351,17 +362,17 @@
     align-items: center;
     gap: 1rem;
     padding: 1.25rem;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12));
-    border: 1px solid rgba(99, 102, 241, 0.2);
+    background: rgba(24, 104, 219, 0.05);
+    border: 1px solid rgba(24, 104, 219, 0.1);
     border-radius: 14px;
     margin-bottom: 1rem;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 
     .user-avatar {
         width: 52px;
         height: 52px;
         font-size: 1.25rem;
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        box-shadow: 0 2px 8px rgba(24, 104, 219, 0.2);
     }
 
     .user-email {
@@ -374,26 +385,48 @@
 
 .mobile-btn {
     width: 100%;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    padding: 1.125rem 1.5rem !important;
+    /* Remove breaking display overrides from host element to prevent internal mat-label multi-line wrapping */
+    padding: 1rem 1.5rem !important;
     font-size: 1rem !important;
     font-weight: 600 !important;
     border-radius: 14px !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2) !important;
+    box-shadow: none !important;
+    background: rgba(24, 104, 219, 0.04);
+    color: var(--text-primary);
+    border: 1px solid rgba(24, 104, 219, 0.08);
+
+    &.btn-login {
+        background: var(--primary) !important;
+        color: white !important;
+        border-color: transparent !important;
+        box-shadow: 0 4px 12px rgba(24, 104, 219, 0.25) !important;
+    }
+
+    /* Target the actual inner framework wrapper to prevent stacking */
+    ::ng-deep .mdc-button__label,
+    ::ng-deep .mat-button-wrapper {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 0.6rem !important;
+        width: 100%;
+        line-height: normal !important;
+    }
 
     svg {
         flex-shrink: 0;
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
+        display: block !important;
+        margin: 0 !important;
     }
 
     &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3) !important;
+        background: rgba(24, 104, 219, 0.08);
+        border-color: rgba(24, 104, 219, 0.15);
     }
 
     &:active {

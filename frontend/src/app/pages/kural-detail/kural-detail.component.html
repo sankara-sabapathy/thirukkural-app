@@ -7,6 +7,23 @@
         <div *ngIf="kural" class="kural-content">
             <div class="kural-card">
 
+                <!-- Ultra Background Container with Animated Characters -->
+                <div class="ultra-bg-container" aria-hidden="true">
+                    <div class="bg-thiruvalluvar"></div>
+                    <div class="floating-alphabet" style="--delay: 0s; --x: 10%; --y: 15%;">அ</div>
+                    <div class="floating-alphabet" style="--delay: 2s; --x: 82%; --y: 20%;">ஆ</div>
+                    <div class="floating-alphabet" style="--delay: 4s; --x: 18%; --y: 75%;">இ</div>
+                    <div class="floating-alphabet" style="--delay: 1s; --x: 75%; --y: 85%;">ஈ</div>
+                    <div class="floating-alphabet" style="--delay: 3s; --x: 88%; --y: 45%;">உ</div>
+                    <div class="floating-alphabet" style="--delay: 5s; --x: 8%; --y: 45%;">ஊ</div>
+                    <div class="floating-alphabet" style="--delay: 2.5s; --x: 50%; --y: 10%;">எ</div>
+                    <div class="floating-alphabet" style="--delay: 4.5s; --x: 45%; --y: 88%;">ஏ</div>
+                    <div class="floating-alphabet" style="--delay: 1.5s; --x: 90%; --y: 10%;">ஐ</div>
+                    <div class="floating-alphabet" style="--delay: 3.5s; --x: 5%; --y: 88%;">ஒ</div>
+                    <div class="floating-alphabet" style="--delay: 0.5s; --x: 35%; --y: 50%;">ஓ</div>
+                    <div class="floating-alphabet" style="--delay: 5.5s; --x: 65%; --y: 35%;">ஔ</div>
+                </div>
+
                 <!-- Hidden Capture Area for High Quality Image -->
                 <div #captureArea class="share-card-hidden">
                     <div class="share-card-content">
@@ -49,27 +66,29 @@
                     </div>
                 </div>
 
-                <div class="card-header">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div>
-                            <div class="number-badge">{{ kural.number }}</div>
-                            <h1>Thirukkural {{ kural.number }}</h1>
-                            <div class="category-path">
-                                <span>{{ kural.pal_tr }}</span>
-                                <span>{{ kural.iyal_tr }}</span>
-                                <span>{{ kural.adikaram_tr }}</span>
-                            </div>
+                <div class="ultra-card-header">
+                    <div class="header-main-content">
+                        <div class="kural-eyebrow">Thirukkural</div>
+                        <h1 class="majestic-title">{{ kural.number }}</h1>
+                        <div class="category-path">
+                            <span>{{ kural.pal | tamilCategory:'pal' }}</span>
+                            <span>{{ kural.iyal | tamilCategory:'iyal' }}</span>
+                            <span>{{ kural.adikaram | tamilCategory:'adikaram' }}</span>
                         </div>
-                        <button mat-icon-button (click)="captureAndShare(kural)" [disabled]="isSharing"
-                            style="color: white; background: rgba(255,255,255,0.2);">
-                            <mat-icon>share</mat-icon>
-                        </button>
                     </div>
+                    <button class="standalone-share-btn" mat-icon-button (click)="captureAndShare(kural)"
+                        [disabled]="isSharing" aria-label="Share Kural">
+                        <mat-icon>share</mat-icon>
+                    </button>
                 </div>
 
                 <div class="card-body">
                     <!-- Tamil Text Section -->
                     <div class="tamil-section">
+                        <button mat-icon-button class="quick-copy-text-btn" (click)="copyTamilTextOnly(kural)"
+                            title="Copy Tamil Couplet" aria-label="Copy Tamil Couplet" [class.copied]="isCopied">
+                            <mat-icon>{{ isCopied ? 'check' : 'content_copy' }}</mat-icon>
+                        </button>
                         <div class="tamil-text">
                             <p>{{ kural.line1 }}</p>
                             <p>{{ kural.line2 }}</p>
@@ -82,32 +101,21 @@
                     </div>
 
                     <!-- Category Information -->
-                    <div class="content-section category-info">
-                        <h3>
-                            <mat-icon>category</mat-icon>
-                            Category Information
-                        </h3>
-                        <div class="category-details">
-                            <div class="category-item">
-                                <strong>பால் (Section):</strong>
-                                <span class="tamil-text">{{ kural.pal }}</span>
-                                <span class="english-text">({{ kural.pal_tr }})</span>
-                                <span class="transliteration-text" *ngIf="kural.pal_tl">[{{ kural.pal_tl }}]</span>
-                            </div>
-                            <div class="category-item">
-                                <strong>இயல் (Chapter):</strong>
-                                <span class="tamil-text">{{ kural.iyal }}</span>
-                                <span class="english-text">({{ kural.iyal_tr }})</span>
-                                <span class="transliteration-text" *ngIf="kural.iyal_tl">[{{ kural.iyal_tl
-                                    }}]</span>
-                            </div>
-                            <div class="category-item">
-                                <strong>அதிகாரம் (Topic):</strong>
-                                <span class="tamil-text">{{ kural.adikaram }}</span>
-                                <span class="english-text">({{ kural.adikaram_tr }})</span>
-                                <span class="transliteration-text" *ngIf="kural.adikaram_tl">[{{ kural.adikaram_tl
-                                    }}]</span>
-                            </div>
+                    <div class="ultra-categories-row">
+                        <div class="category-pill">
+                            <span class="pill-label">பால் (Section)</span>
+                            <span class="pill-value">{{ kural.pal | tamilCategory:'pal' }}</span>
+                            <span class="pill-sub">{{ kural.pal_tr }} • {{ kural.pal_tl }}</span>
+                        </div>
+                        <div class="category-pill">
+                            <span class="pill-label">இயல் (Chapter)</span>
+                            <span class="pill-value">{{ kural.iyal | tamilCategory:'iyal' }}</span>
+                            <span class="pill-sub">{{ kural.iyal_tr }} • {{ kural.iyal_tl }}</span>
+                        </div>
+                        <div class="category-pill">
+                            <span class="pill-label">அதிகாரம் (Topic)</span>
+                            <span class="pill-value">{{ kural.adikaram | tamilCategory:'adikaram' }}</span>
+                            <span class="pill-sub">{{ kural.adikaram_tr }} • {{ kural.adikaram_tl }}</span>
                         </div>
                     </div>
 
@@ -186,21 +194,23 @@
 
                 <div class="card-footer">
                     <div class="nav-buttons">
-                        <button mat-raised-button color="primary" (click)="previousKural()"
+                        <button mat-stroked-button color="primary" (click)="previousKural()"
                             [disabled]="currentNumber <= 1">
-                            <mat-icon>chevron_left</mat-icon> Previous
+                            <mat-icon>arrow_back</mat-icon> Previous
                         </button>
-                        <button mat-raised-button color="primary" (click)="nextKural()"
+                        <button mat-stroked-button color="primary" (click)="nextKural()"
                             [disabled]="currentNumber >= 1330">
-                            Next <mat-icon>chevron_right</mat-icon>
+                            Next <mat-icon>arrow_forward</mat-icon>
                         </button>
                     </div>
 
                     <div class="action-buttons">
-                        <button mat-icon-button (click)="copyToClipboard(kural)" title="Copy Text">
+                        <button mat-icon-button (click)="copyToClipboard(kural)" title="Copy Text"
+                            aria-label="Copy Kural text" class="action-icon">
                             <mat-icon>content_copy</mat-icon>
                         </button>
-                        <button mat-fab extended color="accent" (click)="captureAndShare(kural)" [disabled]="isSharing">
+                        <button mat-flat-button color="primary" class="rounded-share-btn"
+                            (click)="captureAndShare(kural)" [disabled]="isSharing">
                             <mat-icon>share</mat-icon>
                             <span *ngIf="!isSharing">Share</span>
                             <span *ngIf="isSharing">Preparing...</span>
@@ -208,9 +218,9 @@
                     </div>
 
                     <div class="back-to-list">
-                        <button mat-button routerLink="/kurals">
+                        <button mat-button color="primary" routerLink="/kurals">
                             <mat-icon>list</mat-icon>
-                            Back to Library
+                            Library
                         </button>
                     </div>
                 </div>

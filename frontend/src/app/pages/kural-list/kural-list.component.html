@@ -3,18 +3,68 @@
         <h1>Thirukkural Library</h1>
         <p class="subtitle">Explore 1330 verses of timeless Tamil wisdom</p>
 
-        <div class="search-actions">
-            <mat-form-field appearance="outline" class="search-field">
-                <mat-label>Search kurals...</mat-label>
-                <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearch($event)"
-                    placeholder="Try searching by number, Tamil text, or translation">
-                <mat-icon matPrefix>search</mat-icon>
-            </mat-form-field>
+        <!-- Ultra Modern Search Hub -->
+        <div class="search-hub">
+            <div class="search-main-row">
+                <mat-icon class="search-hero-icon">search</mat-icon>
+                <input class="hero-search-input" [(ngModel)]="searchQuery" (ngModelChange)="onSearch($event)"
+                    placeholder="Search by number, Tamil text, or meaning..." aria-label="Search Kurals">
 
-            <button mat-stroked-button (click)="goToRandomKural()" class="random-btn">
-                <mat-icon>shuffle</mat-icon>
-                Random Kural
-            </button>
+                <button mat-flat-button color="primary" (click)="goToRandomKural()" class="hero-random-btn">
+                    <mat-icon>shuffle</mat-icon> Random
+                </button>
+            </div>
+
+            <div class="hub-divider"></div>
+
+            <div class="filter-row">
+                <div class="filter-header-group">
+                    <div class="filter-label">
+                        <mat-icon>tune</mat-icon> Filters
+                    </div>
+
+                    <button mat-button class="lang-toggle-btn" (click)="toggleFilterLanguage()"
+                        [attr.aria-label]="filterLanguage === 'en' ? 'Switch to Tamil Filters' : 'Switch to English Filters'"
+                        [attr.aria-pressed]="filterLanguage === 'ta'">
+                        <span [class.active]="filterLanguage === 'en'">Eng</span>
+                        <span class="divider">|</span>
+                        <span [class.active]="filterLanguage === 'ta'">தமிழ்</span>
+                    </button>
+                </div>
+
+                <mat-form-field class="ultra-filter" subscriptSizing="dynamic">
+                    <mat-select [(ngModel)]="selectedPal" (selectionChange)="onPalChange()"
+                        [placeholder]="filterLanguage === 'ta' ? 'பால் (Section)' : 'Section'"
+                        panelClass="ultra-select-panel">
+                        <mat-option value="">{{ filterLanguage === 'ta' ? 'அனைத்து பால்களும்' : 'All Sections'
+                            }}</mat-option>
+                        <mat-option *ngFor="let pal of palOptions" [value]="pal">{{ getTranslatedOption('pal', pal)
+                            }}</mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <mat-form-field class="ultra-filter" subscriptSizing="dynamic">
+                    <mat-select [(ngModel)]="selectedIyal" (selectionChange)="onIyalChange()"
+                        [placeholder]="filterLanguage === 'ta' ? 'இயல் (Chapter)' : 'Chapter'"
+                        panelClass="ultra-select-panel">
+                        <mat-option value="">{{ filterLanguage === 'ta' ? 'அனைத்து இயல்களும்' : 'All Chapters'
+                            }}</mat-option>
+                        <mat-option *ngFor="let iyal of iyalOptions" [value]="iyal">{{ getTranslatedOption('iyal', iyal)
+                            }}</mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <mat-form-field class="ultra-filter" subscriptSizing="dynamic">
+                    <mat-select [(ngModel)]="selectedAdikaram" (selectionChange)="onAdikaramChange()"
+                        [placeholder]="filterLanguage === 'ta' ? 'அதிகாரம் (Topic)' : 'Topic'"
+                        panelClass="ultra-select-panel">
+                        <mat-option value="">{{ filterLanguage === 'ta' ? 'அனைத்து அதிகாரங்களும்' : 'All Topics'
+                            }}</mat-option>
+                        <mat-option *ngFor="let adikaram of adikaramOptions" [value]="adikaram">{{
+                            getTranslatedOption('adikaram', adikaram) }}</mat-option>
+                    </mat-select>
+                </mat-form-field>
+            </div>
         </div>
     </div>
 

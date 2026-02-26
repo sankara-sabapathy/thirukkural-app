@@ -27,6 +27,7 @@ export interface RazorpayOrderRequest {
 
 export interface RazorpaySubscriptionRequest {
     planId: string; // Internal Plan ID ('monthly-inr', 'yearly-usd', etc.)
+    planType: 'monthly' | 'yearly';
     totalCount: number;
 }
 

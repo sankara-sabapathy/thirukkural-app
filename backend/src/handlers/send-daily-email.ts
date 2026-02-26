@@ -114,6 +114,61 @@ export const handler = async (): Promise<void> => {
                     } catch (err: any) {
                         if (err.name === 'ConditionalCheckFailedException') {
                             console.log(`Skipping ${logId}: Insufficient credits (${credits})`);
+
+                            // Logic: Out of Credit Alert (Delivery Skipped)
+                            if (!user.outOfCreditAlertSent) {
+                                console.log(`Attempting to claim and send Out of Credit Alert for ${logId}`);
+                                try {
+                                    // 1. Atomic Claim: Lock to prevent spam across concurrent worker lambda invocations
+                                    await docClient.send(new UpdateCommand({
+                                        TableName: process.env.USERS_TABLE,
+                                        Key: { userId },
+                                        UpdateExpression: 'SET outOfCreditAlertSent = :t, updatedAt = :now',
+                                        ConditionExpression: 'attribute_not_exists(outOfCreditAlertSent) OR outOfCreditAlertSent = :f',
+                                        ExpressionAttributeValues: {
+                                            ':t': true,
+                                            ':f': false,
+                                            ':now': new Date().toISOString()
+                                        }
+                                    }));
+
+                                    // 2. Dispatch Email
+                                    try {
+                                        const alertEmail = generateSystemEmail({ type: 'OUT_OF_CREDITS' });
+                                        await sendEmail({
+                                            to: [email],
+                                            subject: alertEmail.subject,
+                                            text: alertEmail.text,
+                                            html: alertEmail.html
+                                        });
+                                        console.log(`Successfully dispatched Out of Credit Alert for ${logId}`);
+                                    } catch (alertErr) {
+                                        console.error(`Failed to send Out of Credit alert to ${logId}. Rolling back flag.`, alertErr);
+                                        // 3. Rollback if dispatch fails so it can be retried tomorrow
+                                        try {
+                                            await docClient.send(new UpdateCommand({
+                                                TableName: process.env.USERS_TABLE,
+                                                Key: { userId },
+                                                UpdateExpression: 'SET outOfCreditAlertSent = :f, updatedAt = :u',
+                                                ExpressionAttributeValues: {
+                                                    ':f': false,
+                                                    ':u': new Date().toISOString()
+                                                }
+                                            }));
+                                        } catch (rollbackErr) {
+                                            console.error(`Failed to rollback outOfCreditAlertSent for ${logId}`, rollbackErr);
+                                        }
+                                    }
+
+                                } catch (claimErr: any) {
+                                    if (claimErr.name === 'ConditionalCheckFailedException') {
+                                        console.log(`Alert already claimed by another worker for ${logId}. Skipping.`);
+                                    } else {
+                                        console.error(`Failed atomic claim for Out of Credit alert on ${logId}`, claimErr);
+                                    }
+                                }
+                            }
+
                         } else {
                             console.error(`Error deducting credits for ${logId}`, err);
                         }
@@ -139,19 +194,58 @@ export const handler = async (): Promise<void> => {
                         console.log(`Sent email to ${logId}`);
 
                         // Logic: Low Credit Alert (Post-Send)
-                        if (creditsDeducted && newBalance !== undefined && newBalance < LOW_CREDIT_THRESHOLD && (newBalance + emailCost) >= LOW_CREDIT_THRESHOLD) {
+                        if (creditsDeducted && newBalance !== undefined && newBalance < LOW_CREDIT_THRESHOLD && !user.lowCreditAlertSent) {
                             console.log(`Triggering Low Credit Alert for ${logId}`);
-                            const alertEmail = generateSystemEmail({
-                                type: 'LOW_CREDITS',
-                                data: { credits: newBalance }
-                            });
-                            // Best effort alert
-                            await sendEmail({
-                                to: [email],
-                                subject: alertEmail.subject,
-                                text: alertEmail.text,
-                                html: alertEmail.html
-                            }).catch(e => console.error(`Failed to send alert to ${logId}`, e));
+                            try {
+                                // 1. Atomic claim first
+                                await docClient.send(new UpdateCommand({
+                                    TableName: process.env.USERS_TABLE,
+                                    Key: { userId },
+                                    UpdateExpression: 'SET lowCreditAlertSent = :t, updatedAt = :now',
+                                    ConditionExpression: 'attribute_not_exists(lowCreditAlertSent) OR lowCreditAlertSent = :f',
+                                    ExpressionAttributeValues: {
+                                        ':t': true,
+                                        ':f': false,
+                                        ':now': new Date().toISOString()
+                                    }
+                                }));
+
+                                // 2. Dispatch
+                                try {
+                                    const alertEmail = generateSystemEmail({
+                                        type: 'LOW_CREDITS',
+                                        data: { credits: newBalance }
+                                    });
+                                    await sendEmail({
+                                        to: [email],
+                                        subject: alertEmail.subject,
+                                        text: alertEmail.text,
+                                        html: alertEmail.html
+                                    });
+                                    console.log(`Successfully dispatched Low Credit Alert for ${logId}`);
+                                } catch (e) {
+                                    console.error(`Failed to send Low Credit alert to ${logId}. Rolling back flag.`, e);
+                                    try {
+                                        await docClient.send(new UpdateCommand({
+                                            TableName: process.env.USERS_TABLE,
+                                            Key: { userId },
+                                            UpdateExpression: 'SET lowCreditAlertSent = :f, updatedAt = :u',
+                                            ExpressionAttributeValues: {
+                                                ':f': false,
+                                                ':u': new Date().toISOString()
+                                            }
+                                        }));
+                                    } catch (rollbackErr) {
+                                        console.error(`Failed to rollback lowCreditAlertSent for ${logId}`, rollbackErr);
+                                    }
+                                }
+                            } catch (claimErr: any) {
+                                if (claimErr.name === 'ConditionalCheckFailedException') {
+                                    console.log(`Low credit alert already claimed by another worker for ${logId}. Skipping.`);
+                                } else {
+                                    console.error(`Failed atomic claim for Low Credit alert on ${logId}`, claimErr);
+                                }
+                            }
                         }
 
                         // Wait 1 second to respect limits

@@ -132,4 +132,67 @@ describe('Send Daily Email Handler', () => {
         expect(deleteCall).toBeDefined();
         expect((deleteCall?.args[0].input as DeleteCommandInput).Key).toEqual({ deviceId: 'd1' });
     });
+
+    it('should skip email and send OUT_OF_CREDITS alert if credits are insufficient', async () => {
+        process.env.ENABLE_PAYMENTS = 'true';
+        ddbMock.on(ScanCommand, { TableName: 'UsersTable' }).resolves({
+            Items: [{ userId: 'uid1', email: 'poor@test.com', credits: 0, outOfCreditAlertSent: false }]
+        });
+        ddbMock.on(ScanCommand, { TableName: 'PushTable' }).resolves({ Items: [] });
+
+        // Force ConditionalCheckFailedException on the deduction update
+        const conditionalCheckFailed = new Error('ConditionalCheckFailedException');
+        conditionalCheckFailed.name = 'ConditionalCheckFailedException';
+        ddbMock.on(UpdateCommand).rejects(conditionalCheckFailed); // Initial attempt fails
+
+        // But we need the subsequent lock update to succeed.
+        ddbMock.on(UpdateCommand).callsFake((input) => {
+            if (input.UpdateExpression.includes('credits = credits - :cost')) {
+                return Promise.reject(conditionalCheckFailed);
+            }
+            return Promise.resolve({}); // The lock update succeeds
+        });
+
+        await handler();
+
+        // One email sent -> the alert
+        expect(sendEmail).toHaveBeenCalledTimes(1);
+        expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
+            to: ['poor@test.com'],
+            subject: expect.stringContaining('Delivery Paused: Out of Credits')
+        }));
+
+        // Verify the DB lock was applied
+        const updates = ddbMock.calls().filter(c => c.args[0] instanceof UpdateCommand && (c.args[0].input as any).UpdateExpression.includes('outOfCreditAlertSent'));
+        expect(updates).toHaveLength(1);
+    });
+
+    it('should send daily email and then send LOW_CREDITS alert if balance drops below threshold', async () => {
+        process.env.ENABLE_PAYMENTS = 'true';
+        ddbMock.on(ScanCommand, { TableName: 'UsersTable' }).resolves({
+            Items: [{ userId: 'uid2', email: 'low@test.com', credits: 5, lowCreditAlertSent: false }]
+        });
+        ddbMock.on(ScanCommand, { TableName: 'PushTable' }).resolves({ Items: [] });
+
+        // The deduction update succeeds and returns the new balance (4)
+        ddbMock.on(UpdateCommand).resolves({
+            Attributes: { credits: 4 }
+        });
+
+        await handler();
+
+        // Two emails sent: standard daily kural + low credit alert
+        expect(sendEmail).toHaveBeenCalledTimes(2);
+
+        // Let's check the contents of the final email which should be the alert
+        const calls = vi.mocked(sendEmail).mock.calls;
+        const subjects = calls.map(c => c[0].subject);
+
+        expect(subjects.some(s => s.includes('Running Low on Credits'))).toBe(true);
+        expect(subjects.some(s => s.includes('Thirukkural #1337'))).toBe(true);
+
+        // Verify the DB lock was applied
+        const updates = ddbMock.calls().filter(c => c.args[0] instanceof UpdateCommand && (c.args[0].input as any).UpdateExpression.includes('lowCreditAlertSent'));
+        expect(updates).toHaveLength(1);
+    });
 });

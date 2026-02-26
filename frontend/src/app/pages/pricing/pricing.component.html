@@ -27,22 +27,13 @@
                 <li>
                     <strong>{{ currency === 'INR' ? '15' : '50' }} Credits</strong>
                 </li>
-                <li>1 Email = 0.5 Credits</li>
+                <li>1 Email = 1 Credit</li>
                 <li>Valid forever</li>
             </ul>
             <button class="cta-btn outline" (click)="buyCredits(currency === 'INR' ? 15 : 1.00)"
                 [disabled]="!enablePayments">
                 {{ enablePayments ? 'Buy ' + (currency === 'INR' ? '15' : '50') + ' Credits' : 'Coming Soon' }}
             </button>
-            <!-- Larger Packs -->
-            <div class="mini-packs">
-                <button (click)="buyCredits(currency === 'INR' ? 30 : 5.00)" [disabled]="!enablePayments">
-                    {{ enablePayments ? (currency === 'INR' ? '₹30 (30 Cr)' : '$5 (250 Cr)') : 'Coming Soon' }}
-                </button>
-                <button (click)="buyCredits(currency === 'INR' ? 100 : 10.00)" [disabled]="!enablePayments">
-                    {{ enablePayments ? (currency === 'INR' ? '₹100 (105 Cr)' : '$10 (500 Cr)') : 'Coming Soon' }}
-                </button>
-            </div>
         </div>
 
         <!-- Subscription -->

@@ -6,9 +6,26 @@ import { createResponse, safeJsonParse } from '../shared/utils';
 import { docClient } from '../shared/dynamo';
 import { GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { PRICING_CONFIG, RazorpayOrderRequest, RazorpaySubscriptionRequest, UserProfile } from '../shared/types';
+import { sendEmail } from '../shared/email-service';
+import { generateSystemEmail } from '../shared/email-templates';
 import * as crypto from 'crypto';
 
 const USERS_TABLE = process.env.USERS_TABLE;
+
+// Shared Helper: Resolves Cognito JWT subs to internal Profile IDs via AUTH_LINK
+async function resolveAuthLinkUserId(jwtSub?: string): Promise<string | undefined> {
+    if (!jwtSub) return undefined;
+
+    let userId = jwtSub;
+    const linkCheckRes = await docClient.send(new GetCommand({
+        TableName: USERS_TABLE,
+        Key: { userId: jwtSub }
+    }));
+    if (linkCheckRes.Item && linkCheckRes.Item.type === 'AUTH_LINK') {
+        userId = linkCheckRes.Item.linkedUserId;
+    }
+    return userId;
+}
 
 // Initialize Razorpay lazily to ensure secrets are fetched
 let razorpay: Razorpay | null = null;
@@ -20,6 +37,10 @@ const getRazorpayClient = async () => {
     const keyId = await getSecret('PARAM_RAZORPAY_KEY_ID');
     const keySecret = await getSecret('PARAM_RAZORPAY_KEY_SECRET');
     webhookSecret = await getSecret('PARAM_RAZORPAY_WEBHOOK_SECRET') || null;
+
+    if (!webhookSecret) {
+        console.warn('[WARNING] PARAM_RAZORPAY_WEBHOOK_SECRET is missing or empty. Webhooks will fail validation.');
+    }
 
     if (!keyId || !keySecret) {
         throw new Error('Razorpay credentials not configured');
@@ -42,7 +63,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // 1. Create Order (Credits)
         if (path.endsWith('/order') && method === 'POST') {
-            const userId = event.requestContext.authorizer?.claims?.sub;
+            const sub = event.requestContext.authorizer?.claims?.sub;
+            if (!sub) return createResponse(401, { message: 'Unauthorized' }, origin);
+
+            const userId = await resolveAuthLinkUserId(sub);
             if (!userId) return createResponse(401, { message: 'Unauthorized' }, origin);
 
             const body = safeJsonParse(event.body);
@@ -74,13 +98,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // 2. Create Subscription
         if (path.endsWith('/subscription') && method === 'POST') {
-            const userId = event.requestContext.authorizer?.claims?.sub;
+            const jwtSub = event.requestContext.authorizer?.claims?.sub;
+            if (!jwtSub) return createResponse(401, { message: 'Unauthorized' }, origin);
+
+            const userId = await resolveAuthLinkUserId(jwtSub);
             if (!userId) return createResponse(401, { message: 'Unauthorized' }, origin);
 
             const body = safeJsonParse(event.body);
-            const { planId, totalCount } = body as RazorpaySubscriptionRequest; // 'plan_monthly_inr' etc. provided by logic
+            const { planId, planType, totalCount } = body as RazorpaySubscriptionRequest; // 'plan_monthly_inr' etc. provided by logic
 
-            if (!planId) return createResponse(400, { message: 'Missing planId' }, origin);
+            if (!planId || !planType) return createResponse(400, { message: 'Missing planId or planType' }, origin);
 
             // Validate totalCount
             let safeTotalCount = Number(totalCount);
@@ -101,6 +128,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 // Creating indefinite sub:
                 // total_count: 12 (1 year) or large number.
                 notes: {
+                    planType: planType,
                     userId: userId,
                     type: 'SUBSCRIPTION'
                 }
@@ -150,28 +178,43 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     let creditsToAdd = 0;
                     if (currency === 'INR') {
                         creditsToAdd = amountPaid; // 1 INR = 1 Credit
-                        if (amountPaid >= 100) creditsToAdd *= 1.05; // 5% Bonus logic
+                        if (amountPaid >= 100) creditsToAdd = Math.floor(creditsToAdd * 1.05); // 5% Bonus logic
                     } else if (currency === 'USD') {
                         creditsToAdd = amountPaid * 50; // $1 = 50 Credits
+                        if (amountPaid >= 2) creditsToAdd = Math.floor(creditsToAdd * 1.05); // Equivalent 5% Bonus logic for USD
                     }
 
                     console.log(`Adding ${creditsToAdd} credits to user ${userId} for payment ${paymentId}`);
 
                     try {
-                        await docClient.send(new UpdateCommand({
+                        const updateResult = await docClient.send(new UpdateCommand({
                             TableName: USERS_TABLE,
                             Key: { userId },
-                            // Atomic add credits AND record payment ID to prevent double processing
-                            UpdateExpression: 'ADD processedPayments :pid_set SET credits = if_not_exists(credits, :zero) + :val, updatedAt = :now',
-                            ConditionExpression: 'NOT contains(processedPayments, :pid)',
+                            // Atomic add credits AND record payment ID to prevent double processing.
+                            // CRITICAL: Reset the threshold alerting flags so they can be alerted again if they drop low in the future.
+                            UpdateExpression: 'ADD processedPayments :pid_set SET credits = if_not_exists(credits, :zero) + :val, updatedAt = :now, lowCreditAlertSent = :f, outOfCreditAlertSent = :f',
+                            ConditionExpression: 'attribute_not_exists(processedPayments) OR NOT contains(processedPayments, :pid)',
                             ExpressionAttributeValues: {
                                 ':zero': 0,
                                 ':val': creditsToAdd,
                                 ':now': new Date().toISOString(),
                                 ':pid': paymentId,
-                                ':pid_set': new Set([paymentId])
-                            }
+                                ':pid_set': new Set([paymentId]),
+                                ':f': false
+                            },
+                            ReturnValues: 'ALL_NEW'
                         }));
+
+                        const userEmail = updateResult.Attributes?.email;
+                        if (userEmail) {
+                            try {
+                                const systemEmail = generateSystemEmail({ type: 'CREDITS_ADDED', data: { credits: creditsToAdd } });
+                                await sendEmail({ to: [userEmail], subject: systemEmail.subject, text: systemEmail.text, html: systemEmail.html });
+                                console.log(`[Credits Added Email] Dispatch success to ${userId}`);
+                            } catch (e) {
+                                console.error(`[Credits Added Email] Delivery failed for ${userId}:`, e);
+                            }
+                        }
                     } catch (err: any) {
                         if (err.name === 'ConditionalCheckFailedException') {
                             console.log(`Payment ${paymentId} already processed for user ${userId}`);
@@ -192,7 +235,27 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
                 console.log(`Subscription charged for user ${userId}`);
 
-                await docClient.send(new UpdateCommand({
+                let planFallback: 'monthly' | 'yearly' | null = null;
+                if (sub.notes?.planType && (sub.notes.planType === 'monthly' || sub.notes.planType === 'yearly')) {
+                    planFallback = sub.notes.planType;
+                } else if (sub.plan_id) {
+                    const PLAN_ID_TO_TYPE: Record<string, 'monthly' | 'yearly'> = {
+                        [process.env.RAZORPAY_PLAN_MONTHLY_INR || 'plan_SCB8cdaYV5UXEP']: 'monthly',
+                        [process.env.RAZORPAY_PLAN_YEARLY_INR || 'plan_SCB8dBVUs1Jmmw']: 'yearly',
+                        [process.env.RAZORPAY_PLAN_MONTHLY_USD || 'plan_monthly_usd']: 'monthly',
+                        [process.env.RAZORPAY_PLAN_YEARLY_USD || 'plan_yearly_usd']: 'yearly'
+                    };
+                    planFallback = PLAN_ID_TO_TYPE[sub.plan_id] || null;
+                    if (!planFallback) {
+                        console.warn(`[Webhook] Unknown plan_id ${sub.plan_id} on subscription ${sub.id}. Falling back to default 'yearly'.`);
+                        planFallback = 'yearly';
+                    }
+                } else {
+                    console.warn(`[Webhook] Missing plan details entirely in subscription ${sub.id}. Falling back to default 'yearly'.`);
+                    planFallback = 'yearly';
+                }
+
+                const updateResult = await docClient.send(new UpdateCommand({
                     TableName: USERS_TABLE,
                     Key: { userId },
                     UpdateExpression: 'SET subscriptionStatus = :status, subscriptionId = :subId, subscriptionExpiry = :expiry, subscriptionPlan = :plan, updatedAt = :now',
@@ -200,10 +263,22 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                         ':status': 'active',
                         ':subId': sub.id,
                         ':expiry': new Date(sub.current_end * 1000).toISOString(), // Razorpay sends unix timestamp
-                        ':plan': sub.plan_id.includes('monthly') ? 'monthly' : 'yearly', // Simple heuristic
+                        ':plan': planFallback,
                         ':now': new Date().toISOString()
-                    }
+                    },
+                    ReturnValues: 'ALL_NEW'
                 }));
+
+                const userEmail = updateResult.Attributes?.email;
+                if (userEmail && sub.paid_count === 1) {
+                    try {
+                        const systemEmail = generateSystemEmail({ type: 'WELCOME_PLUS' });
+                        await sendEmail({ to: [userEmail], subject: systemEmail.subject, text: systemEmail.text, html: systemEmail.html });
+                        console.log(`[Welcome Plus Email] Dispatch success to ${userId}`);
+                    } catch (e) {
+                        console.error(`[Welcome Plus Email] Delivery failed for ${userId}:`, e);
+                    }
+                }
             } else if (eventType === 'subscription.cancelled' || eventType === 'subscription.halted') {
                 const sub = data.subscription.entity;
                 const userId = sub.notes?.userId;
@@ -213,15 +288,28 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     return createResponse(200, { status: 'ignored_missing_user' });
                 }
 
-                await docClient.send(new UpdateCommand({
+                const updateResult = await docClient.send(new UpdateCommand({
                     TableName: USERS_TABLE,
                     Key: { userId },
                     UpdateExpression: 'SET subscriptionStatus = :status, updatedAt = :now',
                     ExpressionAttributeValues: {
                         ':status': sub.status, // cancelled/halted
                         ':now': new Date().toISOString()
-                    }
+                    },
+                    ReturnValues: 'ALL_NEW'
                 }));
+
+                const userEmail = updateResult.Attributes?.email;
+                if (userEmail) {
+                    try {
+                        const templateType = eventType === 'subscription.halted' ? 'PAYMENT_FAILED' : 'SUBSCRIPTION_CANCELLED';
+                        const systemEmail = generateSystemEmail({ type: templateType });
+                        await sendEmail({ to: [userEmail], subject: systemEmail.subject, text: systemEmail.text, html: systemEmail.html });
+                        console.log(`[${templateType} Email] Dispatch success to ${userId}`);
+                    } catch (e) {
+                        console.error(`[Subscription Cancelled/Halted Email] Delivery failed for ${userId}:`, e);
+                    }
+                }
             }
 
             return createResponse(200, { status: 'ok' });
@@ -230,7 +318,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // 4. Verify Payment Signature (Frontend Callback)
         if (path.endsWith('/verify') && method === 'POST') {
             const body = safeJsonParse(event.body);
-            const userId = event.requestContext.authorizer?.claims?.sub; // Ensure we know WHO is verifying
+            const jwtSub = event.requestContext.authorizer?.claims?.sub; // Ensure we know WHO is verifying
+
+            // Resolve real internal ID from AUTH_LINK
+            let userId = await resolveAuthLinkUserId(jwtSub);
+
             const { razorpay_order_id, razorpay_payment_id, razorpay_signature, razorpay_subscription_id } = body;
 
             if (!razorpay_payment_id || !razorpay_signature) {
@@ -291,6 +383,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                         // Accept 'authenticated' as it means the auth transaction (payment) succeeded
                         if (sub.status === 'active' || sub.status === 'authenticated') {
                             console.log(`[Verify] Immediate update for subscription ${razorpay_subscription_id}`);
+
+                            let planFallback = 'yearly';
+                            if (sub.notes?.planType) {
+                                planFallback = sub.notes.planType;
+                            } else if (sub.plan_id) {
+                                console.warn(`[Verify] Missing notes.planType in subscription ${sub.id}. Falling back to regex on plan_id.`);
+                                planFallback = /monthly/i.test(sub.plan_id) ? 'monthly' : 'yearly';
+                            }
+
                             const updateResult = await docClient.send(new UpdateCommand({
                                 TableName: USERS_TABLE,
                                 Key: { userId },
@@ -299,15 +400,21 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                                     ':status': 'active', // Force active in our DB if authenticated
                                     ':subId': sub.id,
                                     ':expiry': sub.current_end ? new Date(sub.current_end * 1000).toISOString() : null,
-                                    ':plan': sub.plan_id ? (sub.plan_id.includes('monthly') ? 'monthly' : 'yearly') : 'yearly',
+                                    ':plan': planFallback,
                                     ':now': new Date().toISOString()
                                 },
                                 ReturnValues: 'UPDATED_NEW'
                             }));
 
                             // Clean response logic: Return only non-PII fields.
-                            // The attributes object from 'UPDATED_NEW' already contains only the fields that were updated.
-                            return createResponse(200, { status: 'valid', updatedUser: updateResult.Attributes }, origin);
+                            const safeUpdatedUser = {
+                                subscriptionStatus: updateResult.Attributes?.subscriptionStatus,
+                                subscriptionId: updateResult.Attributes?.subscriptionId,
+                                subscriptionExpiry: updateResult.Attributes?.subscriptionExpiry,
+                                subscriptionPlan: updateResult.Attributes?.subscriptionPlan,
+                                updatedAt: updateResult.Attributes?.updatedAt
+                            };
+                            return createResponse(200, { status: 'valid', updatedUser: safeUpdatedUser }, origin);
                         } else {
                             console.warn(`[Verify] Subscription status '${sub.status}' not active/authenticated. DB not updated immediately.`);
                         }
@@ -326,7 +433,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // 5. Cancel Subscription
         if (path.endsWith('/cancel') && method === 'POST') {
-            const userId = event.requestContext.authorizer?.claims?.sub;
+            const jwtSub = event.requestContext.authorizer?.claims?.sub;
+            if (!jwtSub) return createResponse(401, { message: 'Unauthorized' }, origin);
+
+            const userId = await resolveAuthLinkUserId(jwtSub);
             if (!userId) return createResponse(401, { message: 'Unauthorized' }, origin);
 
             // Fetch user's subscription ID from DB
@@ -346,9 +456,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 await rzp.subscriptions.cancel(user.subscriptionId, false);
             } catch (rzpErr: any) {
                 console.error('Razorpay Cancellation Failed:', rzpErr);
-                // Even if Razorpay fails (e.g. already cancelled), we might want to sync local state?
-                // But safer to return error.
-                return createResponse(500, { message: 'Failed to cancel subscription with provider', details: rzpErr.error }, origin);
+
+                // UNHAPPY PATH: If Razorpay says it's already cancelled (400) or not found (404), 
+                // we should NOT block the user. We must proceed to sync the local DB state.
+                const errStatus = rzpErr?.statusCode;
+                if (errStatus === 400 || errStatus === 404 || rzpErr?.error?.code === 'BAD_REQUEST_ERROR') {
+                    console.log(`[Cancel Failsafe] Provider returned ${errStatus}. Proceeding to sync local database to 'cancelled' anyway.`);
+                } else {
+                    return createResponse(500, { message: 'Failed to cancel subscription with provider', details: { code: 'PROVIDER_ERROR' } }, origin);
+                }
             }
 
             // Update DB Status immediately
@@ -362,6 +478,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 }
             }));
 
+            if (user.email) {
+                try {
+                    const systemEmail = generateSystemEmail({ type: 'SUBSCRIPTION_CANCELLED' });
+                    await sendEmail({ to: [user.email], subject: systemEmail.subject, text: systemEmail.text, html: systemEmail.html });
+                    console.log(`[SUBSCRIPTION_CANCELLED Email] Dispatch success to ${userId} (Manual Cancel Failsafe)`);
+                } catch (e) {
+                    console.error(`[SUBSCRIPTION_CANCELLED Email] Delivery failed for ${userId}:`, e);
+                }
+            }
+
             return createResponse(200, { status: 'cancelled' }, origin);
         }
 
@@ -369,7 +495,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     } catch (err: any) {
         console.error('Razorpay Handler Error:', err);
-        return createResponse(500, { message: err.message }, origin);
+        return createResponse(500, { message: 'Internal Server Error' }, origin);
     }
 };
 

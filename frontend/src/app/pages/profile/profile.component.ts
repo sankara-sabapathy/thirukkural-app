@@ -20,6 +20,7 @@ export class ProfileComponent implements OnInit {
     profile: any = null;
     loading = true;
     enablePayments = environment.enablePayments;
+    private pollTimers: ReturnType<typeof setTimeout>[] = [];
 
     constructor(
         private apiService: ApiService,
@@ -29,7 +30,11 @@ export class ProfileComponent implements OnInit {
         private route: ActivatedRoute,
         private snackBar: MatSnackBar,
         private destroyRef: DestroyRef
-    ) { }
+    ) {
+        this.destroyRef.onDestroy(() => {
+            this.pollTimers.forEach(id => clearTimeout(id));
+        });
+    }
 
     ngOnInit() {
         this.authService.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(user => {
@@ -101,8 +106,11 @@ export class ProfileComponent implements OnInit {
                     theme: { color: '#1868db' }
                 }, 'credits');
             } else if (intent.type === 'subscription') {
+                if (intent.planType !== 'monthly' && intent.planType !== 'yearly') {
+                    throw new Error(`Invalid or missing planType '${intent.planType}' in subscription checkout intent.`);
+                }
                 const totalCount = this.paymentService.getSubscriptionCycleCount(intent.planType);
-                const sub = await this.paymentService.createSubscription(intent.planId, totalCount);
+                const sub = await this.paymentService.createSubscription(intent.planId, intent.planType, totalCount);
                 this.openCheckout({
                     key: environment.razorpay.keyId,
                     subscription_id: sub.id,
@@ -121,13 +129,30 @@ export class ProfileComponent implements OnInit {
     openCheckout(options: any, type: string) {
         options.handler = async (response: any) => {
             try {
-                await this.paymentService.verifyPayment(response);
+                const verifyRes = await this.paymentService.verifyPayment(response);
                 this.snackBar.open(
                     type === 'subscription' ? 'Welcome to Plus!' : 'Credits added!',
                     'Awesome',
                     { duration: 5000, panelClass: ['snackbar-success'], verticalPosition: 'top' }
                 );
-                this.fetchProfile(); // Refresh data
+
+                // CRITICAL RACE CONDITION FIX:
+                // Instantly inject the authoritative backend DB state to skip the Webhook lag
+                if (verifyRes && verifyRes.updatedUser) {
+                    this.profile = { ...this.profile, ...verifyRes.updatedUser };
+                }
+
+                // Artificial failsafe delay: give DynamoDB and Webhooks time to settle
+                // Poll the server recursively with a backoff strategy.
+                const pollProfile = (attempt: number) => {
+                    if (attempt > 4) return; // Give up after 4 attempts (1s, 2s, 3s, 4s)
+                    const timerId = setTimeout(() => {
+                        this.fetchProfile(true);
+                        pollProfile(attempt + 1);
+                    }, attempt * 1000);
+                    this.pollTimers.push(timerId);
+                };
+                pollProfile(1);
             } catch (e) {
                 console.error('Verification failed', e);
                 alert('Payment verification failed.');
@@ -137,21 +162,25 @@ export class ProfileComponent implements OnInit {
         this.paymentService.openCheckout(options);
     }
 
-    fetchProfile() {
-        this.loading = true;
-        this.apiService.getProfile().subscribe({
+    fetchProfile(silent = false) {
+        if (!silent) this.loading = true;
+        this.apiService.getProfile().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (data) => {
-                this.profile = data;
-                this.loading = false;
+                if (this.profile) {
+                    this.profile = { ...this.profile, ...data };
+                } else {
+                    this.profile = data;
+                }
+                if (!silent) this.loading = false;
             },
             error: (err) => {
                 console.error('Failed to fetch profile', err);
                 if (err.status === 504) {
-                    alert('Server timeout. Please try again in 30 seconds (Cold Start).');
+                    this.snackBar.open('Server timeout. Please try again in 30 seconds (Cold Start).', 'Close', { duration: 5000 });
                 } else {
-                    alert('Failed to load profile. Please verify your internet connection.');
+                    this.snackBar.open('Failed to load profile. Please verify your internet connection.', 'Close', { duration: 5000 });
                 }
-                this.loading = false;
+                if (!silent) this.loading = false;
             }
         });
     }

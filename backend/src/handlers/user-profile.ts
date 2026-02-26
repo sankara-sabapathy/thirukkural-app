@@ -1,7 +1,10 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { GetCommand, PutCommand, UpdateCommand, QueryCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
+import * as crypto from 'crypto';
 import { docClient } from '../shared/dynamo';
 import { createResponse } from '../shared/utils';
+import { sendEmail } from '../shared/email-service';
+import { generateSystemEmail } from '../shared/email-templates';
 
 const TABLE_NAME = process.env.USERS_TABLE;
 
@@ -11,6 +14,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // Get userId from Cognito Authorizer
         const userId = event.requestContext.authorizer?.claims?.sub;
         const email = event.requestContext.authorizer?.claims?.email;
+        const email_verified = event.requestContext.authorizer?.claims?.email_verified;
 
         if (!userId) {
             return createResponse(401, { message: 'Unauthorized' }, origin);
@@ -22,58 +26,208 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             console.log('Fetching profile from', TABLE_NAME);
             const params = {
                 TableName: TABLE_NAME,
-                Key: { userId },
+                Key: { userId }, // Looking up by Cognito sub first
                 ConsistentRead: true, // Ensure we see latest payment updates immediately
             };
-            // console.log('DynamoDB Get Params:', JSON.stringify(params)); // Redacted PII
 
             const result = await docClient.send(new GetCommand(params));
-            // console.log('DynamoDB Get Result:', result); // Redacted PII
+            const profileItem = result.Item;
 
-            if (!result.Item) {
-                console.log('User not found, creating default profile...');
-                // If user doesn't exist in DB but is authenticated, create a default profile
-                // Detect region from CloudFront headers (injected by CF)
-                const cfCountry = (event.headers?.['CloudFront-Viewer-Country'] || event.headers?.['cloudfront-viewer-country']) as string;
-
-                // Default to IN if not present (for now), but prefer detected country
-                const region = (cfCountry && cfCountry.toUpperCase() === 'IN') ? 'IN' : (cfCountry ? 'ROW' : 'IN');
-                const currency = region === 'IN' ? 'INR' : 'USD';
-
-                // TODO: [TK-101] Improve region detection accuracy and support more currencies if needed.
-                // Currently assuming IN = INR, Everything else = USD (ROW).
-
-                const newProfile = {
-                    userId,
-                    email,
-                    isPaid: false, // Default to free
-                    receiveDailyEmail: false, // Default to false
-                    credits: 10,
-                    subscriptionStatus: 'inactive',
-                    region,
-                    currency,
-                    createdAt: new Date().toISOString(),
-                };
-
-                try {
-                    await docClient.send(new PutCommand({
+            if (profileItem) {
+                if (profileItem.type === 'AUTH_LINK') {
+                    // It's an auth link, fetch the real mapped profile
+                    const realProfileId = profileItem.linkedUserId;
+                    const realResult = await docClient.send(new GetCommand({
                         TableName: TABLE_NAME,
-                        Item: newProfile,
-                        ConditionExpression: 'attribute_not_exists(userId)'
+                        Key: { userId: realProfileId },
+                        ConsistentRead: true
                     }));
-                    console.log('Default profile created');
-                    return createResponse(200, newProfile, origin);
-                } catch (putErr: any) {
-                    if (putErr.name === 'ConditionalCheckFailedException') {
-                        console.log('Profile created concurrently, fetching existing...');
-                        const retryResult = await docClient.send(new GetCommand(params));
-                        return createResponse(200, retryResult.Item, origin);
+                    if (!realResult.Item) {
+                        console.error(`Orphaned AUTH_LINK for ${userId} pointing to ${realProfileId}`);
+                        return createResponse(500, { message: 'Profile data corrupted' }, origin);
                     }
-                    throw putErr;
+                    return createResponse(200, realResult.Item, origin);
+                } else {
+                    // It's a legacy profile using the old 'sub' as PK!
+                    // Even if its type is 'PROFILE', if it was fetched using the Cognito sub, it is strictly still coupled.
+                    // Zero-Downtime Lazy Migration
+                    const newInternalId = crypto.randomUUID();
+                    const migratedProfile = {
+                        ...profileItem,
+                        userId: newInternalId,
+                        type: 'PROFILE',
+                        migratedAt: new Date().toISOString()
+                    };
+
+                    // Convert the old sub ID into an AUTH_LINK
+                    const authLink = {
+                        userId: userId, // the old sub
+                        type: 'AUTH_LINK',
+                        linkedUserId: newInternalId,
+                        createdAt: new Date().toISOString()
+                    };
+
+                    try {
+                        await docClient.send(new TransactWriteCommand({
+                            TransactItems: [
+                                {
+                                    Put: {
+                                        TableName: TABLE_NAME,
+                                        Item: migratedProfile,
+                                        ConditionExpression: 'attribute_not_exists(userId)'
+                                    }
+                                },
+                                {
+                                    Put: {
+                                        TableName: TABLE_NAME,
+                                        Item: authLink,
+                                        ConditionExpression: 'attribute_not_exists(userId) OR #type = :profile',
+                                        ExpressionAttributeNames: { '#type': 'type' },
+                                        ExpressionAttributeValues: { ':profile': 'PROFILE' }
+                                    }
+                                }
+                            ]
+                        }));
+                    } catch (err: any) {
+                        if (err.name === 'TransactionCanceledException') {
+                            console.log(`Auth link transaction canceled for ${userId}. Likely concurrent modification. Treating as success and re-fetching.`);
+                        } else {
+                            throw err;
+                        }
+                    }
+
+                    console.log(`Lazy migrated legacy user ${userId} to new ID ${newInternalId}`);
+                    return createResponse(200, migratedProfile, origin);
+                }
+            } else {
+                console.log('User not found by sub, checking EmailIndex for identity merging...');
+
+                let actualUserIdToUse = crypto.randomUUID();
+                let isNewUser = true;
+
+                if (email && (email_verified === 'true' || email_verified === true)) {
+                    const emailResult = await docClient.send(new QueryCommand({
+                        TableName: TABLE_NAME,
+                        IndexName: 'EmailIndex',
+                        KeyConditionExpression: 'email = :email',
+                        ExpressionAttributeValues: { ':email': email }
+                    }));
+
+                    if (emailResult.Items && emailResult.Items.length > 0) {
+                        // Found an existing user by email! Let's pick the first valid profile.
+                        const foundItem = emailResult.Items.find(item => item.type === 'PROFILE' || !item.type);
+
+                        if (foundItem) {
+                            const maskedEmail = email.replace(/(.{2})(.*)(?=@)/, (fullMatch: string, prefix: string, rest: string) => prefix + rest.replace(/./g, '*'));
+                            console.log(`Matching email found for ${maskedEmail}, merging identity...`);
+                            isNewUser = false;
+                            actualUserIdToUse = foundItem.userId; // Will be internal ID or legacy sub
+
+                            // Create the AUTH_LINK for the new sub pointing to the existing profile
+                            await docClient.send(new PutCommand({
+                                TableName: TABLE_NAME,
+                                Item: {
+                                    userId: userId, // The new sub
+                                    type: 'AUTH_LINK',
+                                    linkedUserId: actualUserIdToUse,
+                                    createdAt: new Date().toISOString()
+                                },
+                                ConditionExpression: 'attribute_not_exists(userId)' // Protect against concurrent link overwrites
+                            }));
+
+                            const finalProfileResult = await docClient.send(new GetCommand({
+                                TableName: TABLE_NAME,
+                                Key: { userId: actualUserIdToUse },
+                                ConsistentRead: true
+                            }));
+                            if (!finalProfileResult.Item) {
+                                console.error(`Profile not found after merge link for ${actualUserIdToUse}`);
+                                return createResponse(404, { message: 'Profile not found' }, origin);
+                            }
+                            return createResponse(200, finalProfileResult.Item, origin);
+                        }
+                    }
+                }
+
+                if (isNewUser) {
+                    console.log('No existing user found, creating brand new profile and auth link...');
+
+                    const cfCountry = (event.headers?.['CloudFront-Viewer-Country'] || event.headers?.['cloudfront-viewer-country']) as string;
+                    const region = (cfCountry && cfCountry.toUpperCase() === 'IN') ? 'IN' : (cfCountry ? 'ROW' : 'IN');
+                    const currency = region === 'IN' ? 'INR' : 'USD';
+
+                    const newProfile = {
+                        userId: actualUserIdToUse,
+                        email,
+                        type: 'PROFILE',
+                        isPaid: false,
+                        receiveDailyEmail: false,
+                        credits: 10,
+                        subscriptionStatus: 'inactive',
+                        region,
+                        currency,
+                        createdAt: new Date().toISOString(),
+                    };
+
+                    try {
+                        // 1. Create Base Profile & 2. Create Auth Link mapping sub to Base Profile atomically
+                        await docClient.send(new TransactWriteCommand({
+                            TransactItems: [
+                                {
+                                    Put: {
+                                        TableName: TABLE_NAME!,
+                                        Item: newProfile,
+                                        ConditionExpression: 'attribute_not_exists(userId)'
+                                    }
+                                },
+                                {
+                                    Put: {
+                                        TableName: TABLE_NAME!,
+                                        Item: {
+                                            userId: userId, // Cognito Sub
+                                            type: 'AUTH_LINK',
+                                            linkedUserId: actualUserIdToUse,
+                                            createdAt: new Date().toISOString()
+                                        },
+                                        ConditionExpression: 'attribute_not_exists(userId)'
+                                    }
+                                }
+                            ]
+                        }));
+
+                        console.log('Default profile and Auth Link created transactionally');
+
+                        if (email) {
+                            try {
+                                const systemEmail = generateSystemEmail({ type: 'WELCOME_NEW_USER' });
+                                await sendEmail({
+                                    to: [email],
+                                    subject: systemEmail.subject,
+                                    text: systemEmail.text,
+                                    html: systemEmail.html
+                                });
+                                console.log(`[Welcome Email] Successfully dispatched for ${actualUserIdToUse}`);
+                            } catch (emailErr) {
+                                console.error(`[Welcome Email] SES Delivery failed for ${actualUserIdToUse}:`, emailErr);
+                            }
+                        }
+
+                        return createResponse(200, newProfile, origin);
+                    } catch (txErr: any) {
+                        if (txErr.name === 'TransactionCanceledException') {
+                            console.log('Profile created concurrently, fetching existing authoritative profile...');
+                            let targetId = actualUserIdToUse;
+                            const linkCheck = await docClient.send(new GetCommand({ TableName: TABLE_NAME, Key: { userId } }));
+                            if (linkCheck.Item && linkCheck.Item.type === 'AUTH_LINK') {
+                                targetId = linkCheck.Item.linkedUserId;
+                            }
+                            const retryResult = await docClient.send(new GetCommand({ TableName: TABLE_NAME, Key: { userId: targetId } }));
+                            return createResponse(200, retryResult.Item, origin);
+                        }
+                        throw txErr;
+                    }
                 }
             }
-
-            return createResponse(200, result.Item, origin);
         }
 
         if (method === 'PUT') {
@@ -84,12 +238,20 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 return createResponse(400, { message: 'Invalid JSON body' }, origin);
             }
 
+            // Resolve real internal ID from AUTH_LINK
+            let internalUserId = userId;
+            const linkCheckRes = await docClient.send(new GetCommand({
+                TableName: TABLE_NAME,
+                Key: { userId }
+            }));
+            if (linkCheckRes.Item && linkCheckRes.Item.type === 'AUTH_LINK') {
+                internalUserId = linkCheckRes.Item.linkedUserId;
+            } else if (!linkCheckRes.Item) {
+                return createResponse(404, { message: 'User profile not found' }, origin);
+            }
+
             // Validate allowed fields
             const { receiveDailyEmail } = body;
-
-            // We don't allow updating 'isPaid' from client side directly for security. 
-            // That should be handled by a payment webhook or admin process.
-            // But for this exercise, we'll assume only preferences are updatable here.
 
             const updateExp = [];
             const expAttrNames: Record<string, string> = {};
@@ -118,7 +280,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
             const result = await docClient.send(new UpdateCommand({
                 TableName: TABLE_NAME,
-                Key: { userId },
+                Key: { userId: internalUserId },
                 UpdateExpression: `SET ${updateExp.join(', ')}`,
                 ExpressionAttributeNames: expAttrNames,
                 ExpressionAttributeValues: expAttrValues,

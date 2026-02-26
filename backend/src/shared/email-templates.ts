@@ -254,7 +254,7 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
 };
 
 export interface SystemEmailOptions {
-    type: 'WELCOME_PLUS' | 'CREDITS_ADDED' | 'LOW_CREDITS' | 'PAYMENT_FAILED';
+    type: 'WELCOME_NEW_USER' | 'WELCOME_PLUS' | 'CREDITS_ADDED' | 'LOW_CREDITS' | 'OUT_OF_CREDITS' | 'PAYMENT_FAILED' | 'SUBSCRIPTION_CANCELLED';
     data?: any; // e.g. amount of credits, etc.
 }
 
@@ -262,35 +262,61 @@ export const generateSystemEmail = (options: SystemEmailOptions) => {
     let subject = '';
     let headline = '';
     let message = '';
+    let ctaText = '';
+    let ctaLink = 'https://thirukkural.site/profile';
 
     // Colors
     const primaryColor = '#1868db';
     const white = '#ffffff';
 
     switch (options.type) {
+        case 'WELCOME_NEW_USER':
+            subject = 'Welcome to Thirukkural Daily 🙏';
+            headline = 'Your Daily Journey Begins';
+            message = 'Welcome to Thirukkural Daily! We are thrilled to have you. Every morning, you will receive a curated Kural with deep translations and commentaries directly to your inbox. As a welcome gift, your first few days are on us!';
+            ctaText = 'Go to Dashboard';
+            break;
         case 'WELCOME_PLUS':
-            subject = 'Welcome to Thirukkural Plus!';
+            subject = 'Welcome to Thirukkural Plus ✨';
             headline = 'Subscription Active';
-            message = 'Thank you for subscribing to **Thirukkural Plus**. You now have unlimited access to daily emails.';
+            message = 'Thank you for subscribing to **Thirukkural Plus**! You now have unlimited access to daily emails, push notifications, and all expert commentaries. Your deep dive into ancient wisdom is fully unlocked.';
+            ctaText = 'View My Profile';
             break;
         case 'CREDITS_ADDED':
-            subject = 'Credits Added Successfully';
-            headline = 'Credits Added';
-            message = `You have successfully added **${options.data?.credits} credits** to your account.`;
+            subject = 'Credits Added Successfully 💳';
+            headline = 'Account Recharged';
+            message = `You have successfully added **${options.data?.credits} credits** to your account. Your pursuit of wisdom continues uninterrupted!`;
+            ctaText = 'Back to Dashboard';
             break;
         case 'LOW_CREDITS':
-            subject = 'Low Credit Warning';
-            headline = 'Running Low on Credits';
-            message = `You have **${options.data?.credits} credits** remaining. Please top up to continue receiving daily emails without interruption.`;
+            subject = 'Running Low on Credits 📉';
+            headline = 'Action Recommended';
+            message = `You only have **${options.data?.credits} credits** remaining. To ensure your daily wisdom is not interrupted, please top up your account or consider upgrading to Thirukkural Plus for unlimited access.`;
+            ctaText = 'Add Credits';
+            ctaLink = 'https://thirukkural.site/pricing';
+            break;
+        case 'OUT_OF_CREDITS':
+            subject = 'Delivery Paused: Out of Credits 🛑';
+            headline = 'Daily Kural Paused';
+            message = "We tried to send your daily Kural today, but your credit balance is empty. We've temporarily paused your deliveries. Please recharge your account to resume your daily wisdom.";
+            ctaText = 'Recharge Now';
+            ctaLink = 'https://thirukkural.site/pricing';
             break;
         case 'PAYMENT_FAILED':
-            subject = 'Payment Failed';
-            headline = 'Action Required';
-            message = 'We were unable to process your subscription renewal. Please update your payment method to maintain access.';
+            subject = 'Action Required: Subscription Paused ⚠️';
+            headline = 'Payment Failed';
+            message = "We were unable to process your subscription renewal after multiple attempts. Your Plus access has been paused, but don't worry—you can continue receiving emails using your Pay-As-You-Go credits. Please update your payment method to restore unlimited access.";
+            ctaText = 'Manage Subscription';
+            break;
+        case 'SUBSCRIPTION_CANCELLED':
+            subject = 'Subscription Cancelled';
+            headline = 'Subscription Cancelled';
+            message = 'Your Thirukkural Plus subscription has been successfully cancelled. We are sorry to see you go! You will still have access to premium features until the end of your current billing cycle, after which your account will revert to the free tier.';
+            ctaText = 'Go to Dashboard';
             break;
     }
 
-    const html = `
+    const htmlBody = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -301,24 +327,33 @@ export const generateSystemEmail = (options: SystemEmailOptions) => {
              body { font-family: 'Inter', Helvetica, Arial, sans-serif; margin: 0; padding: 0; background-color: #f1f5f9; color: #334155; }
         </style>
     </head>
-    <body>
-        <div style="max-width: 600px; margin: 20px auto; background-color: ${white}; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-            <div style="background-color: ${primaryColor}; padding: 20px; text-align: center; color: ${white};">
-                <h1 style="margin: 0; font-size: 20px;">Thirukkural Daily</h1>
+    <body style="margin: 0; padding: 0; background-color: #f1f5f9; color: #334155;">
+        <div style="max-width: 600px; margin: 20px auto; background-color: ${white}; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); font-family: 'Inter', Helvetica, Arial, sans-serif;">
+            
+            <div style="background-color: ${primaryColor}; padding: 25px 20px; text-align: center; color: ${white};">
+                <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 0.5px;">Thirukkural Daily</h1>
             </div>
-            <div style="padding: 30px;">
-                <h2 style="color: #1e293b; margin-top: 0;">${headline}</h2>
-                <p style="font-size: 16px; line-height: 1.6; color: #475569;">
-                    ${message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
+            
+            <div style="padding: 35px 30px; text-align: center;">
+                <h2 style="color: #1e293b; margin-top: 0; font-size: 22px; margin-bottom: 20px;">${headline}</h2>
+                <p style="font-size: 16px; line-height: 1.7; color: #475569; margin-bottom: 35px;">
+                    ${message.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #0f172a;">$1</strong>')}
                 </p>
-                <div style="margin-top: 30px; text-align: center;">
-                    <a href="https://thirukkural.site/profile" style="background-color: ${primaryColor}; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">Go to Dashboard</a>
+                <div style="margin-top: 10px; margin-bottom: 20px;">
+                    <a href="${ctaLink}" style="background-color: ${primaryColor}; color: white; padding: 14px 30px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; display: inline-block;">
+                        ${ctaText}
+                    </a>
                 </div>
+            </div>
+
+            <div style="background-color: #f8fafc; color: #64748b; padding: 20px; text-align: center; font-size: 13px; border-top: 1px solid #e2e8f0;">
+                <p style="margin: 0; opacity: 0.8;">&copy; ${new Date().getFullYear()} KRSS Online. All rights reserved.</p>
+                <p style="margin: 5px 0 0; opacity: 0.8;">You received this because you are an active member.</p>
             </div>
         </div>
     </body>
     </html>
     `;
 
-    return { subject, text: message.replace(/\*\*(.*?)\*\*/g, '$1'), html };
+    return { subject, text: message.replace(/\*\*(.*?)\*\*/g, '$1'), html: htmlBody };
 };

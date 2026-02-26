@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,8 +9,14 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { KuralService, Kural } from '../../services/kural.service';
 import { switchMap, map, tap, catchError, distinctUntilChanged, shareReplay } from 'rxjs/operators';
 import { Observable, of, merge } from 'rxjs';
-import { Title, Meta } from '@angular/platform-browser';
+import { Meta, Title } from '@angular/platform-browser';
 import html2canvas from 'html2canvas';
+import { KURAL_FILTER_MAPPING } from '../kural-list/kural-filter-mapping';
+
+// Helper for JSON-LD structured data
+import { DOCUMENT } from '@angular/common';
+import { Inject } from '@angular/core';
+import { TamilCategoryPipe } from '../../pipes/tamil-category.pipe';
 
 @Component({
     selector: 'app-kural-detail',
@@ -22,16 +28,18 @@ import html2canvas from 'html2canvas';
         MatIconModule,
         MatCardModule,
         MatProgressSpinnerModule,
-        MatSnackBarModule
+        MatSnackBarModule,
+        TamilCategoryPipe
     ],
     templateUrl: './kural-detail.component.html',
     styleUrls: ['./kural-detail.component.scss']
 })
-export class KuralDetailComponent implements OnInit {
+export class KuralDetailComponent implements OnInit, OnDestroy {
     kural$: Observable<Kural | undefined> = of(undefined);
     loading = true;
     currentNumber = 1;
     isSharing = false;
+    isCopied = false;
 
     @ViewChild('captureArea') captureArea!: ElementRef;
 
@@ -42,7 +50,8 @@ export class KuralDetailComponent implements OnInit {
         private snackBar: MatSnackBar,
         private cdr: ChangeDetectorRef,
         private titleService: Title,
-        private metaService: Meta
+        private metaService: Meta,
+        @Inject(DOCUMENT) private doc: Document
     ) { }
 
     ngOnInit(): void {
@@ -91,12 +100,84 @@ export class KuralDetailComponent implements OnInit {
         );
     }
 
+    ngOnDestroy(): void {
+        const scriptId = 'structured-data-kural';
+        const scriptTag = this.doc.getElementById(scriptId);
+        if (scriptTag) {
+            scriptTag.remove();
+        }
+    }
+
     updateMetaTags(kural: Kural): void {
-        const title = `Thirukkural #${kural.number} - ${kural.translation.substring(0, 50)}...`;
+        const title = `Thirukkural #${kural.number} - ${kural.translation.substring(0, 50)}... | Thirukkural Daily`;
         this.titleService.setTitle(title);
 
-        // Client-side meta updates are removed as they are ineffective for social crawlers (which need SSR).
-        // Static tags in index.html serve as the fallback.
+        const description = `Read Thirukkural ${kural.number} with Tamil text, English translation, and meanings by Mu. Varadarajan, Kalaignar, and Solomon Pappaiya.`;
+        const keywords = `Thirukkural ${kural.number}, Tirukkural ${kural.number}, ${kural.pal_tr}, ${kural.iyal_tr}, ${kural.adikaram_tr}, Thiruvalluvar, Tamil wisdom`;
+        const url = `https://thirukkural.site/kural/${kural.number}`;
+
+        this.metaService.updateTag({ name: 'description', content: description });
+        this.metaService.updateTag({ name: 'keywords', content: keywords });
+
+        // OpenGraph Meta Tags
+        this.metaService.updateTag({ property: 'og:title', content: title });
+        this.metaService.updateTag({ property: 'og:description', content: description });
+        this.metaService.updateTag({ property: 'og:url', content: url });
+
+        // Twitter Meta Tags
+        this.metaService.updateTag({ name: 'twitter:title', content: title });
+        this.metaService.updateTag({ name: 'twitter:description', content: description });
+
+        this.injectStructuredData(kural);
+    }
+
+    injectStructuredData(kural: Kural): void {
+        const scriptId = 'structured-data-kural';
+        let scriptTag = this.doc.getElementById(scriptId) as HTMLScriptElement;
+
+        if (!scriptTag) {
+            scriptTag = this.doc.createElement('script');
+            scriptTag.id = scriptId;
+            scriptTag.setAttribute('type', 'application/ld+json');
+            this.doc.head.appendChild(scriptTag);
+        }
+
+        const explanation = this.getBestExplanation(kural);
+
+        const jsonLd = {
+            "@context": "https://schema.org",
+            "@type": "CreativeWork",
+            "name": `Thirukkural ${kural.number}`,
+            "author": {
+                "@type": "Person",
+                "name": "Thiruvalluvar"
+            },
+            "inLanguage": ["ta", "en"],
+            "genre": "Poetry",
+            "abstract": kural.translation,
+            "text": `${kural.line1}\n${kural.line2}`,
+            "about": [
+                { "@type": "Thing", "name": kural.pal_tr },
+                { "@type": "Thing", "name": kural.iyal_tr },
+                { "@type": "Thing", "name": kural.adikaram_tr }
+            ],
+            "translationOfWork": {
+                "@type": "CreativeWork",
+                "name": "Thirukkural",
+                "author": { "@type": "Person", "name": "Thiruvalluvar" }
+            },
+            "url": `https://thirukkural.site/kural/${kural.number}`
+        };
+
+        if (explanation) {
+            (jsonLd as any)["comment"] = {
+                "@type": "Comment",
+                "author": { "@type": "Person", "name": explanation.author },
+                "text": explanation.text
+            };
+        }
+
+        scriptTag.text = JSON.stringify(jsonLd);
     }
 
     previousKural(): void {
@@ -108,6 +189,27 @@ export class KuralDetailComponent implements OnInit {
     nextKural(): void {
         if (this.currentNumber < 1330) {
             this.router.navigate(['/kural', this.currentNumber + 1]);
+        }
+    }
+
+    private writeToClipboard(text: string, onSuccess: () => void, onError: (err: any) => void): void {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            navigator.clipboard.writeText(text).then(onSuccess).catch(onError);
+        } else {
+            try {
+                const textArea = this.doc.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                this.doc.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                const successful = this.doc.execCommand('copy');
+                this.doc.body.removeChild(textArea);
+                if (successful) onSuccess();
+                else onError(new Error('execCommand copy failed'));
+            } catch (err) {
+                onError(err);
+            }
         }
     }
 
@@ -124,11 +226,34 @@ export class KuralDetailComponent implements OnInit {
 
         text += `Read more: ${window.location.href}`;
 
-        navigator.clipboard.writeText(text).then(() => {
-            if (!silent) {
-                this.snackBar.open('Copied to clipboard!', 'Close', { duration: 2000 });
-            }
-        });
+        const onSuccess = () => {
+            if (!silent) this.snackBar.open('Copied to clipboard!', 'Close', { duration: 2000 });
+        };
+        const onError = (err: any) => {
+            console.error('Failed to copy text: ', err);
+            if (!silent) this.snackBar.open('Failed to copy. Please try again.', 'Close', { duration: 2000 });
+        };
+
+        this.writeToClipboard(text, onSuccess, onError);
+    }
+
+    copyTamilTextOnly(kural: Kural): void {
+        const textToCopy = `${kural.line1}\n${kural.line2}\n\n- திருக்குறள் (${kural.number})`;
+        const onSuccess = () => {
+            this.isCopied = true;
+            this.cdr.markForCheck();
+            this.snackBar.open('Tamil couplet copied to clipboard!', 'Close', { duration: 2000 });
+            setTimeout(() => {
+                this.isCopied = false;
+                this.cdr.markForCheck();
+            }, 2000);
+        };
+        const onError = (err: any) => {
+            console.error('Failed to copy text: ', err);
+            this.snackBar.open('Failed to copy. Please try again.', 'Close', { duration: 2000 });
+        };
+
+        this.writeToClipboard(textToCopy, onSuccess, onError);
     }
 
     getBestExplanation(kural: Kural): { author: string, text: string } | null {
@@ -228,12 +353,12 @@ export class KuralDetailComponent implements OnInit {
 
     private downloadImage(blob: Blob): void {
         const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
+        const link = this.doc.createElement('a');
         link.href = url;
         link.download = `thirukkural-${this.currentNumber}.png`;
-        document.body.appendChild(link);
+        this.doc.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        this.doc.body.removeChild(link);
         URL.revokeObjectURL(url);
         this.snackBar.open('Image downloaded!', 'Close', { duration: 2000 });
     }
