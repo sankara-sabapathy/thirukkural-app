@@ -181,6 +181,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                         if (amountPaid >= 100) creditsToAdd = Math.floor(creditsToAdd * 1.05); // 5% Bonus logic
                     } else if (currency === 'USD') {
                         creditsToAdd = amountPaid * 50; // $1 = 50 Credits
+                        if (amountPaid >= 2) creditsToAdd = Math.floor(creditsToAdd * 1.05); // Equivalent 5% Bonus logic for USD
                     }
 
                     console.log(`Adding ${creditsToAdd} credits to user ${userId} for payment ${paymentId}`);
@@ -234,6 +235,14 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
                 console.log(`Subscription charged for user ${userId}`);
 
+                let planFallback = 'yearly';
+                if (sub.notes?.planType) {
+                    planFallback = sub.notes.planType;
+                } else if (sub.plan_id) {
+                    console.warn(`[Webhook] Missing notes.planType in subscription ${sub.id}. Falling back to regex on plan_id.`);
+                    planFallback = /monthly/i.test(sub.plan_id) ? 'monthly' : 'yearly';
+                }
+
                 const updateResult = await docClient.send(new UpdateCommand({
                     TableName: USERS_TABLE,
                     Key: { userId },
@@ -242,7 +251,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                         ':status': 'active',
                         ':subId': sub.id,
                         ':expiry': new Date(sub.current_end * 1000).toISOString(), // Razorpay sends unix timestamp
-                        ':plan': sub.notes?.planType || (sub.plan_id.includes('monthly') ? 'monthly' : 'yearly'), // Read strictly from notes if present
+                        ':plan': planFallback,
                         ':now': new Date().toISOString()
                     },
                     ReturnValues: 'ALL_NEW'
@@ -300,16 +309,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             const jwtSub = event.requestContext.authorizer?.claims?.sub; // Ensure we know WHO is verifying
 
             // Resolve real internal ID from AUTH_LINK
-            let userId = jwtSub;
-            if (jwtSub) {
-                const linkCheckRes = await docClient.send(new GetCommand({
-                    TableName: USERS_TABLE,
-                    Key: { userId: jwtSub }
-                }));
-                if (linkCheckRes.Item && linkCheckRes.Item.type === 'AUTH_LINK') {
-                    userId = linkCheckRes.Item.linkedUserId;
-                }
-            }
+            let userId = await resolveAuthLinkUserId(jwtSub);
 
             const { razorpay_order_id, razorpay_payment_id, razorpay_signature, razorpay_subscription_id } = body;
 
@@ -371,6 +371,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                         // Accept 'authenticated' as it means the auth transaction (payment) succeeded
                         if (sub.status === 'active' || sub.status === 'authenticated') {
                             console.log(`[Verify] Immediate update for subscription ${razorpay_subscription_id}`);
+
+                            let planFallback = 'yearly';
+                            if (sub.notes?.planType) {
+                                planFallback = sub.notes.planType;
+                            } else if (sub.plan_id) {
+                                console.warn(`[Verify] Missing notes.planType in subscription ${sub.id}. Falling back to regex on plan_id.`);
+                                planFallback = /monthly/i.test(sub.plan_id) ? 'monthly' : 'yearly';
+                            }
+
                             const updateResult = await docClient.send(new UpdateCommand({
                                 TableName: USERS_TABLE,
                                 Key: { userId },
@@ -379,7 +388,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                                     ':status': 'active', // Force active in our DB if authenticated
                                     ':subId': sub.id,
                                     ':expiry': sub.current_end ? new Date(sub.current_end * 1000).toISOString() : null,
-                                    ':plan': sub.notes?.planType || (sub.plan_id ? (sub.plan_id.includes('monthly') ? 'monthly' : 'yearly') : 'yearly'),
+                                    ':plan': planFallback,
                                     ':now': new Date().toISOString()
                                 },
                                 ReturnValues: 'UPDATED_NEW'
@@ -416,6 +425,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             if (!jwtSub) return createResponse(401, { message: 'Unauthorized' }, origin);
 
             const userId = await resolveAuthLinkUserId(jwtSub);
+            if (!userId) return createResponse(401, { message: 'Unauthorized' }, origin);
 
             // Fetch user's subscription ID from DB
             const userResult = await docClient.send(new GetCommand({
@@ -441,7 +451,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 if (errStatus === 400 || errStatus === 404 || rzpErr?.error?.code === 'BAD_REQUEST_ERROR') {
                     console.log(`[Cancel Failsafe] Provider returned ${errStatus}. Proceeding to sync local database to 'cancelled' anyway.`);
                 } else {
-                    return createResponse(500, { message: 'Failed to cancel subscription with provider', details: rzpErr?.error }, origin);
+                    return createResponse(500, { message: 'Failed to cancel subscription with provider', details: { code: 'PROVIDER_ERROR' } }, origin);
                 }
             }
 

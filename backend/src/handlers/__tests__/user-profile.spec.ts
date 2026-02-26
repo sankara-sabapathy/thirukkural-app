@@ -39,7 +39,7 @@ describe('User Profile Handler', () => {
                     claims: {
                         sub: 'test-user-id',
                         email: 'test@example.com',
-                        email_verified: true
+                        email_verified: 'true'
                     }
                 }
             }
@@ -49,16 +49,19 @@ describe('User Profile Handler', () => {
 
         expect(result.statusCode).toBe(200);
 
-        // Verify PutCommand was called with correct default
-        expect(ddbMock.calls()).toHaveLength(4); // Get + Query + Put (Profile) + Put (Auth Link)
-        const putCalls = ddbMock.calls().filter(call => call.args[0] instanceof PutCommand);
-        expect(putCalls).toHaveLength(2);
+        // Verify TransactWriteCommand was called with correct default
+        expect(ddbMock.calls()).toHaveLength(3); // Get + Query + TransactWrite
+        const txCalls = ddbMock.calls().filter(call => call.args[0].constructor.name === 'TransactWriteCommand');
+        expect(txCalls).toHaveLength(1);
 
-        const putProfileInput = putCalls[0].args[0].input as any;
+        const txItems = (txCalls[0].args[0].input as any).TransactItems;
+        expect(txItems).toHaveLength(2);
+
+        const putProfileInput = txItems[0].Put as any;
         expect(putProfileInput.Item.type).toBe('PROFILE');
         expect(putProfileInput.Item.receiveDailyEmail).toBe(false); // crucial check
 
-        const putLinkInput = putCalls[1].args[0].input as any;
+        const putLinkInput = txItems[1].Put as any;
         expect(putLinkInput.Item.type).toBe('AUTH_LINK');
         expect(putLinkInput.Item.userId).toBe('test-user-id');
 
@@ -106,7 +109,7 @@ describe('User Profile Handler', () => {
                     claims: {
                         sub: 'existing-user',
                         email: 'existing@example.com',
-                        email_verified: true
+                        email_verified: 'true'
                     }
                 }
             }

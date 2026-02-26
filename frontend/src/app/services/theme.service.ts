@@ -19,7 +19,9 @@ export class ThemeService {
 
   private initTheme() {
     // Check local storage first
-    const savedTheme = localStorage.getItem(this.THEME_KEY);
+    const rawTheme = localStorage.getItem(this.THEME_KEY);
+    // Explicitly whitelist 'dark' and 'light' to prevent corruption
+    const savedTheme = (rawTheme === 'dark' || rawTheme === 'light') ? rawTheme : null;
 
     if (savedTheme) {
       this.setTheme(savedTheme === 'dark', false); // Already saved, no need to overwrite

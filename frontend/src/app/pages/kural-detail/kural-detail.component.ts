@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -16,6 +16,7 @@ import { KURAL_FILTER_MAPPING } from '../kural-list/kural-filter-mapping';
 // Helper for JSON-LD structured data
 import { DOCUMENT } from '@angular/common';
 import { Inject } from '@angular/core';
+import { TamilCategoryPipe } from '../../pipes/tamil-category.pipe';
 
 @Component({
     selector: 'app-kural-detail',
@@ -27,12 +28,13 @@ import { Inject } from '@angular/core';
         MatIconModule,
         MatCardModule,
         MatProgressSpinnerModule,
-        MatSnackBarModule
+        MatSnackBarModule,
+        TamilCategoryPipe
     ],
     templateUrl: './kural-detail.component.html',
     styleUrls: ['./kural-detail.component.scss']
 })
-export class KuralDetailComponent implements OnInit {
+export class KuralDetailComponent implements OnInit, OnDestroy {
     kural$: Observable<Kural | undefined> = of(undefined);
     loading = true;
     currentNumber = 1;
@@ -96,6 +98,14 @@ export class KuralDetailComponent implements OnInit {
             }),
             shareReplay(1) // Share the result to prevent multiple subscriptions from triggering multiple HTTP requests
         );
+    }
+
+    ngOnDestroy(): void {
+        const scriptId = 'structured-data-kural';
+        const scriptTag = this.doc.getElementById(scriptId);
+        if (scriptTag) {
+            scriptTag.remove();
+        }
     }
 
     updateMetaTags(kural: Kural): void {
@@ -182,6 +192,27 @@ export class KuralDetailComponent implements OnInit {
         }
     }
 
+    private writeToClipboard(text: string, onSuccess: () => void, onError: (err: any) => void): void {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            navigator.clipboard.writeText(text).then(onSuccess).catch(onError);
+        } else {
+            try {
+                const textArea = this.doc.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                this.doc.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                const successful = this.doc.execCommand('copy');
+                this.doc.body.removeChild(textArea);
+                if (successful) onSuccess();
+                else onError(new Error('execCommand copy failed'));
+            } catch (err) {
+                onError(err);
+            }
+        }
+    }
+
     copyToClipboard(kural: Kural, silent: boolean = false): void {
         let text = `Thirukkural ${kural.number}\n\n`;
         text += `${kural.line1}\n${kural.line2}\n\n`;
@@ -203,24 +234,7 @@ export class KuralDetailComponent implements OnInit {
             if (!silent) this.snackBar.open('Failed to copy. Please try again.', 'Close', { duration: 2000 });
         };
 
-        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-            navigator.clipboard.writeText(text).then(onSuccess).catch(onError);
-        } else {
-            try {
-                const textArea = document.createElement('textarea');
-                textArea.value = text;
-                textArea.style.position = 'fixed';
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                const successful = document.execCommand('copy');
-                document.body.removeChild(textArea);
-                if (successful) onSuccess();
-                else onError(new Error('execCommand copy failed'));
-            } catch (err) {
-                onError(err);
-            }
-        }
+        this.writeToClipboard(text, onSuccess, onError);
     }
 
     copyTamilTextOnly(kural: Kural): void {
@@ -239,29 +253,7 @@ export class KuralDetailComponent implements OnInit {
             this.snackBar.open('Failed to copy. Please try again.', 'Close', { duration: 2000 });
         };
 
-        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-            navigator.clipboard.writeText(textToCopy).then(onSuccess).catch(onError);
-        } else {
-            try {
-                const textArea = document.createElement('textarea');
-                textArea.value = textToCopy;
-                textArea.style.position = 'fixed';
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                const successful = document.execCommand('copy');
-                document.body.removeChild(textArea);
-                if (successful) onSuccess();
-                else onError(new Error('execCommand copy failed'));
-            } catch (err) {
-                onError(err);
-            }
-        }
-    }
-
-    getTamilCategory(type: 'pal' | 'iyal' | 'adikaram', value: string): string {
-        const mappedValue = KURAL_FILTER_MAPPING[type]?.[value as keyof typeof KURAL_FILTER_MAPPING[typeof type]];
-        return mappedValue || value;
+        this.writeToClipboard(textToCopy, onSuccess, onError);
     }
 
     getBestExplanation(kural: Kural): { author: string, text: string } | null {
@@ -361,12 +353,12 @@ export class KuralDetailComponent implements OnInit {
 
     private downloadImage(blob: Blob): void {
         const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
+        const link = this.doc.createElement('a');
         link.href = url;
         link.download = `thirukkural-${this.currentNumber}.png`;
-        document.body.appendChild(link);
+        this.doc.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        this.doc.body.removeChild(link);
         URL.revokeObjectURL(url);
         this.snackBar.open('Image downloaded!', 'Close', { duration: 2000 });
     }

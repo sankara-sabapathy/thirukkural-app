@@ -8,7 +8,7 @@
             <div class="kural-card">
 
                 <!-- Ultra Background Container with Animated Characters -->
-                <div class="ultra-bg-container">
+                <div class="ultra-bg-container" aria-hidden="true">
                     <div class="bg-thiruvalluvar"></div>
                     <div class="floating-alphabet" style="--delay: 0s; --x: 10%; --y: 15%;">அ</div>
                     <div class="floating-alphabet" style="--delay: 2s; --x: 82%; --y: 20%;">ஆ</div>
@@ -71,9 +71,9 @@
                         <div class="kural-eyebrow">Thirukkural</div>
                         <h1 class="majestic-title">{{ kural.number }}</h1>
                         <div class="category-path">
-                            <span>{{ getTamilCategory('pal', kural.pal) }}</span>
-                            <span>{{ getTamilCategory('iyal', kural.iyal) }}</span>
-                            <span>{{ getTamilCategory('adikaram', kural.adikaram) }}</span>
+                            <span>{{ kural.pal | tamilCategory:'pal' }}</span>
+                            <span>{{ kural.iyal | tamilCategory:'iyal' }}</span>
+                            <span>{{ kural.adikaram | tamilCategory:'adikaram' }}</span>
                         </div>
                     </div>
                     <button class="standalone-share-btn" mat-icon-button (click)="captureAndShare(kural)"
@@ -104,17 +104,17 @@
                     <div class="ultra-categories-row">
                         <div class="category-pill">
                             <span class="pill-label">பால் (Section)</span>
-                            <span class="pill-value">{{ getTamilCategory('pal', kural.pal) }}</span>
+                            <span class="pill-value">{{ kural.pal | tamilCategory:'pal' }}</span>
                             <span class="pill-sub">{{ kural.pal_tr }} • {{ kural.pal_tl }}</span>
                         </div>
                         <div class="category-pill">
                             <span class="pill-label">இயல் (Chapter)</span>
-                            <span class="pill-value">{{ getTamilCategory('iyal', kural.iyal) }}</span>
+                            <span class="pill-value">{{ kural.iyal | tamilCategory:'iyal' }}</span>
                             <span class="pill-sub">{{ kural.iyal_tr }} • {{ kural.iyal_tl }}</span>
                         </div>
                         <div class="category-pill">
                             <span class="pill-label">அதிகாரம் (Topic)</span>
-                            <span class="pill-value">{{ getTamilCategory('adikaram', kural.adikaram) }}</span>
+                            <span class="pill-value">{{ kural.adikaram | tamilCategory:'adikaram' }}</span>
                             <span class="pill-sub">{{ kural.adikaram_tr }} • {{ kural.adikaram_tl }}</span>
                         </div>
                     </div>

@@ -40,7 +40,7 @@
         overflow: hidden;
 
         /* Base subtle gradient covering the whole card */
-        background: radial-gradient(circle at center, rgba(24, 104, 219, 0.04) 0%, transparent 80%);
+        background: radial-gradient(circle at center, color-mix(in srgb, var(--primary) 4%, transparent) 0%, transparent 80%);
 
         .bg-thiruvalluvar {
             position: absolute;
@@ -74,7 +74,7 @@
             /* More visible */
             left: var(--x);
             top: var(--y);
-            animation: float-tamil 15s infinite ease-in-out alternate;
+            animation: kural-detail-float-tamil 15s infinite ease-in-out alternate;
             /* Faster */
             animation-delay: var(--delay);
             filter: blur(1px);
@@ -444,7 +444,7 @@
 }
 
 /* Keyframes for roaming alphabets */
-@keyframes float-tamil {
+@keyframes kural-detail-float-tamil {
     0% {
         transform: translate(0, 0) rotate(0deg) scale(1);
     }

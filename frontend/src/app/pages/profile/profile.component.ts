@@ -20,6 +20,7 @@ export class ProfileComponent implements OnInit {
     profile: any = null;
     loading = true;
     enablePayments = environment.enablePayments;
+    private pollTimers: ReturnType<typeof setTimeout>[] = [];
 
     constructor(
         private apiService: ApiService,
@@ -29,7 +30,11 @@ export class ProfileComponent implements OnInit {
         private route: ActivatedRoute,
         private snackBar: MatSnackBar,
         private destroyRef: DestroyRef
-    ) { }
+    ) {
+        this.destroyRef.onDestroy(() => {
+            this.pollTimers.forEach(id => clearTimeout(id));
+        });
+    }
 
     ngOnInit() {
         this.authService.user$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(user => {
@@ -141,10 +146,11 @@ export class ProfileComponent implements OnInit {
                 // Poll the server recursively with a backoff strategy.
                 const pollProfile = (attempt: number) => {
                     if (attempt > 4) return; // Give up after 4 attempts (1s, 2s, 3s, 4s)
-                    setTimeout(() => {
+                    const timerId = setTimeout(() => {
                         this.fetchProfile();
                         pollProfile(attempt + 1);
                     }, attempt * 1000);
+                    this.pollTimers.push(timerId);
                 };
                 pollProfile(1);
             } catch (e) {

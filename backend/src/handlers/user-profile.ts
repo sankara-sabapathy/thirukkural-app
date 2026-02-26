@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { GetCommand, PutCommand, UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { GetCommand, PutCommand, UpdateCommand, QueryCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
 import * as crypto from 'crypto';
 import { docClient } from '../shared/dynamo';
 import { createResponse } from '../shared/utils';
@@ -74,10 +74,21 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                         createdAt: new Date().toISOString()
                     };
 
-                    await docClient.send(new PutCommand({
-                        TableName: TABLE_NAME,
-                        Item: authLink
-                    }));
+                    try {
+                        await docClient.send(new PutCommand({
+                            TableName: TABLE_NAME,
+                            Item: authLink,
+                            ConditionExpression: 'attribute_not_exists(userId) OR #type = :profile',
+                            ExpressionAttributeNames: { '#type': 'type' },
+                            ExpressionAttributeValues: { ':profile': 'PROFILE' }
+                        }));
+                    } catch (err: any) {
+                        if (err.name === 'ConditionalCheckFailedException') {
+                            console.log(`Auth link already migrated for ${userId}. Treating as success.`);
+                        } else {
+                            throw err;
+                        }
+                    }
 
                     console.log(`Lazy migrated legacy user ${userId} to new ID ${newInternalId}`);
                     return createResponse(200, migratedProfile, origin);
@@ -101,7 +112,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                         const foundItem = emailResult.Items.find(item => item.type === 'PROFILE' || !item.type);
 
                         if (foundItem) {
-                            const maskedEmail = email.replace(/(.{2})(.*)(?=@)/, (gp1: string, gp2: string, gp3: string) => gp1 + gp3.replace(/./g, '*'));
+                            const maskedEmail = email.replace(/(.{2})(.*)(?=@)/, (fullMatch: string, prefix: string, rest: string) => prefix + rest.replace(/./g, '*'));
                             console.log(`Matching email found for ${maskedEmail}, merging identity...`);
                             isNewUser = false;
                             actualUserIdToUse = foundItem.userId; // Will be internal ID or legacy sub
@@ -118,12 +129,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                                 ConditionExpression: 'attribute_not_exists(userId)' // Protect against concurrent link overwrites
                             }));
 
-                            // Fetch and return the target profile
                             const finalProfileResult = await docClient.send(new GetCommand({
                                 TableName: TABLE_NAME,
                                 Key: { userId: actualUserIdToUse },
                                 ConsistentRead: true
                             }));
+                            if (!finalProfileResult.Item) {
+                                console.error(`Profile not found after merge link for ${actualUserIdToUse}`);
+                                return createResponse(404, { message: 'Profile not found' }, origin);
+                            }
                             return createResponse(200, finalProfileResult.Item, origin);
                         }
                     }
@@ -150,26 +164,32 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     };
 
                     try {
-                        // 1. Create Base Profile
-                        await docClient.send(new PutCommand({
-                            TableName: TABLE_NAME,
-                            Item: newProfile,
-                            ConditionExpression: 'attribute_not_exists(userId)'
+                        // 1. Create Base Profile & 2. Create Auth Link mapping sub to Base Profile atomically
+                        await docClient.send(new TransactWriteCommand({
+                            TransactItems: [
+                                {
+                                    Put: {
+                                        TableName: TABLE_NAME!,
+                                        Item: newProfile,
+                                        ConditionExpression: 'attribute_not_exists(userId)'
+                                    }
+                                },
+                                {
+                                    Put: {
+                                        TableName: TABLE_NAME!,
+                                        Item: {
+                                            userId: userId, // Cognito Sub
+                                            type: 'AUTH_LINK',
+                                            linkedUserId: actualUserIdToUse,
+                                            createdAt: new Date().toISOString()
+                                        },
+                                        ConditionExpression: 'attribute_not_exists(userId)'
+                                    }
+                                }
+                            ]
                         }));
 
-                        // 2. Create Auth Link mapping sub to Base Profile
-                        await docClient.send(new PutCommand({
-                            TableName: TABLE_NAME,
-                            Item: {
-                                userId: userId, // Cognito Sub
-                                type: 'AUTH_LINK',
-                                linkedUserId: actualUserIdToUse,
-                                createdAt: new Date().toISOString()
-                            },
-                            ConditionExpression: 'attribute_not_exists(userId)'
-                        }));
-
-                        console.log('Default profile and Auth Link created');
+                        console.log('Default profile and Auth Link created transactionally');
 
                         if (email) {
                             try {
@@ -187,13 +207,18 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                         }
 
                         return createResponse(200, newProfile, origin);
-                    } catch (putErr: any) {
-                        if (putErr.name === 'ConditionalCheckFailedException') {
-                            console.log('Profile created concurrently, fetching existing...');
-                            const retryResult = await docClient.send(new GetCommand({ TableName: TABLE_NAME, Key: { userId: actualUserIdToUse } }));
+                    } catch (txErr: any) {
+                        if (txErr.name === 'TransactionCanceledException') {
+                            console.log('Profile created concurrently, fetching existing authoritative profile...');
+                            let targetId = actualUserIdToUse;
+                            const linkCheck = await docClient.send(new GetCommand({ TableName: TABLE_NAME, Key: { userId } }));
+                            if (linkCheck.Item && linkCheck.Item.type === 'AUTH_LINK') {
+                                targetId = linkCheck.Item.linkedUserId;
+                            }
+                            const retryResult = await docClient.send(new GetCommand({ TableName: TABLE_NAME, Key: { userId: targetId } }));
                             return createResponse(200, retryResult.Item, origin);
                         }
-                        throw putErr;
+                        throw txErr;
                     }
                 }
             }

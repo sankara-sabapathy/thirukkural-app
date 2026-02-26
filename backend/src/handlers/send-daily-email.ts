@@ -145,12 +145,16 @@ export const handler = async (): Promise<void> => {
                                     } catch (alertErr) {
                                         console.error(`Failed to send Out of Credit alert to ${logId}. Rolling back flag.`, alertErr);
                                         // 3. Rollback if dispatch fails so it can be retried tomorrow
-                                        await docClient.send(new UpdateCommand({
-                                            TableName: process.env.USERS_TABLE,
-                                            Key: { userId },
-                                            UpdateExpression: 'SET outOfCreditAlertSent = :f',
-                                            ExpressionAttributeValues: { ':f': false }
-                                        }));
+                                        try {
+                                            await docClient.send(new UpdateCommand({
+                                                TableName: process.env.USERS_TABLE,
+                                                Key: { userId },
+                                                UpdateExpression: 'SET outOfCreditAlertSent = :f',
+                                                ExpressionAttributeValues: { ':f': false }
+                                            }));
+                                        } catch (rollbackErr) {
+                                            console.error(`Failed to rollback outOfCreditAlertSent for ${logId}`, rollbackErr);
+                                        }
                                     }
 
                                 } catch (claimErr: any) {
@@ -190,25 +194,51 @@ export const handler = async (): Promise<void> => {
                         if (creditsDeducted && newBalance !== undefined && newBalance < LOW_CREDIT_THRESHOLD && !user.lowCreditAlertSent) {
                             console.log(`Triggering Low Credit Alert for ${logId}`);
                             try {
-                                const alertEmail = generateSystemEmail({
-                                    type: 'LOW_CREDITS',
-                                    data: { credits: newBalance }
-                                });
-                                await sendEmail({
-                                    to: [email],
-                                    subject: alertEmail.subject,
-                                    text: alertEmail.text,
-                                    html: alertEmail.html
-                                });
-                                // Lock to prevent spam tomorrow (Only after successful SES send)
+                                // 1. Atomic claim first
                                 await docClient.send(new UpdateCommand({
                                     TableName: process.env.USERS_TABLE,
                                     Key: { userId },
-                                    UpdateExpression: 'SET lowCreditAlertSent = :t',
-                                    ExpressionAttributeValues: { ':t': true }
+                                    UpdateExpression: 'SET lowCreditAlertSent = :t, updatedAt = :now',
+                                    ConditionExpression: 'attribute_not_exists(lowCreditAlertSent) OR lowCreditAlertSent = :f',
+                                    ExpressionAttributeValues: {
+                                        ':t': true,
+                                        ':f': false,
+                                        ':now': new Date().toISOString()
+                                    }
                                 }));
-                            } catch (e) {
-                                console.error(`Failed to send Low Credit alert to ${logId}`, e);
+
+                                // 2. Dispatch
+                                try {
+                                    const alertEmail = generateSystemEmail({
+                                        type: 'LOW_CREDITS',
+                                        data: { credits: newBalance }
+                                    });
+                                    await sendEmail({
+                                        to: [email],
+                                        subject: alertEmail.subject,
+                                        text: alertEmail.text,
+                                        html: alertEmail.html
+                                    });
+                                    console.log(`Successfully dispatched Low Credit Alert for ${logId}`);
+                                } catch (e) {
+                                    console.error(`Failed to send Low Credit alert to ${logId}. Rolling back flag.`, e);
+                                    try {
+                                        await docClient.send(new UpdateCommand({
+                                            TableName: process.env.USERS_TABLE,
+                                            Key: { userId },
+                                            UpdateExpression: 'SET lowCreditAlertSent = :f',
+                                            ExpressionAttributeValues: { ':f': false }
+                                        }));
+                                    } catch (rollbackErr) {
+                                        console.error(`Failed to rollback lowCreditAlertSent for ${logId}`, rollbackErr);
+                                    }
+                                }
+                            } catch (claimErr: any) {
+                                if (claimErr.name === 'ConditionalCheckFailedException') {
+                                    console.log(`Low credit alert already claimed by another worker for ${logId}. Skipping.`);
+                                } else {
+                                    console.error(`Failed atomic claim for Low Credit alert on ${logId}`, claimErr);
+                                }
                             }
                         }
 

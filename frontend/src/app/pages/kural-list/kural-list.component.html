@@ -24,7 +24,7 @@
                     </div>
 
                     <button mat-button class="lang-toggle-btn" (click)="toggleFilterLanguage()"
-                        aria-label="Toggle Filter Language">
+                        [attr.aria-label]="filterLanguage === 'en' ? 'Switch to Tamil Filters' : 'Switch to English Filters'">
                         <span [class.active]="filterLanguage === 'en'">Eng</span>
                         <span class="divider">|</span>
                         <span [class.active]="filterLanguage === 'ta'">தமிழ்</span>
