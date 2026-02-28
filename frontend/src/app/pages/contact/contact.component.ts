@@ -17,9 +17,9 @@ import { CommonModule } from '@angular/common';
           <div class="contact-info">
             <div class="info-item">
               <h3>Email Us</h3>
-              <a href="mailto:sabapathy.work@gmail.com" class="email-link">
+              <a href="mailto:support@thirukkural.site" class="email-link">
                 <span class="icon">✉️</span>
-                sabapathy.work@gmail.com
+                support@thirukkural.site
               </a>
               <p class="sub-text">We usually respond within 24-48 hours.</p>
             </div>

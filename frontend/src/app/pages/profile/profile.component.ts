@@ -87,12 +87,20 @@ export class ProfileComponent implements OnInit {
             return;
         }
 
+        const termsAccepted = localStorage.getItem('termsAccepted') === 'true';
+        if (!termsAccepted) {
+            this.snackBar.open('Terms not accepted. Please initiate payment again from the pricing page.', 'Close', { duration: 5000 });
+            localStorage.removeItem('paymentIntent');
+            return;
+        }
+
         try {
             const intent = JSON.parse(intentStr);
             // Safe to remove now, or keep until success? 
             // Better to remove to avoid infinite loop on malformed data, 
             // but if valid parse, we process.
             localStorage.removeItem('paymentIntent');
+            localStorage.removeItem('termsAccepted');
 
             if (intent.type === 'credits') {
                 const order = await this.paymentService.createOrder(intent.amount, intent.currency);

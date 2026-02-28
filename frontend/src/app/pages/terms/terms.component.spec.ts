@@ -22,7 +22,7 @@ describe('TermsComponent', () => {
 
     it('should render title', () => {
         const compiled = fixture.nativeElement as HTMLElement;
-        expect(compiled.querySelector('h1')?.textContent).toContain('Terms of Service');
+        expect(compiled.querySelector('h1')?.textContent).toContain('Terms and Conditions');
     });
 
     it('should not have header or footer tags', () => {
