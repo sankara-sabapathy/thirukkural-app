@@ -4,13 +4,13 @@ import { CommonModule } from '@angular/common';
 import { PaymentService } from '../../services/payment.service';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { environment } from '../../../environments/environment';
 
 @Component({
     selector: 'app-pricing',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, RouterModule],
     templateUrl: './pricing.component.html',
     styleUrls: ['./pricing.component.css']
 })
@@ -19,6 +19,7 @@ export class PricingComponent implements OnInit {
     isLoggedIn = false;
     isLoading = false;
     enablePayments = environment.enablePayments;
+    termsAccepted = false;
 
     constructor(
         private paymentService: PaymentService,
@@ -41,6 +42,8 @@ export class PricingComponent implements OnInit {
     }
 
     async buyCredits(amount: number) {
+        if (!this.termsAccepted) return;
+
         if (!this.isLoggedIn) {
             // Save intent for seamless flow
             const intent = { type: 'credits', amount, currency: this.currency };
@@ -91,6 +94,8 @@ export class PricingComponent implements OnInit {
     }
 
     async subscribe(planType: 'monthly' | 'yearly') {
+        if (!this.termsAccepted) return;
+
         if (!this.isLoggedIn) {
             // Save intent for seamless flow
             // Plan IDs need to be consistent. 

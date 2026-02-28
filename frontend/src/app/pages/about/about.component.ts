@@ -11,21 +11,24 @@ import { CommonModule } from '@angular/common';
         <div class="content-card card fade-in">
           <h1>About Thirukkural Daily</h1>
           <p>
-            Thirukkural Daily is a modern digital initiative to bring the timeless wisdom of Saint Thiruvalluvar to the digital age. 
-            Our mission is to make the profound insights of the Thirukkural accessible, understandable, and relevant to everyone, every day.
+            Thirukkural Daily is a digital initiative designed to deliver the timeless wisdom of Saint Thiruvalluvar through a robust and modern platform. 
+            Our mission is to make the profound insights of the Thirukkural accessible to a global audience, every single day.
           </p>
           
           <h2>The Thirukkural</h2>
           <p>
             The Thirukkural is a classic Tamil language text consisting of 1,330 short couplets of seven words each, or Kurals. 
-            The text is divided into three books, each with aphoristic teachings on virtue (aram), wealth (porul), and love (inbam). 
-            Considered one of the greatest works on ethics and morality, it is known for its universality and secular nature.
+            Structured into three distinct books covering virtue (aram), wealth (porul), and love (inbam), it serves as a universal philosophical framework.
+            Considered one of the greatest works on ethics and morality, its teachings remain highly relevant for contemporary personal and professional growth.
           </p>
 
-          <h2>Our Vision</h2>
+          <h2>Service Delivery & Compliance</h2>
           <p>
-            We believe that starting the day with a thought-provoking idea can transform lives. 
-            By delivering one Kural every morning, we hope to inspire mindfulness, ethical living, and personal growth in our subscribers.
+            We leverage modern cloud infrastructure to deliver daily insights efficiently. However, as an evolving digital service, we operate under standard provisions.
+            <strong>Disclaimer:</strong> This service is provided "as is" without any Service Level Agreements (SLAs). Services may be interrupted, suspended, or terminated at any time. We cannot guarantee continuous or error-free operation.
+          </p>
+          <p>
+            We are committed to data privacy and regulatory compliance as per applicable laws. All content and services are subject to "All rights reserved" under intellectual property statutes.
           </p>
         </div>
       </div>

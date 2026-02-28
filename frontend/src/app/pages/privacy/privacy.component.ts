@@ -10,57 +10,89 @@ import { CommonModule } from '@angular/common';
       <div class="container">
         <div class="content-card card fade-in">
           <h1>Privacy Policy</h1>
-          <p class="last-updated">Last updated: November 2025</p>
-          
-          <p>
-            At Thirukkural Daily, we take your privacy seriously. This Privacy Policy explains how we collect, use, and protect your personal information.
-          </p>
+          <p class="last-updated">Last Updated: February 2026</p>
 
-          <h2>Information We Collect</h2>
-          <p>
-            We only collect the information necessary to provide our service:
-          </p>
-          <ul>
-            <li><strong>Email Address:</strong> Collected when you sign in with Google to send you daily emails.</li>
-            <li><strong>Basic Profile Info:</strong> Your name and profile picture from Google to personalize your experience.</li>
-          </ul>
+          <section>
+            <h2>1. Information We Collect</h2>
+            <p>When you register for our service using Google Authentication, we collect basic profile information including your name, email address, and profile picture provided by Google.</p>
+          </section>
 
-          <h2>How We Use Your Information</h2>
-          <p>
-            Your email address is used solely for:
-          </p>
-          <ul>
-            <li>Sending you the daily Thirukkural email.</li>
-            <li>Authenticating your account.</li>
-            <li>Communicating important service updates.</li>
-          </ul>
-          <p>We do NOT sell, trade, or rent your personal identification information to others.</p>
+          <section>
+            <h2>2. How We Use Your Information</h2>
+            <p>We use your email address exclusively for:</p>
+            <ul>
+              <li>Delivering the daily Thirukkural emails and related notifications.</li>
+              <li>Managing your account status and subscription.</li>
+              <li>Communicating essential service updates.</li>
+            </ul>
+            <p>We do not sell, rent, or trade your personal information to third parties.</p>
+          </section>
 
-          <h2>Data Security</h2>
-          <p>
-            We use industry-standard security measures, including AWS Cognito for authentication and encrypted database storage, to protect your data.
-          </p>
+          <section>
+            <h2>3. Payment Processing</h2>
+            <p>Our payment operations are securely handled by Razorpay. We do not store or process your credit card numbers or sensitive financial data on our servers.</p>
+          </section>
 
-          <h2>Contact Us</h2>
-          <p>
-            If you have any questions about this Privacy Policy, please contact us at <a href="mailto:sabapathy.work@gmail.com">sabapathy.work@gmail.com</a>.
-          </p>
+          <section>
+            <h2>4. Strictly Necessary Cookies</h2>
+            <p>We use standard local storage and cookies strictly necessary to provide the service. This includes maintaining your logged-in session via AWS Cognito and processing secure checkouts. We do not use third-party tracking or marketing cookies without your explicit consent.</p>
+          </section>
+
+          <section>
+            <h2>5. Data Deletion</h2>
+            <p>You can request the deletion of your account and associated data at any time by contacting support. Upon account deletion, your active subscriptions will be terminated immediately.</p>
+          </section>
+
         </div>
       </div>
     </main>
   `,
   styles: [`
-    .page-main { padding: 4rem 0; min-height: 80vh; }
-    .content-card { max-width: 800px; margin: 0 auto; }
-    h1 { font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--accent-primary); }
-    .last-updated { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 2rem; }
-    h2 { font-size: 1.5rem; margin: 2rem 0 1rem; color: var(--text-primary); }
-    p { margin-bottom: 1rem; font-size: 1.1rem; line-height: 1.8; }
-    ul { margin-bottom: 1.5rem; padding-left: 1.5rem; }
-    li { margin-bottom: 0.5rem; color: var(--text-secondary); }
-    strong { color: var(--text-primary); }
-    a { color: var(--accent-primary); text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    .page-main { 
+      padding: 4rem 0; 
+      min-height: 80vh; 
+    }
+    .content-card { 
+      max-width: 800px; 
+      margin: 0 auto;
+      padding: 3rem 2rem;
+    }
+    h1 { 
+      font-size: 2.5rem; 
+      margin-bottom: 0.5rem; 
+      color: var(--text-primary);
+    }
+    .last-updated {
+      color: var(--text-tertiary);
+      font-size: 0.9rem;
+      margin-bottom: 2.5rem;
+    }
+    section {
+      margin-bottom: 2rem;
+    }
+    h2 { 
+      font-size: 1.5rem; 
+      margin-bottom: 1rem; 
+      color: var(--text-primary); 
+    }
+    p, li { 
+      margin-bottom: 1rem; 
+      font-size: 1.1rem; 
+      line-height: 1.7; 
+      color: var(--text-secondary);
+    }
+    ul {
+      margin-bottom: 1.5rem;
+      padding-left: 1.5rem;
+      color: var(--text-secondary);
+    }
+    
+    @media (max-width: 768px) {
+      .page-main { padding: 2rem 0; }
+      h1 { font-size: 2rem; }
+      h2 { font-size: 1.25rem; }
+      .content-card { padding: 2rem 1.5rem; }
+    }
   `]
 })
 export class PrivacyComponent { }

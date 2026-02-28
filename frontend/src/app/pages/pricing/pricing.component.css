@@ -79,6 +79,43 @@
     color: var(--text-primary);
 }
 
+.terms-container {
+    max-width: 800px;
+    margin: 0 auto 30px;
+    text-align: center;
+    background: var(--bg-surface);
+    padding: 15px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.terms-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    text-align: left;
+}
+
+.terms-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
+.legal-link {
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.legal-link:hover {
+    color: var(--primary-dark);
+}
+
 .pricing-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
