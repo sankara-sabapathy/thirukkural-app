@@ -46,6 +46,7 @@ export class PricingComponent implements OnInit {
 
         if (!this.isLoggedIn) {
             // Save intent for seamless flow
+            localStorage.setItem('termsAccepted', 'true');
             const intent = { type: 'credits', amount, currency: this.currency };
             localStorage.setItem('paymentIntent', JSON.stringify(intent));
             this.authService.login();
@@ -100,6 +101,7 @@ export class PricingComponent implements OnInit {
             // Save intent for seamless flow
             // Plan IDs need to be consistent. 
             // We'll resolve strict PlanID here to save in intent
+            localStorage.setItem('termsAccepted', 'true');
             const planId = environment.razorpay.plans[this.currency][planType];
 
             const intent = { type: 'subscription', planId, planType, currency: this.currency };
