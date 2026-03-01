@@ -287,7 +287,12 @@ export const handler = async (): Promise<void> => {
 
         // 3.5. Send Telegram Channel Broadcast
         console.log('Starting Telegram Broadcast...');
-        await sendToTelegramChannel(kuralData);
+        const telegramOk = await sendToTelegramChannel(kuralData);
+        if (!telegramOk) {
+            console.error(`Telegram Broadcast Failed for Kural #${kuralData.kuralId} on ${new Date().toISOString()}`);
+        } else {
+            console.log(`Telegram Broadcast Successful for Kural #${kuralData.kuralId} on ${new Date().toISOString()}`);
+        }
 
         // 4. Send Push Notifications
         const pushTable = process.env.PUSH_SUBSCRIPTIONS_TABLE;

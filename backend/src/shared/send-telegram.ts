@@ -25,6 +25,7 @@ export const sendToTelegramChannel = async (kural: Kural): Promise<boolean> => {
         const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
         const response = await fetch(url, {
             method: 'POST',
+            signal: AbortSignal.timeout(8000),
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -51,14 +52,28 @@ export const sendToTelegramChannel = async (kural: Kural): Promise<boolean> => {
 };
 
 /**
+ * Helper to escape HTML characters for Telegram parse_mode='HTML'
+ */
+function escapeHtml(unsafe: string | undefined): string {
+    if (!unsafe) return '';
+    return unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+/**
  * Formats a Kural into a clean, HTML-parsed Telegram message.
  */
 function formatTelegramMessage(kural: Kural): string {
     const appUrl = process.env.APP_DOMAIN || 'https://thirukkural.site';
-    const kuralLink = `${appUrl}/kural/${kural.kuralId}`;
+    const rawKuralLink = `${appUrl}/kural/${kural.kuralId}`;
+    const kuralLink = escapeHtml(rawKuralLink);
 
     // Get the preferred Tamil explanation (Mu. Karunanidhi or Mu. Varadarajan)
-    const tamilExplanation = kural.mk || kural.mv || 'விளக்கம் கிடைக்கவில்லை.';
+    const tamilExplanation = escapeHtml(kural.mk || kural.mv || 'விளக்கம் கிடைக்கவில்லை.');
 
     let msg = `✨ <b>Thirukkural of the Day</b> ✨\n`;
     msg += `━━━━━━━━━━━━━━━━━━━━\n\n`;
@@ -66,13 +81,13 @@ function formatTelegramMessage(kural: Kural): string {
     msg += `<b>குறள் ${kural.kuralId}</b>\n\n`;
 
     if (kural.pal) {
-        msg += `📕 <b>${kural.pal}</b> (${kural.pal_tl}) — <i>${kural.pal_tr}</i>\n`;
+        msg += `📕 <b>${escapeHtml(kural.pal)}</b> (${escapeHtml(kural.pal_tl)}) — <i>${escapeHtml(kural.pal_tr)}</i>\n`;
     }
     if (kural.iyal) {
-        msg += `📗 <b>${kural.iyal}</b> (${kural.iyal_tl}) — <i>${kural.iyal_tr}</i>\n`;
+        msg += `📗 <b>${escapeHtml(kural.iyal)}</b> (${escapeHtml(kural.iyal_tl)}) — <i>${escapeHtml(kural.iyal_tr)}</i>\n`;
     }
     if (kural.adikaram) {
-        msg += `📘 <b>${kural.adikaram}</b> (${kural.adikaram_tl}) — <i>${kural.adikaram_tr}</i>\n`;
+        msg += `📘 <b>${escapeHtml(kural.adikaram)}</b> (${escapeHtml(kural.adikaram_tl)}) — <i>${escapeHtml(kural.adikaram_tr)}</i>\n`;
     }
 
     if (kural.pal || kural.iyal || kural.adikaram) {
@@ -80,12 +95,12 @@ function formatTelegramMessage(kural: Kural): string {
     }
 
     // Tamil Couplet
-    msg += `<b>${kural.line1}</b>\n`;
-    msg += `<b>${kural.line2}</b>\n\n`;
+    msg += `<b>${escapeHtml(kural.line1)}</b>\n`;
+    msg += `<b>${escapeHtml(kural.line2)}</b>\n\n`;
 
     // Transliteration
     if (kural.transliteration) {
-        msg += `<i>${kural.transliteration.replace(/\n/g, '\n')}</i>\n\n`;
+        msg += `<i>${escapeHtml(kural.transliteration.replace(/\n/g, '\n'))}</i>\n\n`;
     }
 
     // Tamil Explanation
@@ -94,10 +109,10 @@ function formatTelegramMessage(kural: Kural): string {
     // English Meaning
     msg += `🌍 <b>English Meaning:</b>\n`;
     if (kural.explanation) {
-        msg += `${kural.explanation}\n`;
+        msg += `${escapeHtml(kural.explanation)}\n`;
     }
     if (kural.translation) {
-        msg += `<i>"${kural.translation}"</i>\n\n`;
+        msg += `<i>"${escapeHtml(kural.translation)}"</i>\n\n`;
     } else {
         msg += `\n`;
     }
