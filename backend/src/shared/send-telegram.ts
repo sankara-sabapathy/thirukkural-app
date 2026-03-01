@@ -7,12 +7,6 @@ import { Kural } from './email-templates';
  * Does not throw errors to prevent interrupting the daily email/push flow.
  */
 export const sendToTelegramChannel = async (kural: Kural): Promise<boolean> => {
-    // 1. Environment Guard
-    if (process.env.STAGE !== 'prod') {
-        console.log('Skipping Telegram broadcast: STAGE is not prod.');
-        return false;
-    }
-
     try {
         // 2. Fetch Secrets
         // These keys map to the PARAM_* environment variables injected by the CDK Stack
@@ -37,8 +31,7 @@ export const sendToTelegramChannel = async (kural: Kural): Promise<boolean> => {
             body: JSON.stringify({
                 chat_id: channelId,
                 text: message,
-                parse_mode: 'HTML',
-                disable_web_page_preview: true
+                parse_mode: 'HTML'
             })
         });
 
@@ -64,29 +57,52 @@ function formatTelegramMessage(kural: Kural): string {
     const appUrl = process.env.APP_DOMAIN || 'https://thirukkural.site';
     const kuralLink = `${appUrl}/kural/${kural.kuralId}`;
 
-    const categories = [kural.pal, kural.iyal, kural.adikaram].filter(Boolean).join(' ❯ ');
+    // Get the preferred Tamil explanation (Mu. Karunanidhi or Mu. Varadarajan)
+    const tamilExplanation = kural.mk || kural.mv || 'விளக்கம் கிடைக்கவில்லை.';
 
-    let msg = `<b>✨ Thirukkural of the Day ✨</b>\n`;
-    msg += `<b>Kural #${kural.kuralId}</b>\n\n`;
+    let msg = `✨ <b>Thirukkural of the Day</b> ✨\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-    if (categories) {
-        msg += `<i>${categories}</i>\n\n`;
+    msg += `<b>குறள் ${kural.kuralId}</b>\n\n`;
+
+    if (kural.pal) {
+        msg += `📕 <b>${kural.pal}</b> (${kural.pal_tl}) — <i>${kural.pal_tr}</i>\n`;
+    }
+    if (kural.iyal) {
+        msg += `📗 <b>${kural.iyal}</b> (${kural.iyal_tl}) — <i>${kural.iyal_tr}</i>\n`;
+    }
+    if (kural.adikaram) {
+        msg += `📘 <b>${kural.adikaram}</b> (${kural.adikaram_tl}) — <i>${kural.adikaram_tr}</i>\n`;
     }
 
+    if (kural.pal || kural.iyal || kural.adikaram) {
+        msg += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+    }
+
+    // Tamil Couplet
     msg += `<b>${kural.line1}</b>\n`;
     msg += `<b>${kural.line2}</b>\n\n`;
 
+    // Transliteration
     if (kural.transliteration) {
-        msg += `<i>${kural.transliteration.replace(/\n/g, ' ')}</i>\n\n`;
+        msg += `<i>${kural.transliteration.replace(/\n/g, '\n')}</i>\n\n`;
     }
 
-    msg += `<b>Explanation (விளக்கம்):</b>\n${kural.explanation}\n\n`;
+    // Tamil Explanation
+    msg += `💡 <b>தமிழ் விளக்கம்:</b>\n${tamilExplanation}\n\n`;
 
+    // English Meaning
+    msg += `🌍 <b>English Meaning:</b>\n`;
+    if (kural.explanation) {
+        msg += `${kural.explanation}\n`;
+    }
     if (kural.translation) {
-        msg += `<b>English Translation:</b>\n${kural.translation}\n\n`;
+        msg += `<i>"${kural.translation}"</i>\n\n`;
+    } else {
+        msg += `\n`;
     }
 
-    msg += `<a href="${kuralLink}">📖 Read Commentaries on Thirukkural.site</a>`;
+    msg += `<a href="${kuralLink}">📖 Read all commentaries on Thirukkural.site</a>`;
 
     return msg;
 }

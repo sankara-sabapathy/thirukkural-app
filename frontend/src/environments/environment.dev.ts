@@ -29,5 +29,6 @@ export const environment = {
             }
         }
     },
+    telegramChannelUrl: 'https://t.me/thirukkural_site_dev',
     vapidPublicKey: '${VAPID_PUBLIC_KEY}'
 };

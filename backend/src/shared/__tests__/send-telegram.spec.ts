@@ -22,9 +22,14 @@ describe('sendToTelegramChannel', () => {
         mk: '',
         mv: '',
         sp: '',
-        pal: '',
-        iyal: '',
-        adikaram: ''
+        pal: 'Arathupal',
+        iyal: 'Payiram',
+        adikaram: 'Kadavul Vazhthu',
+        pal_tr: 'Virtue',
+        iyal_tr: 'Prologue',
+        pal_tl: 'Arathupal',
+        iyal_tl: 'Payiram',
+        adikaram_tl: 'Kadavul Vazhthu'
     };
 
     beforeEach(() => {
@@ -36,15 +41,7 @@ describe('sendToTelegramChannel', () => {
         global.fetch = vi.fn();
     });
 
-    it('should skip sending if STAGE is not prod', async () => {
-        process.env.STAGE = 'dev';
 
-        const result = await sendToTelegramChannel(mockKural);
-
-        expect(result).toBe(false);
-        expect(mockGetSecret).not.toHaveBeenCalled();
-        expect(global.fetch).not.toHaveBeenCalled();
-    });
 
     it('should return false if secrets are missing', async () => {
         mockGetSecret.mockResolvedValueOnce(undefined); // Missing bot token
@@ -74,7 +71,9 @@ describe('sendToTelegramChannel', () => {
 
         const body = JSON.parse(fetchCallArgs[1].body);
         expect(body.chat_id).toBe('mock_channel_id');
-        expect(body.text).toContain('<b>Kural #1</b>');
+        expect(body.text).toContain('✨ <b>Thirukkural of the Day</b> ✨');
+        expect(body.text).toContain('<b>குறள் 1</b>');
+        expect(body.text).toContain('📕 <b>Arathupal</b> (Arathupal) — <i>Virtue</i>');
         expect(body.text).toContain(mockKural.line1);
         expect(body.text).toContain('https://test.site/kural/1');
     });
