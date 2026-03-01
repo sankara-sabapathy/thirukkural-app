@@ -386,7 +386,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
                             let planFallback = 'yearly';
                             if (sub.notes?.planType) {
-                                planFallback = sub.notes.planType;
+                                planFallback = String(sub.notes.planType);
                             } else if (sub.plan_id) {
                                 console.warn(`[Verify] Missing notes.planType in subscription ${sub.id}. Falling back to regex on plan_id.`);
                                 planFallback = /monthly/i.test(sub.plan_id) ? 'monthly' : 'yearly';

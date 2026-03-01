@@ -9,6 +9,7 @@ import { getSecret } from '../shared/secrets';
 import { generateSystemEmail } from '../shared/email-templates';
 import * as webpush from 'web-push';
 import { PRICING_CONFIG } from '../shared/types';
+import { sendToTelegramChannel } from '../shared/send-telegram';
 
 
 export const handler = async (): Promise<void> => {
@@ -277,6 +278,10 @@ export const handler = async (): Promise<void> => {
         } else {
             console.log('No users subscribed to daily email.');
         }
+
+        // 3.5. Send Telegram Channel Broadcast
+        console.log('Starting Telegram Broadcast...');
+        await sendToTelegramChannel(kuralData);
 
         // 4. Send Push Notifications
         const pushTable = process.env.PUSH_SUBSCRIPTIONS_TABLE;

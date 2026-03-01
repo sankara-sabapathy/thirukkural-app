@@ -212,6 +212,8 @@ export class ThirukkuralStack extends cdk.Stack {
             PARAM_RAZORPAY_KEY_ID: getSecretParamName('razorpay_key_id'),
             PARAM_RAZORPAY_KEY_SECRET: getSecretParamName('razorpay_key_secret'),
             PARAM_RAZORPAY_WEBHOOK_SECRET: getSecretParamName('razorpay_webhook_secret'),
+            PARAM_TELEGRAM_BOT_TOKEN: getSecretParamName('telegram_bot_token'),
+            PARAM_TELEGRAM_CHANNEL_ID: getSecretParamName('telegram_channel_id'),
         };
 
         const nodeJsProps: nodejs.NodejsFunctionProps = {
