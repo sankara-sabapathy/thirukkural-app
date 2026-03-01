@@ -9,6 +9,7 @@ import { getSecret } from '../shared/secrets';
 import { generateSystemEmail } from '../shared/email-templates';
 import * as webpush from 'web-push';
 import { PRICING_CONFIG } from '../shared/types';
+import { sendToTelegramChannel } from '../shared/send-telegram';
 
 
 export const handler = async (): Promise<void> => {
@@ -46,8 +47,14 @@ export const handler = async (): Promise<void> => {
             mv: randomKural.mv,
             sp: randomKural.sp,
             pal: randomKural.pal,
+            pal_tr: randomKural.pal_tr,
+            pal_tl: randomKural.pal_tl,
             iyal: randomKural.iyal,
+            iyal_tr: randomKural.iyal_tr,
+            iyal_tl: randomKural.iyal_tl,
             adikaram: randomKural.adikaram,
+            adikaram_tr: randomKural.adikaram_tr,
+            adikaram_tl: randomKural.adikaram_tl,
             parimela: safeJsonParse(randomKural.parimela),
             manikudavar: safeJsonParse(randomKural.manikudavar),
             v_munusami: safeJsonParse(randomKural.v_munusami),
@@ -276,6 +283,15 @@ export const handler = async (): Promise<void> => {
             }
         } else {
             console.log('No users subscribed to daily email.');
+        }
+
+        // 3.5. Send Telegram Channel Broadcast
+        console.log('Starting Telegram Broadcast...');
+        const telegramOk = await sendToTelegramChannel(kuralData);
+        if (!telegramOk) {
+            console.error(`Telegram Broadcast Failed for Kural #${kuralData.kuralId} on ${new Date().toISOString()}`);
+        } else {
+            console.log(`Telegram Broadcast Successful for Kural #${kuralData.kuralId} on ${new Date().toISOString()}`);
         }
 
         // 4. Send Push Notifications

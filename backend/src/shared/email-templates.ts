@@ -11,8 +11,14 @@ export interface Kural {
     sp?: string; // Solomon Pappaiah
     // New fields
     pal?: string;
+    pal_tr?: string;
+    pal_tl?: string;
     iyal?: string;
+    iyal_tr?: string;
+    iyal_tl?: string;
     adikaram?: string;
+    adikaram_tr?: string;
+    adikaram_tl?: string;
     parimela?: string[]; // Parimelazhagar [Title, content]
     manikudavar?: string[]; // Manakkudavar [Title, content]
     v_munusami?: string[]; // V. Munusami [Title, content]

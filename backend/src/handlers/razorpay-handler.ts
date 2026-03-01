@@ -384,9 +384,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                         if (sub.status === 'active' || sub.status === 'authenticated') {
                             console.log(`[Verify] Immediate update for subscription ${razorpay_subscription_id}`);
 
-                            let planFallback = 'yearly';
+                            let planFallback: 'monthly' | 'yearly' = 'yearly';
                             if (sub.notes?.planType) {
-                                planFallback = sub.notes.planType;
+                                const rawPlan = String(sub.notes.planType).toLowerCase();
+                                if (rawPlan === 'monthly' || rawPlan === 'yearly') {
+                                    planFallback = rawPlan as 'monthly' | 'yearly';
+                                } else {
+                                    console.warn(`[Verify] Invalid notes.planType '${rawPlan}' in subscription ${sub.id}. Falling back to regex on plan_id.`);
+                                    planFallback = /monthly/i.test(sub.plan_id) ? 'monthly' : 'yearly';
+                                }
                             } else if (sub.plan_id) {
                                 console.warn(`[Verify] Missing notes.planType in subscription ${sub.id}. Falling back to regex on plan_id.`);
                                 planFallback = /monthly/i.test(sub.plan_id) ? 'monthly' : 'yearly';
