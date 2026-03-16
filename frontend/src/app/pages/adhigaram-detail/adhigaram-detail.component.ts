@@ -1,0 +1,178 @@
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Observable, of, merge } from 'rxjs';
+import { catchError, distinctUntilChanged, map, shareReplay, switchMap, tap } from 'rxjs/operators';
+import { AdhigaramPageData, KuralService } from '../../services/kural.service';
+import { SeoService } from '../../services/seo.service';
+import { TamilCategoryPipe } from '../../pipes/tamil-category.pipe';
+
+@Component({
+    selector: 'app-adhigaram-detail',
+    standalone: true,
+    imports: [
+        CommonModule,
+        RouterModule,
+        MatButtonModule,
+        MatIconModule,
+        MatProgressSpinnerModule,
+        TamilCategoryPipe
+    ],
+    templateUrl: './adhigaram-detail.component.html',
+    styleUrls: ['./adhigaram-detail.component.scss']
+})
+export class AdhigaramDetailComponent implements OnInit, OnDestroy {
+    readonly totalAdhigarams = 133;
+
+    adhigaram$: Observable<AdhigaramPageData | undefined> = of(undefined);
+    loading = true;
+    currentId = 1;
+
+    constructor(
+        private route: ActivatedRoute,
+        private router: Router,
+        private kuralService: KuralService,
+        private seoService: SeoService
+    ) { }
+
+    ngOnInit(): void {
+        const initialValue$ = of(this.route.snapshot.paramMap);
+        const paramMap$ = merge(initialValue$, this.route.paramMap);
+
+        this.adhigaram$ = paramMap$.pipe(
+            map(params => {
+                const id = params.get('id');
+                return id ? Number.parseInt(id, 10) : 1;
+            }),
+            distinctUntilChanged(),
+            switchMap(id => {
+                this.currentId = Number.isInteger(id) ? id : 1;
+                this.loading = true;
+
+                return this.kuralService.getAdhigaram(id).pipe(
+                    tap((adhigaram) => {
+                        this.loading = false;
+
+                        if (adhigaram) {
+                            this.updateMetaTags(adhigaram);
+                            return;
+                        }
+
+                        this.seoService.removeStructuredData('structured-data-adhigaram');
+                    }),
+                    catchError(error => {
+                        console.error('Error fetching adhigaram:', error);
+                        this.loading = false;
+                        return of(undefined);
+                    })
+                );
+            }),
+            shareReplay(1)
+        );
+    }
+
+    ngOnDestroy(): void {
+        this.seoService.removeStructuredData('structured-data-adhigaram');
+    }
+
+    previousAdhigaram(): void {
+        if (this.currentId > 1) {
+            this.router.navigate(['/adhigaram', this.currentId - 1]);
+        }
+    }
+
+    nextAdhigaram(): void {
+        if (this.currentId < this.totalAdhigarams) {
+            this.router.navigate(['/adhigaram', this.currentId + 1]);
+        }
+    }
+
+    private updateMetaTags(adhigaram: AdhigaramPageData): void {
+        const title = `Thirukkural Adhigaram ${adhigaram.id} - ${adhigaram.adikaram} (${adhigaram.adikaram_tr})`;
+        const description =
+            `Read Thirukkural Adhigaram ${adhigaram.id}, ${adhigaram.adikaram_tr}, ` +
+            `from ${adhigaram.pal_tr} > ${adhigaram.iyal_tr}, covering Kurals ${adhigaram.start}-${adhigaram.end}.`;
+        const keywords = [
+            `Thirukkural Adhigaram ${adhigaram.id}`,
+            adhigaram.adikaram_tr,
+            adhigaram.adikaram_tl,
+            adhigaram.iyal_tr,
+            adhigaram.pal_tr
+        ].filter(Boolean).join(', ');
+        const url = `https://thirukkural.site/adhigaram/${adhigaram.id}`;
+
+        this.seoService.generateTags({
+            title,
+            description,
+            keywords,
+            url
+        });
+
+        this.injectStructuredData(adhigaram, url);
+    }
+
+    private injectStructuredData(adhigaram: AdhigaramPageData, url: string): void {
+        const itemListElements = adhigaram.kurals.map((kural, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            url: `https://thirukkural.site/kural/${kural.number}`,
+            name: `Thirukkural ${kural.number}`
+        }));
+
+        const jsonLd = {
+            '@context': 'https://schema.org',
+            '@graph': [
+                {
+                    '@type': 'CollectionPage',
+                    '@id': url,
+                    url,
+                    name: `Thirukkural Adhigaram ${adhigaram.id}`,
+                    isPartOf: {
+                        '@type': 'WebSite',
+                        name: 'Thirukkural Daily',
+                        url: 'https://thirukkural.site'
+                    },
+                    about: [
+                        { '@type': 'Thing', name: adhigaram.pal_tr },
+                        { '@type': 'Thing', name: adhigaram.iyal_tr },
+                        { '@type': 'Thing', name: adhigaram.adikaram_tr }
+                    ],
+                    mainEntity: {
+                        '@type': 'ItemList',
+                        name: `Kurals ${adhigaram.start}-${adhigaram.end}`,
+                        numberOfItems: adhigaram.kurals.length,
+                        itemListElement: itemListElements
+                    }
+                },
+                {
+                    '@type': 'BreadcrumbList',
+                    itemListElement: [
+                        {
+                            '@type': 'ListItem',
+                            position: 1,
+                            name: 'Home',
+                            item: 'https://thirukkural.site/'
+                        },
+                        {
+                            '@type': 'ListItem',
+                            position: 2,
+                            name: 'Kurals',
+                            item: 'https://thirukkural.site/kurals'
+                        },
+                        {
+                            '@type': 'ListItem',
+                            position: 3,
+                            name: `Adhigaram ${adhigaram.id}`,
+                            item: url
+                        }
+                    ]
+                }
+            ]
+        };
+
+        this.seoService.setStructuredData(jsonLd, 'structured-data-adhigaram');
+    }
+}

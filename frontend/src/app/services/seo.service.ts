@@ -96,4 +96,11 @@ export class SeoService {
     script.text = JSON.stringify(jsonData);
     this.document.head.appendChild(script);
   }
+
+  removeStructuredData(scriptId: string) {
+    const script = this.document.getElementById(scriptId);
+    if (script) {
+      script.remove();
+    }
+  }
 }

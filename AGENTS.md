@@ -30,7 +30,7 @@
 - `frontend/src/environments/environment.dev.ts` and `environment.prod.ts` are template files with placeholders replaced in CI.
 - `frontend/src/environments/environment.ts` is the local fallback with hardcoded values for local work.
 - The SEO/data pipeline is local-first. Source content lives at `data/thirukkural/allKural.json` and is split into `frontend/public/data/thirukkural/*.json`; do not reintroduce runtime GitHub fetches for core Kural data.
-- Current indexable SEO routes are numeric Kural pages under `/kural/:id` plus a small set of static pages. There are no `/adhigaram/*` chapter routes yet, and no slugged Kural URLs in production.
+- Current indexable SEO routes are numeric Kural pages under `/kural/:id`, numeric chapter pages under `/adhigaram/:id`, plus a small set of static pages. There are no slugged Kural URLs in production.
 - CloudFront must rewrite extensionless paths to nested `index.html` using `backend/src/cloudfront/basic-auth.js` in non-prod and `backend/src/cloudfront/uri-rewrite.js` in prod.
 - Domain references are inconsistent across older docs (`krss.online` vs `thirukkural.site`). Derive the active domain from current SSM `base_domain`, workflows, and environment files instead of trusting old prose.
 - `implementation_plan.md` is historical bootstrap context, not an up-to-date architecture spec.
@@ -116,11 +116,12 @@
   - `frontend/scripts/sitemap.ts`
 
 ## SEO / SSG Reality
-- `frontend/scripts/prerender.ts` is the canonical SEO prerender pipeline. It prerenders `/` plus all `1330` `/kural/:id` routes into `frontend/dist/frontend/browser/**/index.html`.
+- `frontend/scripts/prerender.ts` is the canonical SEO prerender pipeline. It prerenders `/`, all `133` `/adhigaram/:id` routes, and all `1330` `/kural/:id` routes into `frontend/dist/frontend/browser/**/index.html`.
 - The prerenderer now reuses a live Angular app per Puppeteer worker through `window.__PRERENDER_CONTROLLER__`. Do not revert to one fresh browser boot per route unless correctness requires it; that regresses build time from seconds back into minutes.
 - The prerenderer blocks fonts, images, media, and common analytics URLs during HTML generation. Keep that behavior unless a route depends on one of those assets for SEO-visible content.
-- `frontend/scripts/sitemap.ts` currently emits only home, selected static routes, `/kurals`, and numeric `/kural/:id` URLs. It does not emit adhigaram/chapter URLs because those pages do not exist yet.
-- Kural-specific SEO metadata currently lives in `frontend/src/app/services/seo.service.ts` and `frontend/src/app/pages/kural-detail/kural-detail.component.ts`.
+- `frontend/scripts/sitemap.ts` emits home, selected static routes, `/kurals`, numeric `/adhigaram/:id`, and numeric `/kural/:id` URLs.
+- Kural-specific and adhigaram-specific SEO metadata currently lives in `frontend/src/app/services/seo.service.ts`, `frontend/src/app/pages/kural-detail/kural-detail.component.ts`, and `frontend/src/app/pages/adhigaram-detail/adhigaram-detail.component.ts`.
+- Chapter metadata is generated locally by `scripts/split-data.js` into `frontend/public/data/thirukkural/adhigarams.json`. Keep that file derived from `data/thirukkural/allKural.json`, not hand-edited.
 - `frontend/src/app/app.component.ts` has route-level default SEO plumbing, but most static routes do not currently define `data.seo`. Do not assume every static page already has bespoke metadata.
 - Local content data lives at `data/thirukkural/allKural.json` and is transformed by `scripts/split-data.js` into `frontend/public/data/thirukkural/*.json`.
 - CloudFront viewer-request rewriting is required so `/kural/1153` resolves to `/kural/1153/index.html` in S3. Without that rewrite, direct requests and Googlebot indexing regress to SPA fallback behavior.
@@ -148,9 +149,8 @@
 - Do not present aspirational SEO features as implemented. Check the route tree, sitemap generator, workflows, and built output first.
 
 ## SEO Gaps / Not Yet Implemented
-- No adhigaram/chapter hub pages or `/adhigaram/:id` route set.
 - No slugged Kural URLs such as `/kural/1-agara-mudhala...`; current production shape is `/kural/:id`.
-- No chapter `CollectionPage` schema or FAQ schema.
+- No FAQ schema on chapter pages.
 - No bespoke route metadata entries for most static pages.
 - No Lighthouse CI workflow or automated SEO score gate in GitHub Actions.
 - No `NgOptimizedImage`, font preload strategy, or zoneless migration tied to SEO work.

@@ -1,0 +1,117 @@
+<div class="adhigaram-container">
+    <ng-container *ngIf="adhigaram$ | async as adhigaram">
+        <div *ngIf="loading" class="loading-spinner">
+            <mat-spinner diameter="50"></mat-spinner>
+        </div>
+
+        <div *ngIf="adhigaram" class="adhigaram-content">
+            <div class="adhigaram-card">
+                <div class="adhigaram-card-header">
+                    <nav class="breadcrumb-nav" aria-label="Breadcrumb">
+                        <a routerLink="/">Home</a>
+                        <a routerLink="/kurals">Library</a>
+                        <span aria-current="page">Adhigaram {{ adhigaram.id }}</span>
+                    </nav>
+
+                    <div class="header-main-content">
+                        <div class="adhigaram-eyebrow">Thirukkural Adhigaram</div>
+                        <h1 class="adhigaram-title">
+                            <span class="adhigaram-number">{{ adhigaram.id }}</span>
+                            <span class="adhigaram-name">{{ adhigaram.adikaram }}</span>
+                        </h1>
+                        <p class="adhigaram-subtitle" *ngIf="adhigaram.adikaram_tl">
+                            {{ adhigaram.adikaram_tr }} • {{ adhigaram.adikaram_tl }}
+                        </p>
+                        <div class="category-path">
+                            <span>{{ adhigaram.pal | tamilCategory:'pal' }}</span>
+                            <span>{{ adhigaram.iyal | tamilCategory:'iyal' }}</span>
+                            <span>Kurals {{ adhigaram.start }}-{{ adhigaram.end }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="adhigaram-card-body">
+                    <div class="category-pills">
+                        <div class="category-pill">
+                            <span class="pill-label">பால் (Section)</span>
+                            <span class="pill-value">{{ adhigaram.pal | tamilCategory:'pal' }}</span>
+                            <span class="pill-sub">{{ adhigaram.pal_tr }} • {{ adhigaram.pal_tl }}</span>
+                        </div>
+                        <div class="category-pill">
+                            <span class="pill-label">இயல் (Division)</span>
+                            <span class="pill-value">{{ adhigaram.iyal | tamilCategory:'iyal' }}</span>
+                            <span class="pill-sub">{{ adhigaram.iyal_tr }} • {{ adhigaram.iyal_tl }}</span>
+                        </div>
+                        <div class="category-pill">
+                            <span class="pill-label">அதிகாரம் (Chapter)</span>
+                            <span class="pill-value">{{ adhigaram.adikaram }}</span>
+                            <span class="pill-sub">{{ adhigaram.adikaram_tr }} • {{ adhigaram.adikaram_tl }}</span>
+                        </div>
+                    </div>
+
+                    <section class="kural-list-section">
+                        <div class="section-header">
+                            <h2>Kurals in this chapter</h2>
+                            <p>Read all ten couplets in order with direct links to their full explanation pages.</p>
+                        </div>
+
+                        <div class="adhigaram-kural-grid">
+                            <a
+                                *ngFor="let kural of adhigaram.kurals"
+                                class="adhigaram-kural-card"
+                                [routerLink]="['/kural', kural.number]"
+                                [attr.aria-label]="'Open Thirukkural ' + kural.number"
+                            >
+                                <div class="kural-card-header">
+                                    <div class="kural-number">{{ kural.number }}</div>
+                                    <div class="kural-title">{{ kural.line1 }}</div>
+                                </div>
+
+                                <div class="kural-lines">
+                                    <p>{{ kural.line1 }}</p>
+                                    <p>{{ kural.line2 }}</p>
+                                </div>
+
+                                <p class="kural-translation">{{ kural.translation }}</p>
+                            </a>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="adhigaram-card-footer">
+                    <div class="nav-buttons">
+                        <button mat-stroked-button color="primary" (click)="previousAdhigaram()" [disabled]="currentId <= 1">
+                            <mat-icon>arrow_back</mat-icon>
+                            Previous
+                        </button>
+                        <button
+                            mat-stroked-button
+                            color="primary"
+                            (click)="nextAdhigaram()"
+                            [disabled]="currentId >= totalAdhigarams"
+                        >
+                            Next
+                            <mat-icon>arrow_forward</mat-icon>
+                        </button>
+                    </div>
+
+                    <div class="back-to-list">
+                        <a mat-button color="primary" routerLink="/kurals">
+                            <mat-icon>list</mat-icon>
+                            Library
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div *ngIf="!loading && !adhigaram" class="error-message">
+            <mat-icon>error_outline</mat-icon>
+            <p>Sorry, this adhigaram could not be found.</p>
+            <a mat-raised-button color="primary" routerLink="/kurals">
+                <mat-icon>home</mat-icon>
+                Go to Library
+            </a>
+        </div>
+    </ng-container>
+</div>

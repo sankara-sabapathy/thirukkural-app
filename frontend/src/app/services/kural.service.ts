@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, map, tap, catchError } from 'rxjs';
+import { Observable, of, map, tap, catchError, switchMap } from 'rxjs';
 
 export interface Kural {
     number: number;
@@ -48,6 +48,25 @@ export interface SearchIndexItem {
     a: string; // adikaram
 }
 
+export interface AdhigaramSummary {
+    id: number;
+    start: number;
+    end: number;
+    pal: string;
+    pal_tr: string;
+    pal_tl?: string;
+    iyal: string;
+    iyal_tr: string;
+    iyal_tl?: string;
+    adikaram: string;
+    adikaram_tr: string;
+    adikaram_tl?: string;
+}
+
+export interface AdhigaramPageData extends AdhigaramSummary {
+    kurals: Kural[];
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -57,6 +76,7 @@ export class KuralService {
 
     private chunkCache = new Map<string, Kural[]>();
     private searchIndex: SearchIndexItem[] | null = null;
+    private adhigarams: AdhigaramSummary[] | null = null;
 
     constructor(private http: HttpClient) { }
 
@@ -69,24 +89,10 @@ export class KuralService {
         }
 
         const chunkId = this.getChunkId(number);
-
-        if (this.chunkCache.has(chunkId)) {
-            const chunk = this.chunkCache.get(chunkId)!;
-            const kural = chunk.find(k => k.number === number);
-            return of(kural);
-        }
-
-        const url = `${this.DATA_BASE_URL}/${chunkId}.json`;
-
-        return this.http.get<Kural[]>(url).pipe(
-            tap(chunk => {
-                this.chunkCache.set(chunkId, chunk);
-            }),
-            map(chunk => {
-                return chunk.find(k => k.number === number);
-            }),
+        return this.loadChunk(chunkId).pipe(
+            map(chunk => chunk.find(k => k.number === number)),
             catchError(err => {
-                console.error(`Failed to load chunk ${chunkId}`, err);
+                console.error(`Failed to load kural ${number}`, err);
                 return of(undefined);
             })
         );
@@ -111,6 +117,54 @@ export class KuralService {
         );
     }
 
+    getAdhigarams(): Observable<AdhigaramSummary[]> {
+        if (this.adhigarams) {
+            return of(this.adhigarams);
+        }
+
+        const url = `${this.DATA_BASE_URL}/adhigarams.json`;
+
+        return this.http.get<AdhigaramSummary[]>(url).pipe(
+            tap(adhigarams => this.adhigarams = adhigarams),
+            catchError(err => {
+                console.error('Failed to load adhigarams', err);
+                return of([]);
+            })
+        );
+    }
+
+    getAdhigaram(id: number): Observable<AdhigaramPageData | undefined> {
+        if (!Number.isInteger(id) || id < 1) {
+            return of(undefined);
+        }
+
+        return this.getAdhigarams().pipe(
+            switchMap(adhigarams => {
+                const adhigaram = adhigarams.find(item => item.id === id);
+                if (!adhigaram) {
+                    return of(undefined);
+                }
+
+                const chunkId = this.getChunkId(adhigaram.start);
+                return this.loadChunk(chunkId).pipe(
+                    map(chunk => ({
+                        ...adhigaram,
+                        kurals: chunk.filter(
+                            kural => kural.number >= adhigaram.start && kural.number <= adhigaram.end
+                        )
+                    })),
+                    map(adhigaramPage => (
+                        adhigaramPage.kurals.length > 0 ? adhigaramPage : undefined
+                    )),
+                    catchError(err => {
+                        console.error(`Failed to load adhigaram ${id}`, err);
+                        return of(undefined);
+                    })
+                );
+            })
+        );
+    }
+
     /**
      * Determines the chunk filename for a given Kural number
      * e.g., 1 -> "1-100", 150 -> "101-200"
@@ -119,5 +173,19 @@ export class KuralService {
         const start = Math.floor((number - 1) / this.CHUNK_SIZE) * this.CHUNK_SIZE + 1;
         const end = Math.min(start + this.CHUNK_SIZE - 1, 1330);
         return `${start}-${end}`;
+    }
+
+    private loadChunk(chunkId: string): Observable<Kural[]> {
+        if (this.chunkCache.has(chunkId)) {
+            return of(this.chunkCache.get(chunkId)!);
+        }
+
+        const url = `${this.DATA_BASE_URL}/${chunkId}.json`;
+
+        return this.http.get<Kural[]>(url).pipe(
+            tap(chunk => {
+                this.chunkCache.set(chunkId, chunk);
+            })
+        );
     }
 }

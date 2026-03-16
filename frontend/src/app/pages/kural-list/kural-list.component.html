@@ -86,7 +86,12 @@
         </div>
 
         <div class="kural-grid" *ngIf="displayedKurals.length > 0">
-            <div *ngFor="let kural of displayedKurals" [routerLink]="['/kural', kural.n]" class="kural-item">
+            <a
+                *ngFor="let kural of displayedKurals"
+                [routerLink]="['/kural', kural.n]"
+                class="kural-item"
+                [attr.aria-label]="'Open Thirukkural ' + kural.n"
+            >
                 <div class="kural-header">
                     <div class="kural-number">{{ kural.n }}</div>
                     <div class="kural-title">{{ kural.l1 }}</div>
@@ -101,7 +106,7 @@
                     <span class="meta-tag">{{ kural.i }}</span>
                     <span class="meta-tag">{{ kural.a }}</span>
                 </div>
-            </div>
+            </a>
         </div>
 
         <mat-paginator *ngIf="filteredKurals.length > 0" [length]="filteredKurals.length" [pageSize]="pageSize"

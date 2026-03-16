@@ -99,11 +99,7 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void {
-        const scriptId = 'structured-data-kural';
-        const scriptTag = this.doc.getElementById(scriptId);
-        if (scriptTag) {
-            scriptTag.remove();
-        }
+        this.seoService.removeStructuredData('structured-data-kural');
     }
 
     updateMetaTags(kural: Kural): void {
@@ -171,6 +167,10 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
         if (this.currentNumber < 1330) {
             this.router.navigate(['/kural', this.currentNumber + 1]);
         }
+    }
+
+    getAdhigaramId(kuralNumber: number): number {
+        return Math.floor((kuralNumber - 1) / 10) + 1;
     }
 
     private writeToClipboard(text: string, onSuccess: () => void, onError: (err: any) => void): void {

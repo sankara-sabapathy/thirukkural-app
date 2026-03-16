@@ -7,20 +7,18 @@ test('has title', async ({ page }) => {
     await expect(page).toHaveTitle(/Thirukkural/);
 });
 
-test('hero section loads', async ({ page }) => {
-    await page.goto('/');
+test('adhigaram page loads and links to 10 kurals', async ({ page }) => {
+    await page.goto('/adhigaram/1');
 
-    // Expect the hero title to be visible
-    await expect(page.locator('.hero-title')).toBeVisible();
-    await expect(page.getByText('Start Your Day with')).toBeVisible();
+    await expect(page.locator('.adhigaram-title')).toContainText('1');
+    await expect(page.locator('.adhigaram-kural-card')).toHaveCount(10);
+    await expect(page.locator('.breadcrumb-nav')).toContainText('Library');
 });
 
-test('navigation works', async ({ page }) => {
-    await page.goto('/');
+test('kural detail links back to its adhigaram page', async ({ page }) => {
+    await page.goto('/adhigaram/1');
+    await page.locator('.adhigaram-kural-card').first().click();
 
-    // Click the About link.
-    await page.getByRole('link', { name: 'About' }).first().click();
-
-    // Expects page to have a heading with the name of About.
-    await expect(page.getByRole('heading', { name: 'About Thirukkural Daily' })).toBeVisible();
+    await expect(page).toHaveURL(/\/kural\/1$/);
+    await expect(page.locator('.chapter-link-row')).toContainText('Adhigaram 1');
 });

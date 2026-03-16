@@ -1,9 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { loadAdhigarams } from './adhigaram-utils';
 
 const DIST_FOLDER = path.join(process.cwd(), 'dist/frontend/browser');
 const SITEMAP_PATH = path.join(DIST_FOLDER, 'sitemap.xml');
 const BASE_URL = 'https://thirukkural.site';
+const ADHIGARAMS = loadAdhigarams();
 
 function generateSitemap() {
     console.log('Generating Sitemap...');
@@ -30,6 +32,10 @@ function generateSitemap() {
     // Setting priority to 0.8 as these are the primary content pages Google should index
     for (let i = 1; i <= 1330; i++) {
         urls.push(`<url><loc>${BASE_URL}/kural/${i}</loc><lastmod>${today}</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>`);
+    }
+
+    for (const adhigaram of ADHIGARAMS) {
+        urls.push(`<url><loc>${BASE_URL}/adhigaram/${adhigaram.id}</loc><lastmod>${today}</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>`);
     }
 
     const sitemapContent = `<?xml version="1.0" encoding="UTF-8"?>

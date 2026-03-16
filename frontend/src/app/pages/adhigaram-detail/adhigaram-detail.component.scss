@@ -1,0 +1,336 @@
+.adhigaram-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+    min-height: 80vh;
+}
+
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+}
+
+.adhigaram-content {
+    width: 100%;
+}
+
+.adhigaram-card {
+    background: var(--bg-card);
+    border-radius: 24px;
+    box-shadow: 0 16px 48px rgba(24, 104, 219, 0.08);
+    border: 1px solid rgba(24, 104, 219, 0.06);
+    overflow: hidden;
+}
+
+.adhigaram-card-header {
+    padding: 2.25rem 2.5rem 2rem;
+    border-bottom: 1px solid rgba(24, 104, 219, 0.05);
+    background: linear-gradient(180deg, rgba(24, 104, 219, 0.03) 0%, rgba(24, 104, 219, 0.01) 100%);
+}
+
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+
+    a,
+    span {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    a {
+        color: var(--primary);
+        font-weight: 600;
+    }
+
+    a:not(:last-of-type)::after,
+    span:not(:last-child)::after {
+        content: '›';
+        margin-left: 0.5rem;
+        color: var(--text-tertiary);
+        font-weight: 500;
+    }
+}
+
+.header-main-content {
+    text-align: center;
+}
+
+.adhigaram-eyebrow {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    margin-bottom: 0.75rem;
+}
+
+.adhigaram-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin-bottom: 0.75rem;
+}
+
+.adhigaram-number {
+    font-size: 2.85rem;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    color: var(--text-primary);
+}
+
+.adhigaram-name {
+    font-family: var(--font-tamil);
+    font-size: 2.1rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.adhigaram-subtitle {
+    margin: 0 0 1rem;
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+.category-path {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+
+    span:not(:last-child)::after {
+        content: '•';
+        margin-left: 0.75rem;
+        color: var(--text-tertiary);
+    }
+}
+
+.adhigaram-card-body {
+    padding: 2.5rem;
+}
+
+.category-pills {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+}
+
+.category-pill {
+    flex: 1;
+    background: rgba(24, 104, 219, 0.02);
+    border: 1px solid rgba(24, 104, 219, 0.08);
+    border-radius: 14px;
+    padding: 1rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.pill-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.5rem;
+}
+
+.pill-value {
+    font-family: var(--font-tamil);
+    font-size: 1.08rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 0.15rem;
+}
+
+.pill-sub {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.kural-list-section {
+    border-top: 1px solid rgba(24, 104, 219, 0.06);
+    padding-top: 2.25rem;
+}
+
+.section-header {
+    margin-bottom: 1.5rem;
+
+    h2 {
+        font-size: 1.25rem;
+        color: var(--text-primary);
+        margin-bottom: 0.35rem;
+    }
+
+    p {
+        margin: 0;
+        color: var(--text-secondary);
+    }
+}
+
+.adhigaram-kural-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.adhigaram-kural-card {
+    display: block;
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 1.35rem;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: rgba(24, 104, 219, 0.35);
+    }
+}
+
+.kural-card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.kural-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3rem;
+    height: 3rem;
+    background: rgba(24, 104, 219, 0.1);
+    color: var(--primary);
+    border-radius: 10px;
+    font-weight: 700;
+    border: 1px solid rgba(24, 104, 219, 0.18);
+}
+
+.kural-title {
+    font-family: var(--font-tamil);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.kural-lines {
+    background: rgba(24, 104, 219, 0.02);
+    border-radius: 14px;
+    padding: 1rem 1.15rem;
+    margin-bottom: 1rem;
+
+    p {
+        margin: 0.2rem 0;
+        font-family: var(--font-tamil);
+        font-size: 1.05rem;
+        line-height: 1.7;
+        color: var(--text-primary);
+    }
+}
+
+.kural-translation {
+    margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    font-style: italic;
+}
+
+.adhigaram-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid rgba(24, 104, 219, 0.08);
+    background: rgba(24, 104, 219, 0.015);
+}
+
+.nav-buttons {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.back-to-list a {
+    border-radius: 8px;
+}
+
+.error-message {
+    text-align: center;
+    padding: 4rem 2rem;
+
+    mat-icon {
+        font-size: 4rem;
+        width: 4rem;
+        height: 4rem;
+        color: #ef4444;
+        margin-bottom: 1rem;
+    }
+
+    p {
+        font-size: 1.2rem;
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .adhigaram-container {
+        padding: 1rem 0.5rem;
+    }
+
+    .adhigaram-card-header,
+    .adhigaram-card-body,
+    .adhigaram-card-footer {
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+    }
+
+    .adhigaram-title {
+        gap: 0.5rem;
+    }
+
+    .adhigaram-number {
+        font-size: 2.2rem;
+    }
+
+    .adhigaram-name {
+        font-size: 1.7rem;
+    }
+
+    .category-pills {
+        flex-direction: column;
+    }
+
+    .adhigaram-card-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nav-buttons {
+        width: 100%;
+
+        button {
+            flex: 1;
+        }
+    }
+
+    .back-to-list a {
+        width: 100%;
+        justify-content: center;
+    }
+}

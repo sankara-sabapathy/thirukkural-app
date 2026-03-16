@@ -6,7 +6,7 @@ A modern, enterprise-grade web application to explore the Thirukkural, built wit
 
 This project uses a **Serverless Architecture** on AWS:
 
-*   **Frontend**: Angular hosted on **S3** and served via **CloudFront** (CDN), with static pre-rendering for Kural detail routes.
+*   **Frontend**: Angular hosted on **S3** and served via **CloudFront** (CDN), with static pre-rendering for Kural and Adhigaram detail routes.
 *   **Backend**: AWS Lambda (Node.js) & API Gateway.
 *   **Database**: DynamoDB (Single-table design principles).
 *   **Auth**: Amazon Cognito (User Pools with Google Identity Provider).
@@ -116,7 +116,7 @@ export UNSUBSCRIBE_SECRET="your-random-hex-string"
 
 ### 4. Build Frontend
 
-The CDK stack will deploy the built artifacts from the frontend directory. The frontend now uses a local vendored Thirukkural dataset plus a custom SSG pipeline for Kural pages.
+The CDK stack will deploy the built artifacts from the frontend directory. The frontend now uses a local vendored Thirukkural dataset plus a custom SSG pipeline for Kural and Adhigaram pages.
 
 **Dataset source**
 - Source snapshot: `data/thirukkural/allKural.json`
@@ -133,7 +133,7 @@ The CDK stack will deploy the built artifacts from the frontend directory. The f
   cd frontend
   npm run build
   ```
-- SEO build with prerendered Kural pages and sitemap:
+- SEO build with prerendered Kural pages, Adhigaram pages, and sitemap:
   ```bash
   cd frontend
   npm run build:ssg
@@ -230,8 +230,8 @@ npx playwright show-report
 
 **E2E Test Coverage:**
 - Homepage loading and title verification
-- Hero section rendering
-- Navigation between pages
+- Adhigaram page loading and chapter-to-kural navigation
+- Kural detail backlink to the correct Adhigaram page
 - Cross-browser testing (Chromium, Firefox, WebKit)
 - Mobile viewport testing (Pixel 5, iPhone 12)
 

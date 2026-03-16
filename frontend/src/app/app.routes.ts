@@ -13,6 +13,10 @@ export const routes: Routes = [
     { path: 'contact', loadComponent: () => import('./pages/contact/contact.component').then(m => m.ContactComponent) },
     { path: 'kurals', loadComponent: () => import('./pages/kural-list/kural-list.component').then(m => m.KuralListComponent) },
     {
+        path: 'adhigaram/:id',
+        loadComponent: () => import('./pages/adhigaram-detail/adhigaram-detail.component').then(m => m.AdhigaramDetailComponent)
+    },
+    {
         path: 'kural/:id',
         loadComponent: () => import('./pages/kural-detail/kural-detail.component').then(m => m.KuralDetailComponent)
     },

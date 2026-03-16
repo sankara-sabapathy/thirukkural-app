@@ -4,6 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve --ssl",
+    "start:e2e": "ng serve --host 127.0.0.1 --ssl=false",
     "config": "node scripts/set-env.js",
     "build": "ng build",
     "build:ssg": "ng build && npm run prerender && npm run generate-sitemap",

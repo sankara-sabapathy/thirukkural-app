@@ -3,6 +3,7 @@ import * as express from 'express';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { getAdhigaramRoutes, loadAdhigarams } from './adhigaram-utils';
 
 const DIST_FOLDER = path.join(process.cwd(), 'dist/frontend/browser');
 const PORT = 4200;
@@ -16,6 +17,8 @@ const KURAL_END = clampRouteNumber(process.env.PRERENDER_KURAL_END ?? '1330');
 const INCLUDE_HOME_ROUTE = process.env.PRERENDER_INCLUDE_HOME !== 'false';
 const BLOCKED_RESOURCE_TYPES = new Set(['font', 'image', 'media']);
 const BLOCKED_URL_PATTERNS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'google-analytics.com', 'googletagmanager.com'];
+const ADHIGARAMS = loadAdhigarams();
+const ADHIGARAM_ROUTES = getAdhigaramRoutes();
 
 type RouteJob = {
   index: number;
@@ -42,6 +45,8 @@ function getRoutesToPrerender(): string[] {
   if (INCLUDE_HOME_ROUTE) {
     routes.push('/');
   }
+
+  routes.push(...ADHIGARAM_ROUTES);
 
   for (let i = KURAL_START; i <= KURAL_END; i++) {
     routes.push(`/kural/${i}`);
@@ -121,6 +126,20 @@ async function navigateWithinApp(page: Page, route: string): Promise<void> {
 
 async function verifyRenderedRoute(page: Page, route: string): Promise<void> {
   const expectedCanonicalUrl = `https://thirukkural.site${route}`;
+
+  if (route.startsWith('/adhigaram/')) {
+    await page.waitForSelector('.adhigaram-content', { timeout: ROUTE_READY_TIMEOUT_MS });
+    await page.waitForFunction(
+      (url) => {
+        const canonicalUrl = document.querySelector("link[rel='canonical']")?.getAttribute('href');
+        const structuredData = document.getElementById('structured-data-adhigaram')?.textContent ?? '';
+        return canonicalUrl === url && structuredData.length > 0;
+      },
+      { timeout: ROUTE_READY_TIMEOUT_MS },
+      expectedCanonicalUrl
+    );
+    return;
+  }
 
   if (!route.startsWith('/kural/')) {
     await page.waitForSelector('app-root', { timeout: ROUTE_READY_TIMEOUT_MS });
@@ -291,6 +310,14 @@ async function runPrerender(): Promise<void> {
       if (generatedKuralCount !== 1330) {
         throw new Error(`Expected 1330 prerendered kural directories, found ${generatedKuralCount}`);
       }
+    }
+
+    const generatedAdhigaramCount = fs
+      .readdirSync(path.join(DIST_FOLDER, 'adhigaram'), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory()).length;
+
+    if (generatedAdhigaramCount !== ADHIGARAMS.length) {
+      throw new Error(`Expected ${ADHIGARAMS.length} prerendered adhigaram directories, found ${generatedAdhigaramCount}`);
     }
 
     console.log('Prerendering complete.');
