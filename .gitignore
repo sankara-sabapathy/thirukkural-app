@@ -44,7 +44,9 @@ implementation_plan.md
 
 *thirukkural-data
 *thirukkural-data/*
-allKural.json
+!data/
+!data/thirukkural/
+!data/thirukkural/allKural.json
 
 AGENT_RULES.md
 
