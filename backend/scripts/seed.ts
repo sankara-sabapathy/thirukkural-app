@@ -4,14 +4,24 @@ import * as path from 'path';
 
 const ddb = new DynamoDBClient({});
 const DATA_URL = 'https://raw.githubusercontent.com/sankara-sabapathy/thirukkural-dataset/main/allKural.json';
+const LOCAL_DATA_PATH = path.join(__dirname, '../../data/thirukkural/allKural.json');
 
-async function main() {
+async function loadDataset() {
+    if (fs.existsSync(LOCAL_DATA_PATH)) {
+        console.log(`Loading dataset from local file ${LOCAL_DATA_PATH}...`);
+        return JSON.parse(fs.readFileSync(LOCAL_DATA_PATH, 'utf-8'));
+    }
+
     console.log(`Fetching dataset from ${DATA_URL}...`);
     const response = await fetch(DATA_URL);
     if (!response.ok) {
         throw new Error(`Failed to fetch dataset: ${response.statusText}`);
     }
-    const json = await response.json() as any;
+    return response.json() as Promise<any>;
+}
+
+async function main() {
+    const json = await loadDataset();
 
     // The dataset has a root property "allKural" which is an array
     const kurals = json.allKural;

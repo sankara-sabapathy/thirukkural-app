@@ -6,7 +6,7 @@ A modern, enterprise-grade web application to explore the Thirukkural, built wit
 
 This project uses a **Serverless Architecture** on AWS:
 
-*   **Frontend**: Angular (SPA) hosted on **S3** and served via **CloudFront** (CDN).
+*   **Frontend**: Angular hosted on **S3** and served via **CloudFront** (CDN), with static pre-rendering for Kural detail routes.
 *   **Backend**: AWS Lambda (Node.js) & API Gateway.
 *   **Database**: DynamoDB (Single-table design principles).
 *   **Auth**: Amazon Cognito (User Pools with Google Identity Provider).
@@ -116,13 +116,34 @@ export UNSUBSCRIBE_SECRET="your-random-hex-string"
 
 ### 4. Build Frontend
 
-The CDK stack will deploy the built artifacts from the frontend directory. You must build the Angular app first.
+The CDK stack will deploy the built artifacts from the frontend directory. The frontend now uses a local vendored Thirukkural dataset plus a custom SSG pipeline for Kural pages.
+
+**Dataset source**
+- Source snapshot: `data/thirukkural/allKural.json`
+- Generated frontend assets: `frontend/public/data/thirukkural/*.json`
+- Refresh generated chunk files after updating the source snapshot:
+  ```bash
+  cd frontend
+  npm run sync:kural-data
+  ```
+
+**Build options**
+- Standard SPA build:
+  ```bash
+  cd frontend
+  npm run build
+  ```
+- SEO build with prerendered Kural pages and sitemap:
+  ```bash
+  cd frontend
+  npm run build:ssg
+  ```
 
 ```bash
 cd frontend
 npm run build
 ```
-*Ensure the build output is located at `frontend/dist/thirukkural-app`.*
+*Current build output is `frontend/dist/frontend/browser`.*
 
 ### 5. Deploy Infrastructure
 
@@ -166,6 +187,8 @@ Populate the DynamoDB table with the Thirukkural dataset.
 cd backend
 npx ts-node scripts/seed.ts
 ```
+
+If `data/thirukkural/allKural.json` exists, the seed script uses the local vendored dataset first and only falls back to the GitHub raw URL when the local file is missing.
 
 ## 🧪 Testing
 

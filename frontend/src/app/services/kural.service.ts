@@ -52,7 +52,7 @@ export interface SearchIndexItem {
     providedIn: 'root'
 })
 export class KuralService {
-    private readonly DATA_BASE_URL = 'https://raw.githubusercontent.com/sankara-sabapathy/thirukkural-dataset/main/thirukkural-data';
+    private readonly DATA_BASE_URL = '/data/thirukkural';
     private readonly CHUNK_SIZE = 100;
 
     private chunkCache = new Map<string, Kural[]>();

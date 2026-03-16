@@ -9,8 +9,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { KuralService, Kural } from '../../services/kural.service';
 import { switchMap, map, tap, catchError, distinctUntilChanged, shareReplay } from 'rxjs/operators';
 import { Observable, of, merge } from 'rxjs';
-import { Meta, Title } from '@angular/platform-browser';
-import html2canvas from 'html2canvas';
+import { SeoService } from '../../services/seo.service';
 import { KURAL_FILTER_MAPPING } from '../kural-list/kural-filter-mapping';
 
 // Helper for JSON-LD structured data
@@ -49,8 +48,7 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
         private kuralService: KuralService,
         private snackBar: MatSnackBar,
         private cdr: ChangeDetectorRef,
-        private titleService: Title,
-        private metaService: Meta,
+        private seoService: SeoService,
         @Inject(DOCUMENT) private doc: Document
     ) { }
 
@@ -109,39 +107,22 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
     }
 
     updateMetaTags(kural: Kural): void {
-        const title = `Thirukkural #${kural.number} - ${kural.translation.substring(0, 50)}... | Thirukkural Daily`;
-        this.titleService.setTitle(title);
-
+        const title = `Thirukkural #${kural.number} - ${kural.translation.substring(0, 50)}...`;
         const description = `Read Thirukkural ${kural.number} with Tamil text, English translation, and meanings by Mu. Varadarajan, Kalaignar, and Solomon Pappaiya.`;
         const keywords = `Thirukkural ${kural.number}, Tirukkural ${kural.number}, ${kural.pal_tr}, ${kural.iyal_tr}, ${kural.adikaram_tr}, Thiruvalluvar, Tamil wisdom`;
         const url = `https://thirukkural.site/kural/${kural.number}`;
 
-        this.metaService.updateTag({ name: 'description', content: description });
-        this.metaService.updateTag({ name: 'keywords', content: keywords });
-
-        // OpenGraph Meta Tags
-        this.metaService.updateTag({ property: 'og:title', content: title });
-        this.metaService.updateTag({ property: 'og:description', content: description });
-        this.metaService.updateTag({ property: 'og:url', content: url });
-
-        // Twitter Meta Tags
-        this.metaService.updateTag({ name: 'twitter:title', content: title });
-        this.metaService.updateTag({ name: 'twitter:description', content: description });
+        this.seoService.generateTags({
+           title,
+           description,
+           keywords,
+           url
+        });
 
         this.injectStructuredData(kural);
     }
 
     injectStructuredData(kural: Kural): void {
-        const scriptId = 'structured-data-kural';
-        let scriptTag = this.doc.getElementById(scriptId) as HTMLScriptElement;
-
-        if (!scriptTag) {
-            scriptTag = this.doc.createElement('script');
-            scriptTag.id = scriptId;
-            scriptTag.setAttribute('type', 'application/ld+json');
-            this.doc.head.appendChild(scriptTag);
-        }
-
         const explanation = this.getBestExplanation(kural);
 
         const jsonLd = {
@@ -177,7 +158,7 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
             };
         }
 
-        scriptTag.text = JSON.stringify(jsonLd);
+        this.seoService.setStructuredData(jsonLd);
     }
 
     previousKural(): void {
@@ -283,6 +264,7 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
             // Wait a moment for any DOM updates and ensure hidden element is rendered
             await new Promise(resolve => setTimeout(resolve, 100));
 
+            const html2canvas = (await import('html2canvas')).default;
             const canvas = await html2canvas(this.captureArea.nativeElement, {
                 useCORS: true,
                 scale: 3, // HD Quality

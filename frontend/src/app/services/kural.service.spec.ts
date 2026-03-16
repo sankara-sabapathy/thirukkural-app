@@ -37,7 +37,7 @@ describe('KuralService', () => {
             expect(kural?.line1).toBe('Test Line 1');
         });
 
-        const req = httpMock.expectOne(`https://raw.githubusercontent.com/sankara-sabapathy/thirukkural-dataset/main/thirukkural-data/${chunkId}.json`);
+        const req = httpMock.expectOne(`/data/thirukkural/${chunkId}.json`);
         expect(req.request.method).toBe('GET');
         req.flush([dummyKural]);
     });
@@ -51,6 +51,6 @@ describe('KuralService', () => {
             expect(kural).toBeUndefined();
         });
 
-        httpMock.expectNone('https://raw.githubusercontent.com/sankara-sabapathy/thirukkural-dataset/main/thirukkural-data/1-100.json');
+        httpMock.expectNone('/data/thirukkural/1-100.json');
     });
 });

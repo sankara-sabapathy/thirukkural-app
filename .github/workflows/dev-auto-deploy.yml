@@ -168,8 +168,11 @@ jobs:
         # Replace placeholders in environment.dev.ts (used by 'development' config)
         envsubst < src/environments/environment.dev.ts > src/environments/environment.dev.ts.tmp && mv src/environments/environment.dev.ts.tmp src/environments/environment.dev.ts
 
+    - name: Sync Local Kural Data
+      run: npm run sync:kural-data
+
     - name: Build (Development Config)
-      run: npm run build -- --configuration development
+      run: npm run build:ssg:development
 
     - name: Sync to S3
       run: |

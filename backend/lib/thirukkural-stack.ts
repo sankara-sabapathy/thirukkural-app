@@ -482,6 +482,18 @@ export class ThirukkuralStack extends cdk.Stack {
                 function: basicAuthFn,
                 eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
             });
+        } else {
+            const uriRewriteFn = new cloudfront.Function(this, 'UriRewriteFn', {
+                code: cloudfront.FunctionCode.fromFile({
+                    filePath: path.join(__dirname, '../src/cloudfront/uri-rewrite.js'),
+                }),
+                runtime: cloudfront.FunctionRuntime.JS_2_0,
+            });
+
+            functionAssociations.push({
+                function: uriRewriteFn,
+                eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+            });
         }
 
         const distribution = new cloudfront.Distribution(this, 'WebsiteDistribution', {

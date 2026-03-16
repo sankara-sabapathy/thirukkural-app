@@ -1,11 +1,19 @@
 import { Component, OnInit } from '@angular/core';
-import { Router, NavigationEnd, RouterOutlet } from '@angular/router';
+import { Router, NavigationEnd, RouterOutlet, ActivatedRoute } from '@angular/router';
 import { HeaderComponent } from './components/header/header.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { PwaInstallBannerComponent } from './components/pwa-install-banner/pwa-install-banner.component';
-import { filter } from 'rxjs/operators';
+import { filter, map, mergeMap } from 'rxjs/operators';
 import { SwPush } from '@angular/service-worker';
 import { environment } from '../environments/environment';
+import { SeoService } from './services/seo.service';
+
+type PrerenderWindow = Window & {
+    __PRERENDER__?: boolean;
+    __PRERENDER_CONTROLLER__?: {
+        navigate: (url: string) => Promise<boolean>;
+    };
+};
 
 @Component({
     selector: 'app-root',
@@ -61,18 +69,48 @@ import { environment } from '../environments/environment';
 export class AppComponent implements OnInit {
     title = 'frontend';
     telegramUrl = environment.telegramChannelUrl;
+    private readonly isPrerender =
+        typeof window !== 'undefined' && (window as PrerenderWindow).__PRERENDER__ === true;
 
     constructor(
         private router: Router,
-        private swPush: SwPush
-    ) { }
+        private activatedRoute: ActivatedRoute,
+        private swPush: SwPush,
+        private seoService: SeoService
+    ) {
+        if (this.isPrerender) {
+            (window as PrerenderWindow).__PRERENDER_CONTROLLER__ = {
+                navigate: (url: string) => this.router.navigateByUrl(url, { replaceUrl: true })
+            };
+        }
+    }
 
     ngOnInit() {
-        // Scroll to top on navigation
+        // Scroll to top on navigation and set Base SEO
         this.router.events.pipe(
-            filter(event => event instanceof NavigationEnd)
-        ).subscribe(() => {
+            filter(event => event instanceof NavigationEnd),
+            map(() => this.activatedRoute),
+            map(route => {
+                while (route.firstChild) route = route.firstChild;
+                return route;
+            }),
+            filter(route => route.outlet === 'primary'),
+            mergeMap(route => route.data)
+        ).subscribe((event: any) => {
             window.scrollTo(0, 0);
+            
+            // Set base Canonical URL on every route change
+            const currentUrl = 'https://thirukkural.site' + this.router.url.split('?')[0];
+            this.seoService.updateCanonicalUrl(currentUrl);
+            
+            // Apply default titles and metadata configured in route data
+            if (event['seo']) {
+              this.seoService.generateTags({
+                 title: event['seo'].title || 'Home',
+                 description: event['seo'].description || 'Discover the timeless wisdom of Thirukkural.',
+                 url: currentUrl
+              });
+            }
         });
 
         // Handle push notification clicks

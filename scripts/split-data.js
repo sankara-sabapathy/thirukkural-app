@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const INPUT_FILE = path.join(__dirname, '../allKural.json');
-const OUTPUT_DIR = path.join(__dirname, '../thirukkural-data');
+const INPUT_FILE = path.join(__dirname, '../data/thirukkural/allKural.json');
+const OUTPUT_DIR = path.join(__dirname, '../frontend/public/data/thirukkural');
 const CHUNK_SIZE = 100;
 
 function splitData() {
@@ -26,7 +26,13 @@ function splitData() {
 
     // Create output directory
     if (!fs.existsSync(OUTPUT_DIR)) {
-        fs.mkdirSync(OUTPUT_DIR);
+        fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+    }
+
+    for (const existingFile of fs.readdirSync(OUTPUT_DIR)) {
+        if (existingFile.endsWith('.json')) {
+            fs.unlinkSync(path.join(OUTPUT_DIR, existingFile));
+        }
     }
 
     // Create chunks
@@ -37,7 +43,7 @@ function splitData() {
         const end = Math.min(i + CHUNK_SIZE, allKural.length);
         const fileName = `${start}-${end}.json`;
 
-        fs.writeFileSync(path.join(OUTPUT_DIR, fileName), JSON.stringify(chunk, null, 2));
+        fs.writeFileSync(path.join(OUTPUT_DIR, fileName), JSON.stringify(chunk));
         console.log(`Created ${fileName}`);
         chunks.push(fileName);
     }
@@ -55,9 +61,9 @@ function splitData() {
     }));
 
     fs.writeFileSync(path.join(OUTPUT_DIR, 'search-index.json'), JSON.stringify(searchIndex));
-    console.log('Created search-index.json');
+    console.log(`Created search-index.json in ${OUTPUT_DIR}`);
 
-    console.log('Done! Upload the "thirukkural-data" folder to your GitHub repository.');
+    console.log('Done! Commit the dataset source and generated frontend data assets together.');
 }
 
 splitData();
