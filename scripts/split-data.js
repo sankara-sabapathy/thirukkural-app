@@ -20,12 +20,11 @@ function validateKuralSequence(allKural) {
         throw new Error(`Expected ${EXPECTED_KURAL_COUNT} unique Kural numbers, found ${uniqueNumbers.size}.`);
     }
 
-    const sortedNumbers = [...numbers].sort((left, right) => left - right);
-    const invalidNumber = sortedNumbers.find((value, index) => value !== index + 1);
-    if (invalidNumber !== undefined) {
+    const invalidIndex = numbers.findIndex((value, index) => value !== index + 1);
+    if (invalidIndex !== -1) {
         throw new Error(
-            `Kural numbering is not sequential from 1 to ${EXPECTED_KURAL_COUNT}. ` +
-            `Found ${invalidNumber} where ${sortedNumbers.indexOf(invalidNumber) + 1} was expected.`
+            `Kural numbering is out of order at position ${invalidIndex + 1}. ` +
+            `Expected ${invalidIndex + 1}, found ${numbers[invalidIndex]}.`
         );
     }
 }

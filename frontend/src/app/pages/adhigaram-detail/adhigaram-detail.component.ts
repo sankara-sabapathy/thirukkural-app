@@ -31,6 +31,7 @@ interface AdhigaramFaqItem {
 })
 export class AdhigaramDetailComponent implements OnInit, OnDestroy {
     readonly totalAdhigarams = 133;
+    private readonly baseUrl = 'https://thirukkural.site';
 
     adhigaram$: Observable<AdhigaramPageData | undefined> = of(undefined);
     faqItems: AdhigaramFaqItem[] = [];
@@ -82,11 +83,12 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
                         console.error('Error fetching adhigaram:', error);
                         this.loading = false;
                         this.faqItems = [];
+                        this.seoService.removeStructuredData('structured-data-adhigaram');
                         return of(undefined);
                     })
                 );
             }),
-            shareReplay(1)
+            shareReplay({ bufferSize: 1, refCount: true })
         );
     }
 
@@ -118,7 +120,7 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
             adhigaram.iyal_tr,
             adhigaram.pal_tr
         ].filter(Boolean).join(', ');
-        const url = `https://thirukkural.site/adhigaram/${adhigaram.id}`;
+        const url = `${this.baseUrl}/adhigaram/${adhigaram.id}`;
 
         this.seoService.generateTags({
             title,
@@ -131,11 +133,10 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
     }
 
     private injectStructuredData(adhigaram: AdhigaramPageData, url: string): void {
-        const faqItems = this.buildFaqItems(adhigaram);
         const itemListElements = adhigaram.kurals.map((kural, index) => ({
             '@type': 'ListItem',
             position: index + 1,
-            url: `https://thirukkural.site/kural/${kural.number}`,
+            url: `${this.baseUrl}/kural/${kural.number}`,
             name: `Thirukkural ${kural.number}`
         }));
 
@@ -150,7 +151,7 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
                     isPartOf: {
                         '@type': 'WebSite',
                         name: 'Thirukkural Daily',
-                        url: 'https://thirukkural.site'
+                        url: this.baseUrl
                     },
                     about: [
                         { '@type': 'Thing', name: adhigaram.pal_tr },
@@ -168,7 +169,7 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
                     '@type': 'FAQPage',
                     '@id': `${url}#faq`,
                     url: `${url}#faq`,
-                    mainEntity: faqItems.map((faq) => ({
+                    mainEntity: this.faqItems.map((faq) => ({
                         '@type': 'Question',
                         name: faq.question,
                         acceptedAnswer: {
@@ -184,13 +185,13 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
                             '@type': 'ListItem',
                             position: 1,
                             name: 'Home',
-                            item: 'https://thirukkural.site/'
+                            item: `${this.baseUrl}/`
                         },
                         {
                             '@type': 'ListItem',
                             position: 2,
                             name: 'Kurals',
-                            item: 'https://thirukkural.site/kurals'
+                            item: `${this.baseUrl}/kurals`
                         },
                         {
                             '@type': 'ListItem',
@@ -225,7 +226,7 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
             {
                 question: `Which Kurals are included in Adhigaram ${adhigaram.id}?`,
                 answer:
-                    `This chapter contains 10 Kurals, from Thirukkural ${adhigaram.start} to ` +
+                    `This chapter contains ${adhigaram.kurals.length} Kurals, from Thirukkural ${adhigaram.start} to ` +
                     `Thirukkural ${adhigaram.end}.`
             },
             {

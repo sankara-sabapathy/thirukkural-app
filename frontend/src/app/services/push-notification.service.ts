@@ -75,7 +75,8 @@ export class PushNotificationService {
             // Verify with SwPush subscription
             try {
                 if (!this.swPush) {
-                    return true;
+                    localStorage.removeItem(this.STORAGE_KEY);
+                    return false;
                 }
 
                 const subscription = await firstValueFrom(this.swPush.subscription);
@@ -83,8 +84,8 @@ export class PushNotificationService {
                     return true;
                 }
             } catch {
-                // SwPush not available, rely on localStorage
-                return true;
+                localStorage.removeItem(this.STORAGE_KEY);
+                return false;
             }
         }
 

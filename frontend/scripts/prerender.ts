@@ -11,11 +11,15 @@ const INCLUDE_HOME_ROUTE = process.env.PRERENDER_INCLUDE_HOME !== 'false';
 const INCLUDE_LIBRARY_ROUTE = process.env.PRERENDER_INCLUDE_LIBRARY !== 'false';
 
 function clampRouteNumber(value: string): number {
-  const parsedValue = Number.parseInt(value, 10);
-  if (Number.isNaN(parsedValue)) {
-    return 1;
+  const normalizedValue = value.trim();
+  if (!/^\d+$/.test(normalizedValue)) {
+    throw new Error(
+      `Invalid prerender Kural route number "${value}". ` +
+      'Use a whole number between 1 and 1330.'
+    );
   }
 
+  const parsedValue = Number.parseInt(normalizedValue, 10);
   return Math.min(1330, Math.max(1, parsedValue));
 }
 

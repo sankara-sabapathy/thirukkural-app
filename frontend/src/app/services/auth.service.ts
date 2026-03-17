@@ -56,7 +56,14 @@ export class AuthService {
         if (this.isLocalhost() && !localStorage.getItem('real_auth')) {
             const storedUser = localStorage.getItem('dummy_user');
             if (storedUser) {
-                this.zone.run(() => this.userSubject.next(JSON.parse(storedUser)));
+                try {
+                    const parsedUser = JSON.parse(storedUser);
+                    this.zone.run(() => this.userSubject.next(parsedUser));
+                } catch (error) {
+                    console.warn('Failed to parse localhost dummy user. Clearing stored auth state.', error);
+                    localStorage.removeItem('dummy_user');
+                    this.zone.run(() => this.userSubject.next(null));
+                }
             }
             return;
         }

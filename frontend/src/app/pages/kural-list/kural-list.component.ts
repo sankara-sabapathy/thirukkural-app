@@ -86,6 +86,7 @@ export class KuralListComponent implements OnInit {
             takeUntilDestroyed(this.destroyRef)
         ).subscribe((query) => {
             this.searchQuery = query;
+            this.pageIndex = 0;
             this.applyFilters(true);
         });
     }
