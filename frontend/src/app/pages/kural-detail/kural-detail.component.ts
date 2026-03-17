@@ -65,31 +65,21 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
             distinctUntilChanged(), // Prevent duplicate emissions with the same ID
             switchMap(id => {
                 this.currentNumber = id;
-                // Only update loading if it needs to change, and defer the change
-                const wasLoading = this.loading;
-                if (!wasLoading) {
-                    Promise.resolve().then(() => {
-                        this.loading = true;
-                        this.cdr.markForCheck();
-                    });
-                }
+                this.loading = !this.kuralService.hasPrerenderedKural(id);
                 return this.kuralService.getKural(id).pipe(
                     tap((kural) => {
-                        // Defer setting loading to false
-                        Promise.resolve().then(() => {
-                            this.loading = false;
-                            this.cdr.markForCheck();
-                        });
+                        this.loading = false;
+                        this.syncPrerenderRouteData(kural);
+                        this.cdr.markForCheck();
                         if (kural) {
                             this.updateMetaTags(kural);
                         }
                     }),
                     catchError(error => {
                         console.error('Error fetching kural:', error);
-                        Promise.resolve().then(() => {
-                            this.loading = false;
-                            this.cdr.markForCheck();
-                        });
+                        this.loading = false;
+                        this.syncPrerenderRouteData(undefined);
+                        this.cdr.markForCheck();
                         return of(undefined);
                     })
                 );
@@ -171,6 +161,20 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
 
     getAdhigaramId(kuralNumber: number): number {
         return Math.floor((kuralNumber - 1) / 10) + 1;
+    }
+
+    private syncPrerenderRouteData(kural: Kural | undefined): void {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const target = window as Window & {
+            __PRERENDER_ROUTE_DATA__?: { type: 'kural'; payload: Kural } | null;
+        };
+
+        target.__PRERENDER_ROUTE_DATA__ = kural
+            ? { type: 'kural', payload: kural }
+            : null;
     }
 
     private writeToClipboard(text: string, onSuccess: () => void, onError: (err: any) => void): void {

@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { Inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, map, tap, catchError, switchMap } from 'rxjs';
 
@@ -67,6 +68,10 @@ export interface AdhigaramPageData extends AdhigaramSummary {
     kurals: Kural[];
 }
 
+type PrerenderRouteSnapshot =
+    | { type: 'kural'; payload: Kural }
+    | { type: 'adhigaram'; payload: AdhigaramPageData };
+
 @Injectable({
     providedIn: 'root'
 })
@@ -77,8 +82,12 @@ export class KuralService {
     private chunkCache = new Map<string, Kural[]>();
     private searchIndex: SearchIndexItem[] | null = null;
     private adhigarams: AdhigaramSummary[] | null = null;
+    private prerenderRouteSnapshot: PrerenderRouteSnapshot | null | undefined = undefined;
 
-    constructor(private http: HttpClient) { }
+    constructor(
+        private http: HttpClient,
+        @Inject(DOCUMENT) private document: Document
+    ) { }
 
     /**
      * Fetches a specific Kural by its number (1-1330)
@@ -86,6 +95,11 @@ export class KuralService {
     getKural(number: number): Observable<Kural | undefined> {
         if (number < 1 || number > 1330) {
             return of(undefined);
+        }
+
+        const prerenderedKural = this.consumePrerenderedKural(number);
+        if (prerenderedKural) {
+            return of(prerenderedKural);
         }
 
         const chunkId = this.getChunkId(number);
@@ -138,6 +152,11 @@ export class KuralService {
             return of(undefined);
         }
 
+        const prerenderedAdhigaram = this.consumePrerenderedAdhigaram(id);
+        if (prerenderedAdhigaram) {
+            return of(prerenderedAdhigaram);
+        }
+
         return this.getAdhigarams().pipe(
             switchMap(adhigarams => {
                 const adhigaram = adhigarams.find(item => item.id === id);
@@ -165,6 +184,16 @@ export class KuralService {
         );
     }
 
+    hasPrerenderedKural(number: number): boolean {
+        const snapshot = this.getPrerenderRouteSnapshot();
+        return snapshot?.type === 'kural' && snapshot.payload.number === number;
+    }
+
+    hasPrerenderedAdhigaram(id: number): boolean {
+        const snapshot = this.getPrerenderRouteSnapshot();
+        return snapshot?.type === 'adhigaram' && snapshot.payload.id === id;
+    }
+
     /**
      * Determines the chunk filename for a given Kural number
      * e.g., 1 -> "1-100", 150 -> "101-200"
@@ -187,5 +216,54 @@ export class KuralService {
                 this.chunkCache.set(chunkId, chunk);
             })
         );
+    }
+
+    private getPrerenderRouteSnapshot(): PrerenderRouteSnapshot | null {
+        if (this.prerenderRouteSnapshot !== undefined) {
+            return this.prerenderRouteSnapshot;
+        }
+
+        const script = this.document.getElementById('prerender-route-data');
+        if (!script?.textContent) {
+            this.prerenderRouteSnapshot = null;
+            return this.prerenderRouteSnapshot;
+        }
+
+        try {
+            this.prerenderRouteSnapshot = JSON.parse(script.textContent) as PrerenderRouteSnapshot;
+        } catch (error) {
+            console.error('Failed to parse prerender route snapshot', error);
+            this.prerenderRouteSnapshot = null;
+        }
+
+        return this.prerenderRouteSnapshot;
+    }
+
+    private clearPrerenderRouteSnapshot(): void {
+        const script = this.document.getElementById('prerender-route-data');
+        if (script) {
+            script.remove();
+        }
+        this.prerenderRouteSnapshot = null;
+    }
+
+    private consumePrerenderedKural(number: number): Kural | null {
+        const snapshot = this.getPrerenderRouteSnapshot();
+        if (snapshot?.type === 'kural' && snapshot.payload.number === number) {
+            this.clearPrerenderRouteSnapshot();
+            return snapshot.payload;
+        }
+
+        return null;
+    }
+
+    private consumePrerenderedAdhigaram(id: number): AdhigaramPageData | null {
+        const snapshot = this.getPrerenderRouteSnapshot();
+        if (snapshot?.type === 'adhigaram' && snapshot.payload.id === id) {
+            this.clearPrerenderRouteSnapshot();
+            return snapshot.payload;
+        }
+
+        return null;
     }
 }

@@ -30,6 +30,10 @@ type PrerenderController = {
   navigate: (url: string) => Promise<boolean>;
 };
 
+type RouteSnapshot =
+  | { type: 'kural'; payload: unknown }
+  | { type: 'adhigaram'; payload: unknown };
+
 function getBrowserLaunchArgs(): string[] {
   const args = ['--disable-dev-shm-usage', '--disable-service-worker'];
 
@@ -74,6 +78,28 @@ function getOutputPath(route: string): string {
   const routeDirectory = path.join(DIST_FOLDER, route);
   fs.mkdirSync(routeDirectory, { recursive: true });
   return path.join(routeDirectory, 'index.html');
+}
+
+function injectRouteSnapshot(html: string, snapshot: RouteSnapshot | null): string {
+  if (!snapshot) {
+    return html;
+  }
+
+  const serializedSnapshot = JSON.stringify(snapshot).replace(/</g, '\\u003c');
+  const snapshotScript = `<script id="prerender-route-data" type="application/json">${serializedSnapshot}</script>`;
+
+  if (html.includes('id="prerender-route-data"')) {
+    return html.replace(
+      /<script id="prerender-route-data" type="application\/json">[\s\S]*?<\/script>/,
+      snapshotScript
+    );
+  }
+
+  if (html.includes('</body>')) {
+    return html.replace('</body>', `${snapshotScript}</body>`);
+  }
+
+  return `${html}${snapshotScript}`;
 }
 
 async function configurePage(page: Page): Promise<void> {
@@ -192,7 +218,11 @@ async function renderRoute(page: Page, route: string): Promise<boolean> {
 
     await verifyRenderedRoute(page, route);
 
-    const html = await page.content();
+    const snapshot = await page.evaluate(() => {
+      return (globalThis as { __PRERENDER_ROUTE_DATA__?: RouteSnapshot | null }).__PRERENDER_ROUTE_DATA__ ?? null;
+    });
+
+    const html = injectRouteSnapshot(await page.content(), snapshot);
     fs.writeFileSync(getOutputPath(route), html);
     return true;
   } catch (error) {

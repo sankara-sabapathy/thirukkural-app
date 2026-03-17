@@ -50,11 +50,12 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
             distinctUntilChanged(),
             switchMap(id => {
                 this.currentId = Number.isInteger(id) ? id : 1;
-                this.loading = true;
+                this.loading = !this.kuralService.hasPrerenderedAdhigaram(this.currentId);
 
                 return this.kuralService.getAdhigaram(id).pipe(
                     tap((adhigaram) => {
                         this.loading = false;
+                        this.syncPrerenderRouteData(adhigaram);
 
                         if (adhigaram) {
                             this.updateMetaTags(adhigaram);
@@ -66,6 +67,7 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
                     catchError(error => {
                         console.error('Error fetching adhigaram:', error);
                         this.loading = false;
+                        this.syncPrerenderRouteData(undefined);
                         return of(undefined);
                     })
                 );
@@ -174,5 +176,19 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
         };
 
         this.seoService.setStructuredData(jsonLd, 'structured-data-adhigaram');
+    }
+
+    private syncPrerenderRouteData(adhigaram: AdhigaramPageData | undefined): void {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const target = window as Window & {
+            __PRERENDER_ROUTE_DATA__?: { type: 'adhigaram'; payload: AdhigaramPageData } | null;
+        };
+
+        target.__PRERENDER_ROUTE_DATA__ = adhigaram
+            ? { type: 'adhigaram', payload: adhigaram }
+            : null;
     }
 }
