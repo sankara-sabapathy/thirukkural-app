@@ -1,11 +1,13 @@
-import { Component, OnInit } from '@angular/core';
-import { Router, NavigationEnd, RouterOutlet } from '@angular/router';
+import { Component, Inject, OnInit, Optional, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { Router, NavigationEnd, RouterOutlet, ActivatedRoute } from '@angular/router';
 import { HeaderComponent } from './components/header/header.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { PwaInstallBannerComponent } from './components/pwa-install-banner/pwa-install-banner.component';
-import { filter } from 'rxjs/operators';
+import { filter, map, mergeMap } from 'rxjs/operators';
 import { SwPush } from '@angular/service-worker';
 import { environment } from '../environments/environment';
+import { SeoService } from './services/seo.service';
 
 @Component({
     selector: 'app-root',
@@ -61,29 +63,66 @@ import { environment } from '../environments/environment';
 export class AppComponent implements OnInit {
     title = 'frontend';
     telegramUrl = environment.telegramChannelUrl;
+    private readonly isBrowser: boolean;
 
     constructor(
         private router: Router,
-        private swPush: SwPush
-    ) { }
+        private activatedRoute: ActivatedRoute,
+        @Optional() private swPush: SwPush | null,
+        private seoService: SeoService,
+        @Inject(PLATFORM_ID) platformId: Object
+    ) {
+        this.isBrowser = isPlatformBrowser(platformId);
+    }
 
     ngOnInit() {
-        // Scroll to top on navigation
+        // Scroll to top on navigation and set Base SEO
         this.router.events.pipe(
-            filter(event => event instanceof NavigationEnd)
-        ).subscribe(() => {
-            window.scrollTo(0, 0);
+            filter(event => event instanceof NavigationEnd),
+            map(() => this.activatedRoute),
+            map(route => {
+                while (route.firstChild) route = route.firstChild;
+                return route;
+            }),
+            filter(route => route.outlet === 'primary'),
+            mergeMap(route => route.data)
+        ).subscribe((event: any) => {
+            if (this.isBrowser) {
+                window.scrollTo(0, 0);
+            }
+            
+            // Set base Canonical URL on every route change
+            const currentUrl = 'https://thirukkural.site' + this.router.url.split('?')[0];
+            
+            // Apply default titles and metadata configured in route data
+            if (event['seo']) {
+              this.seoService.generateTags({
+                 title: event['seo'].title || 'Home',
+                 description: event['seo'].description || 'Discover the timeless wisdom of Thirukkural.',
+                 keywords: event['seo'].keywords,
+                 robots: event['seo'].robots,
+                 type: event['seo'].type,
+                 author: event['seo'].author,
+                 image: event['seo'].image,
+                 url: currentUrl
+              });
+              return;
+            }
+
+            this.seoService.updateCanonicalUrl(currentUrl);
         });
 
         // Handle push notification clicks
-        this.setupNotificationClickHandler();
+        if (this.isBrowser) {
+            this.setupNotificationClickHandler();
+        }
     }
 
     /**
      * Listen for push notification clicks and navigate to the relevant kural
      */
     private setupNotificationClickHandler() {
-        if (!this.swPush.isEnabled) {
+        if (!this.swPush?.isEnabled) {
             return;
         }
 

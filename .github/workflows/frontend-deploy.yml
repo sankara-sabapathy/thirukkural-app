@@ -128,15 +128,23 @@ jobs:
         envsubst < src/environments/environment.prod.ts > src/environments/environment.prod.ts.tmp && mv src/environments/environment.prod.ts.tmp src/environments/environment.prod.ts
         envsubst < src/environments/environment.dev.ts > src/environments/environment.dev.ts.tmp && mv src/environments/environment.dev.ts.tmp src/environments/environment.dev.ts
 
+    - name: Sync Local Kural Data
+      run: npm run sync:kural-data
+
+    - name: Verify Kural Data
+      run: |
+        test -s ../data/thirukkural/allKural.json
+        test -s public/data/thirukkural/search-index.json
+        test -s public/data/thirukkural/adhigarams.json
+        test -s public/data/thirukkural/1-100.json
+
     - name: Build
       run: |
-        # Map stage to Angular configuration
-        # Assuming 'production' config for prod, 'development' for dev/others? 
-        # Or maybe create 'uat' config in angular.json later.
-        CONFIG="production" 
-        if [ "${{ inputs.stage }}" != "prod" ]; then CONFIG="development"; fi
-        
-        npm run build -- --configuration $CONFIG
+        if [ "${{ inputs.stage }}" = "prod" ]; then
+          npm run build:ssg:production
+        else
+          npm run build:ssg:development
+        fi
 
     - name: Sync to S3
       run: |

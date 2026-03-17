@@ -6,7 +6,7 @@ A modern, enterprise-grade web application to explore the Thirukkural, built wit
 
 This project uses a **Serverless Architecture** on AWS:
 
-*   **Frontend**: Angular (SPA) hosted on **S3** and served via **CloudFront** (CDN).
+*   **Frontend**: Angular hosted on **S3** and served via **CloudFront** (CDN), with static pre-rendering for Kural and Adhigaram detail routes.
 *   **Backend**: AWS Lambda (Node.js) & API Gateway.
 *   **Database**: DynamoDB (Single-table design principles).
 *   **Auth**: Amazon Cognito (User Pools with Google Identity Provider).
@@ -94,8 +94,6 @@ $env:GOOGLE_CLIENT_SECRET="your-google-client-secret"
 $env:VAPID_PUBLIC_KEY="BNxCpD0m...your-public-key..."
 $env:VAPID_PRIVATE_KEY="_HsT7zP9...your-private-key..."
 $env:VAPID_SUBJECT="mailto:your-email@example.com"
-$env:VAPID_PRIVATE_KEY="_HsT7zP9...your-private-key..."
-$env:VAPID_SUBJECT="mailto:your-email@example.com"
 # For Secure Unsubscribe
 $env:UNSUBSCRIBE_SECRET="your-random-hex-string"
 ```
@@ -109,20 +107,40 @@ export GOOGLE_CLIENT_SECRET="your-google-client-secret"
 export VAPID_PUBLIC_KEY="BNxCpD0m...your-public-key..."
 export VAPID_PRIVATE_KEY="_HsT7zP9...your-private-key..."
 export VAPID_SUBJECT="mailto:your-email@example.com"
-export VAPID_SUBJECT="mailto:your-email@example.com"
 # For Secure Unsubscribe
 export UNSUBSCRIBE_SECRET="your-random-hex-string"
 ```
 
 ### 4. Build Frontend
 
-The CDK stack will deploy the built artifacts from the frontend directory. You must build the Angular app first.
+The CDK stack will deploy the built artifacts from the frontend directory. The frontend now uses a local vendored Thirukkural dataset plus a custom SSG pipeline for Kural and Adhigaram pages.
+
+**Dataset source**
+- Source snapshot: `data/thirukkural/allKural.json`
+- Generated frontend assets: `frontend/public/data/thirukkural/*.json`
+- Refresh generated chunk files after updating the source snapshot:
+  ```bash
+  cd frontend
+  npm run sync:kural-data
+  ```
+
+**Build options**
+- Standard SPA build:
+  ```bash
+  cd frontend
+  npm run build
+  ```
+- SEO build with prerendered Kural pages, Adhigaram pages, and sitemap:
+  ```bash
+  cd frontend
+  npm run build:ssg
+  ```
 
 ```bash
 cd frontend
 npm run build
 ```
-*Ensure the build output is located at `frontend/dist/thirukkural-app`.*
+*Current build output is `frontend/dist/frontend/browser`.*
 
 ### 5. Deploy Infrastructure
 
@@ -167,6 +185,8 @@ cd backend
 npx ts-node scripts/seed.ts
 ```
 
+If `data/thirukkural/allKural.json` exists, the seed script uses the local vendored dataset first and only falls back to the GitHub raw URL when the local file is missing.
+
 ## 🧪 Testing
 
 This project includes a comprehensive enterprise-grade test suite with unit tests and end-to-end tests.
@@ -207,8 +227,8 @@ npx playwright show-report
 
 **E2E Test Coverage:**
 - Homepage loading and title verification
-- Hero section rendering
-- Navigation between pages
+- Adhigaram page loading and chapter-to-kural navigation
+- Kural detail backlink to the correct Adhigaram page
 - Cross-browser testing (Chromium, Firefox, WebKit)
 - Mobile viewport testing (Pixel 5, iPhone 12)
 

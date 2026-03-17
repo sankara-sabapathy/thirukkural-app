@@ -1,9 +1,96 @@
 const fs = require('fs');
 const path = require('path');
 
-const INPUT_FILE = path.join(__dirname, '../allKural.json');
-const OUTPUT_DIR = path.join(__dirname, '../thirukkural-data');
+const INPUT_FILE = path.join(__dirname, '../data/thirukkural/allKural.json');
+const OUTPUT_DIR = path.join(__dirname, '../frontend/public/data/thirukkural');
 const CHUNK_SIZE = 100;
+const EXPECTED_ADHIGARAMS = 133;
+const EXPECTED_KURAL_COUNT = 1330;
+const KURALS_PER_ADHIGARAM = 10;
+const GENERATED_JSON_PATTERN = /^(\d+-\d+|search-index|adhigarams)\.json$/;
+
+function validateKuralSequence(allKural) {
+    const numbers = allKural.map((kural) => Number(kural.number));
+
+    if (numbers.length !== EXPECTED_KURAL_COUNT) {
+        throw new Error(`Expected ${EXPECTED_KURAL_COUNT} Kurals, found ${numbers.length}.`);
+    }
+
+    const uniqueNumbers = new Set(numbers);
+    if (uniqueNumbers.size !== EXPECTED_KURAL_COUNT) {
+        throw new Error(`Expected ${EXPECTED_KURAL_COUNT} unique Kural numbers, found ${uniqueNumbers.size}.`);
+    }
+
+    const invalidIndex = numbers.findIndex((value, index) => value !== index + 1);
+    if (invalidIndex !== -1) {
+        throw new Error(
+            `Kural numbering is out of order at position ${invalidIndex + 1}. ` +
+            `Expected ${invalidIndex + 1}, found ${numbers[invalidIndex]}.`
+        );
+    }
+}
+
+function buildAdhigarams(allKural) {
+    const adhigarams = [];
+    let currentAdhigaram = null;
+
+    for (const kural of allKural) {
+        const kuralNumber = Number(kural.number);
+        const isNewAdhigaram =
+            currentAdhigaram === null ||
+            currentAdhigaram.adikaram_tr !== kural.adikaram_tr ||
+            currentAdhigaram.iyal_tr !== kural.iyal_tr ||
+            currentAdhigaram.pal_tr !== kural.pal_tr;
+
+        if (isNewAdhigaram) {
+            if (currentAdhigaram) {
+                adhigarams.push(currentAdhigaram);
+            }
+
+            currentAdhigaram = {
+                id: adhigarams.length + 1,
+                start: kuralNumber,
+                end: kuralNumber,
+                pal: kural.pal,
+                pal_tr: kural.pal_tr,
+                pal_tl: kural.pal_tl,
+                iyal: kural.iyal,
+                iyal_tr: kural.iyal_tr,
+                iyal_tl: kural.iyal_tl,
+                adikaram: kural.adikaram,
+                adikaram_tr: kural.adikaram_tr,
+                adikaram_tl: kural.adikaram_tl,
+                count: 1
+            };
+            continue;
+        }
+
+        currentAdhigaram.end = kuralNumber;
+        currentAdhigaram.count += 1;
+    }
+
+    if (currentAdhigaram) {
+        adhigarams.push(currentAdhigaram);
+    }
+
+    if (adhigarams.length !== EXPECTED_ADHIGARAMS) {
+        throw new Error(
+            `Expected ${EXPECTED_ADHIGARAMS} adhigarams, found ${adhigarams.length}.`
+        );
+    }
+
+    const invalidAdhigaram = adhigarams.find(
+        (adhigaram) => adhigaram.count !== KURALS_PER_ADHIGARAM
+    );
+
+    if (invalidAdhigaram) {
+        throw new Error(
+            `Adhigaram ${invalidAdhigaram.id} has ${invalidAdhigaram.count} kurals instead of ${KURALS_PER_ADHIGARAM}.`
+        );
+    }
+
+    return adhigarams.map(({ count, ...adhigaram }) => adhigaram);
+}
 
 function splitData() {
     console.log(`Reading data from ${INPUT_FILE}...`);
@@ -24,9 +111,18 @@ function splitData() {
 
     console.log(`Found ${allKural.length} Kurals.`);
 
+    validateKuralSequence(allKural);
+    const adhigarams = buildAdhigarams(allKural);
+
     // Create output directory
     if (!fs.existsSync(OUTPUT_DIR)) {
-        fs.mkdirSync(OUTPUT_DIR);
+        fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+    }
+
+    for (const existingFile of fs.readdirSync(OUTPUT_DIR)) {
+        if (GENERATED_JSON_PATTERN.test(existingFile)) {
+            fs.unlinkSync(path.join(OUTPUT_DIR, existingFile));
+        }
     }
 
     // Create chunks
@@ -37,7 +133,7 @@ function splitData() {
         const end = Math.min(i + CHUNK_SIZE, allKural.length);
         const fileName = `${start}-${end}.json`;
 
-        fs.writeFileSync(path.join(OUTPUT_DIR, fileName), JSON.stringify(chunk, null, 2));
+        fs.writeFileSync(path.join(OUTPUT_DIR, fileName), JSON.stringify(chunk));
         console.log(`Created ${fileName}`);
         chunks.push(fileName);
     }
@@ -55,9 +151,12 @@ function splitData() {
     }));
 
     fs.writeFileSync(path.join(OUTPUT_DIR, 'search-index.json'), JSON.stringify(searchIndex));
-    console.log('Created search-index.json');
+    console.log(`Created search-index.json in ${OUTPUT_DIR}`);
 
-    console.log('Done! Upload the "thirukkural-data" folder to your GitHub repository.');
+    fs.writeFileSync(path.join(OUTPUT_DIR, 'adhigarams.json'), JSON.stringify(adhigarams));
+    console.log(`Created adhigarams.json in ${OUTPUT_DIR}`);
+
+    console.log('Done! Commit the dataset source and generated frontend data assets together.');
 }
 
 splitData();

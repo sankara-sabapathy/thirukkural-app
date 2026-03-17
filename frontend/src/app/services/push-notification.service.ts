@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable, Optional, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { SwPush } from '@angular/service-worker';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
@@ -15,21 +16,25 @@ export class PushNotificationService {
     private readonly API_URL = environment.api.baseUrl + environment.api.endpoints.subscribe;
     private readonly STORAGE_KEY = 'push_subscribed';
     private readonly DEVICE_ID_KEY = 'device_id';
+    private readonly isBrowser: boolean;
 
     constructor(
-        private swPush: SwPush,
-        private http: HttpClient
-    ) { }
+        @Optional() private swPush: SwPush | null,
+        private http: HttpClient,
+        @Inject(PLATFORM_ID) platformId: Object
+    ) {
+        this.isBrowser = isPlatformBrowser(platformId);
+    }
 
     get isEnabled(): boolean {
-        return this.swPush.isEnabled;
+        return this.swPush?.isEnabled ?? false;
     }
 
     /**
      * Get the current notification permission status
      */
     getPermissionStatus(): NotificationPermissionStatus {
-        if (!('Notification' in window)) {
+        if (!this.isBrowser || !('Notification' in window)) {
             return 'unsupported';
         }
         return Notification.permission as NotificationPermissionStatus;
@@ -54,6 +59,10 @@ export class PushNotificationService {
      * Uses localStorage for quick state access combined with permission check
      */
     async isSubscribed(): Promise<boolean> {
+        if (!this.isBrowser) {
+            return false;
+        }
+
         // If permission is not granted, not subscribed
         if (!this.isGranted()) {
             localStorage.removeItem(this.STORAGE_KEY);
@@ -65,13 +74,21 @@ export class PushNotificationService {
         if (storedState === 'true') {
             // Verify with SwPush subscription
             try {
+                if (!this.swPush) {
+                    localStorage.removeItem(this.STORAGE_KEY);
+                    return false;
+                }
+
                 const subscription = await firstValueFrom(this.swPush.subscription);
                 if (subscription) {
                     return true;
                 }
+
+                localStorage.removeItem(this.STORAGE_KEY);
+                return false;
             } catch {
-                // SwPush not available, rely on localStorage
-                return true;
+                localStorage.removeItem(this.STORAGE_KEY);
+                return false;
             }
         }
 
@@ -79,6 +96,13 @@ export class PushNotificationService {
     }
 
     async subscribeToNotifications(): Promise<{ success: boolean; message: string }> {
+        if (!this.isBrowser) {
+            return {
+                success: false,
+                message: 'Push notifications are only available in the browser.'
+            };
+        }
+
         // Check if notifications are supported
         if (!('Notification' in window)) {
             return {
@@ -99,7 +123,7 @@ export class PushNotificationService {
         }
 
         // Check if service worker is enabled
-        if (!this.swPush.isEnabled) {
+        if (!this.swPush?.isEnabled) {
             return {
                 success: false,
                 message: 'Push notifications require a secure connection (HTTPS) and service worker support.'
@@ -148,9 +172,18 @@ export class PushNotificationService {
      * Unsubscribe from push notifications
      */
     async unsubscribeFromNotifications(): Promise<{ success: boolean; message: string }> {
+        if (!this.isBrowser) {
+            return {
+                success: false,
+                message: 'Push notifications are only available in the browser.'
+            };
+        }
+
         try {
             // Get current subscription
-            const subscription = await firstValueFrom(this.swPush.subscription);
+            const subscription = this.swPush
+                ? await firstValueFrom(this.swPush.subscription)
+                : null;
 
             if (subscription) {
                 // Unsubscribe from browser
@@ -191,6 +224,10 @@ export class PushNotificationService {
     }
 
     private getDeviceId(): string {
+        if (!this.isBrowser) {
+            return '';
+        }
+
         let deviceId = localStorage.getItem(this.DEVICE_ID_KEY);
         if (!deviceId) {
             deviceId = uuidv4();

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, map, tap, catchError } from 'rxjs';
+import { Observable, of, map, tap, catchError, switchMap } from 'rxjs';
 
 export interface Kural {
     number: number;
@@ -48,45 +48,51 @@ export interface SearchIndexItem {
     a: string; // adikaram
 }
 
+export interface AdhigaramSummary {
+    id: number;
+    start: number;
+    end: number;
+    pal: string;
+    pal_tr: string;
+    pal_tl?: string;
+    iyal: string;
+    iyal_tr: string;
+    iyal_tl?: string;
+    adikaram: string;
+    adikaram_tr: string;
+    adikaram_tl?: string;
+}
+
+export interface AdhigaramPageData extends AdhigaramSummary {
+    kurals: Kural[];
+}
+
 @Injectable({
     providedIn: 'root'
 })
 export class KuralService {
-    private readonly DATA_BASE_URL = 'https://raw.githubusercontent.com/sankara-sabapathy/thirukkural-dataset/main/thirukkural-data';
+    private readonly DATA_BASE_URL = '/data/thirukkural';
     private readonly CHUNK_SIZE = 100;
 
     private chunkCache = new Map<string, Kural[]>();
     private searchIndex: SearchIndexItem[] | null = null;
+    private adhigarams: AdhigaramSummary[] | null = null;
 
-    constructor(private http: HttpClient) { }
+    constructor(private http: HttpClient) {}
 
     /**
      * Fetches a specific Kural by its number (1-1330)
      */
     getKural(number: number): Observable<Kural | undefined> {
-        if (number < 1 || number > 1330) {
+        if (!Number.isInteger(number) || number < 1 || number > 1330) {
             return of(undefined);
         }
 
         const chunkId = this.getChunkId(number);
-
-        if (this.chunkCache.has(chunkId)) {
-            const chunk = this.chunkCache.get(chunkId)!;
-            const kural = chunk.find(k => k.number === number);
-            return of(kural);
-        }
-
-        const url = `${this.DATA_BASE_URL}/${chunkId}.json`;
-
-        return this.http.get<Kural[]>(url).pipe(
-            tap(chunk => {
-                this.chunkCache.set(chunkId, chunk);
-            }),
-            map(chunk => {
-                return chunk.find(k => k.number === number);
-            }),
+        return this.loadChunk(chunkId).pipe(
+            map(chunk => chunk.find(k => k.number === number)),
             catchError(err => {
-                console.error(`Failed to load chunk ${chunkId}`, err);
+                console.error(`Failed to load kural ${number}`, err);
                 return of(undefined);
             })
         );
@@ -100,13 +106,61 @@ export class KuralService {
             return of(this.searchIndex);
         }
 
-        const url = `${this.DATA_BASE_URL}/search-index.json`;
+        const url = this.getDataUrl('search-index.json');
 
         return this.http.get<SearchIndexItem[]>(url).pipe(
             tap(index => this.searchIndex = index),
             catchError(err => {
                 console.error('Failed to load search index', err);
                 return of([]);
+            })
+        );
+    }
+
+    getAdhigarams(): Observable<AdhigaramSummary[]> {
+        if (this.adhigarams) {
+            return of(this.adhigarams);
+        }
+
+        const url = this.getDataUrl('adhigarams.json');
+
+        return this.http.get<AdhigaramSummary[]>(url).pipe(
+            tap(adhigarams => this.adhigarams = adhigarams),
+            catchError(err => {
+                console.error('Failed to load adhigarams', err);
+                return of([]);
+            })
+        );
+    }
+
+    getAdhigaram(id: number): Observable<AdhigaramPageData | undefined> {
+        if (!Number.isInteger(id) || id < 1) {
+            return of(undefined);
+        }
+
+        return this.getAdhigarams().pipe(
+            switchMap(adhigarams => {
+                const adhigaram = adhigarams.find(item => item.id === id);
+                if (!adhigaram) {
+                    return of(undefined);
+                }
+
+                const chunkId = this.getChunkId(adhigaram.start);
+                return this.loadChunk(chunkId).pipe(
+                    map(chunk => ({
+                        ...adhigaram,
+                        kurals: chunk.filter(
+                            kural => kural.number >= adhigaram.start && kural.number <= adhigaram.end
+                        )
+                    })),
+                    map(adhigaramPage => (
+                        adhigaramPage.kurals.length > 0 ? adhigaramPage : undefined
+                    )),
+                    catchError(err => {
+                        console.error(`Failed to load adhigaram ${id}`, err);
+                        return of(undefined);
+                    })
+                );
             })
         );
     }
@@ -119,5 +173,23 @@ export class KuralService {
         const start = Math.floor((number - 1) / this.CHUNK_SIZE) * this.CHUNK_SIZE + 1;
         const end = Math.min(start + this.CHUNK_SIZE - 1, 1330);
         return `${start}-${end}`;
+    }
+
+    private loadChunk(chunkId: string): Observable<Kural[]> {
+        if (this.chunkCache.has(chunkId)) {
+            return of(this.chunkCache.get(chunkId)!);
+        }
+
+        const url = this.getDataUrl(`${chunkId}.json`);
+
+        return this.http.get<Kural[]>(url).pipe(
+            tap(chunk => {
+                this.chunkCache.set(chunkId, chunk);
+            })
+        );
+    }
+
+    private getDataUrl(fileName: string): string {
+        return `${this.DATA_BASE_URL}/${fileName}`;
     }
 }

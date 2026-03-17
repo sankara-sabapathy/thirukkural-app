@@ -7,20 +7,43 @@ test('has title', async ({ page }) => {
     await expect(page).toHaveTitle(/Thirukkural/);
 });
 
-test('hero section loads', async ({ page }) => {
-    await page.goto('/');
+test('adhigaram page loads and links to 10 kurals', async ({ page }) => {
+    await page.goto('/adhigaram/1');
 
-    // Expect the hero title to be visible
-    await expect(page.locator('.hero-title')).toBeVisible();
-    await expect(page.getByText('Start Your Day with')).toBeVisible();
+    await expect(page.locator('.adhigaram-title')).toContainText('1');
+    await expect(page.locator('.adhigaram-kural-card')).toHaveCount(10);
+    await expect(page.locator('.breadcrumb-nav')).toContainText('Library');
+    await expect(page.locator('.faq-item')).toHaveCount(4);
+    await page.locator('.faq-item').first().click();
+    await expect(page.locator('.faq-item').first()).toContainText('What is Adhigaram 1 in Thirukkural?');
 });
 
-test('navigation works', async ({ page }) => {
-    await page.goto('/');
+test('kural detail links back to its adhigaram page', async ({ page }) => {
+    await page.goto('/adhigaram/1');
+    await page.locator('.adhigaram-kural-card').first().click();
 
-    // Click the About link.
-    await page.getByRole('link', { name: 'About' }).first().click();
+    await expect(page).toHaveURL(/\/kural\/1$/);
+    await expect(page.locator('.chapter-link-row')).toContainText('Adhigaram 1');
+});
 
-    // Expects page to have a heading with the name of About.
-    await expect(page.getByRole('heading', { name: 'About Thirukkural Daily' })).toBeVisible();
+test('library can switch to adhigaram scope and preserve state after back navigation', async ({ page }) => {
+    await page.goto('/kurals');
+
+    await page.locator('.scope-toggle-adhigaram').click();
+    await page.locator('.hero-search-input').fill('108');
+    await expect(page.locator('.hero-search-input')).toHaveValue('108');
+
+    const adhigaramCard = page.locator('.adhigaram-item[href="/adhigaram/108"]');
+    await expect(adhigaramCard).toBeVisible();
+
+    await adhigaramCard.click();
+    await expect(page).toHaveURL(/\/adhigaram\/108$/);
+
+    await page.goBack();
+    const url = new URL(page.url());
+    expect(url.pathname).toBe('/kurals');
+    expect(url.searchParams.get('view')).toBe('adhigaram');
+    expect(url.searchParams.get('q')).toBe('108');
+    await expect(page.locator('.scope-toggle-adhigaram')).toHaveClass(/mat-button-toggle-checked/);
+    await expect(page.locator('.hero-search-input')).toHaveValue('108');
 });

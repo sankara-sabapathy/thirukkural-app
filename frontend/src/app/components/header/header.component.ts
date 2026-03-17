@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { NgOptimizedImage } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router, RouterModule } from '@angular/router';
@@ -12,7 +13,7 @@ import { Observable, firstValueFrom } from 'rxjs';
 @Component({
     selector: 'app-header',
     standalone: true,
-    imports: [CommonModule, MatButtonModule, MatSnackBarModule, RouterModule],
+    imports: [CommonModule, NgOptimizedImage, MatButtonModule, MatSnackBarModule, RouterModule],
     templateUrl: './header.component.html',
     styleUrls: ['./header.component.scss']
 })

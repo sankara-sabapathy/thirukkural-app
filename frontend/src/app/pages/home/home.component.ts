@@ -1,6 +1,7 @@
-import { Component, OnInit, DestroyRef } from '@angular/core';
+import { Component, OnInit, DestroyRef, Inject, PLATFORM_ID } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -28,6 +29,7 @@ export class HomeComponent implements OnInit {
     isPushSubscribed = false;
     isCheckingPush = true;
     isTogglingPush = false;
+    private readonly isBrowser: boolean;
 
     constructor(
         private authService: AuthService,
@@ -35,9 +37,11 @@ export class HomeComponent implements OnInit {
         private snackBar: MatSnackBar,
         private router: Router,
         private pushService: PushNotificationService,
-        private destroyRef: DestroyRef
+        private destroyRef: DestroyRef,
+        @Inject(PLATFORM_ID) platformId: Object
     ) {
         this.user$ = this.authService.user$;
+        this.isBrowser = isPlatformBrowser(platformId);
     }
 
     async ngOnInit() {
@@ -49,10 +53,14 @@ export class HomeComponent implements OnInit {
         });
 
         // Check push notification subscription status
-        await this.checkPushSubscriptionStatus();
+        if (this.isBrowser) {
+            await this.checkPushSubscriptionStatus();
+        } else {
+            this.isCheckingPush = false;
+        }
 
         // Show notification prompt only if not subscribed and permission is default
-        if (!this.isPushSubscribed && 'Notification' in window && Notification.permission === 'default') {
+        if (this.isBrowser && !this.isPushSubscribed && 'Notification' in window && Notification.permission === 'default') {
             setTimeout(() => {
                 this.showNotificationPrompt = true;
             }, 3000);

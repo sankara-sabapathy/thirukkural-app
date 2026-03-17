@@ -1,4 +1,5 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Inject, Injectable, NgZone, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { getCurrentUser, signInWithRedirect, signOut, fetchUserAttributes } from 'aws-amplify/auth';
@@ -11,8 +12,18 @@ export class AuthService {
     private userSubject = new BehaviorSubject<any>(null);
     user$ = this.userSubject.asObservable();
     isAuthenticated$ = this.userSubject.asObservable().pipe(map(user => !!user));
+    private readonly isBrowser: boolean;
 
-    constructor(private zone: NgZone) {
+    constructor(
+        private zone: NgZone,
+        @Inject(PLATFORM_ID) platformId: Object
+    ) {
+        this.isBrowser = isPlatformBrowser(platformId);
+
+        if (!this.isBrowser) {
+            return;
+        }
+
         // Listen for auth events
         Hub.listen('auth', ({ payload }) => {
             switch (payload.event) {
@@ -29,24 +40,41 @@ export class AuthService {
     }
 
     private isLocalhost(): boolean {
+        if (!this.isBrowser) {
+            return false;
+        }
         return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     }
 
     async checkUser() {
+        if (!this.isBrowser) {
+            this.userSubject.next(null);
+            return;
+        }
+
         // Allow real auth on localhost if 'real_auth' is set in localStorage
         if (this.isLocalhost() && !localStorage.getItem('real_auth')) {
             const storedUser = localStorage.getItem('dummy_user');
             if (storedUser) {
-                this.zone.run(() => this.userSubject.next(JSON.parse(storedUser)));
+                try {
+                    const parsedUser = JSON.parse(storedUser);
+                    this.zone.run(() => this.userSubject.next(parsedUser));
+                    return;
+                } catch (error) {
+                    console.warn('Failed to parse localhost dummy user. Clearing stored auth state.', error);
+                    localStorage.removeItem('dummy_user');
+                    this.zone.run(() => this.userSubject.next(null));
+                    return;
+                }
             }
+
+            this.zone.run(() => this.userSubject.next(null));
             return;
         }
 
         try {
             const user = await getCurrentUser();
-            console.log('Current user:', user);
             const attributes = await fetchUserAttributes();
-            console.log('User attributes:', attributes);
             this.zone.run(() => this.userSubject.next({ ...user, attributes }));
         } catch (error: any) {
             // If the error is simply that the user is not signed in, we don't need to log it as an error
@@ -60,6 +88,10 @@ export class AuthService {
     }
 
     async login() {
+        if (!this.isBrowser) {
+            return;
+        }
+
         if (this.isLocalhost() && !localStorage.getItem('real_auth')) {
             const dummyUser = {
                 username: 'dummy_user',
@@ -82,6 +114,10 @@ export class AuthService {
     }
 
     async logout() {
+        if (!this.isBrowser) {
+            return;
+        }
+
         if (this.isLocalhost() && !localStorage.getItem('real_auth')) {
             localStorage.removeItem('dummy_user');
             this.zone.run(() => this.userSubject.next(null));

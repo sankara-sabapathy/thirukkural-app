@@ -119,6 +119,17 @@
                         </div>
                     </div>
 
+                    <div class="chapter-link-row">
+                        <a
+                            mat-stroked-button
+                            color="primary"
+                            [routerLink]="['/adhigaram', getAdhigaramId(kural.number)]"
+                        >
+                            <mat-icon>menu_book</mat-icon>
+                            Adhigaram {{ getAdhigaramId(kural.number) }}: {{ kural.adikaram | tamilCategory:'adikaram' }}
+                        </a>
+                    </div>
+
                     <!-- English Translation -->
                     <div class="content-section">
                         <h3>

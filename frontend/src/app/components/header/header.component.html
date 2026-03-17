@@ -1,7 +1,13 @@
 <header class="main-header">
   <nav class="nav-container">
     <a class="nav-brand" routerLink="/" style="cursor: pointer; text-decoration: none; color: inherit;">
-      <img src="logo.jpg" alt="Thirukkural Logo" class="brand-logo">
+      <img
+        ngSrc="/logo-192.jpg"
+        alt="Thirukkural Logo"
+        class="brand-logo"
+        width="36"
+        height="36"
+        priority>
       <span class="brand-text">Thirukkural</span>
     </a>
 
@@ -98,7 +104,12 @@
   <div class="mobile-menu" [class.active]="isMobileMenuOpen">
     <div class="mobile-menu-header">
       <div class="nav-brand">
-        <img src="logo.jpg" alt="Thirukkural Logo" class="brand-logo">
+        <img
+          ngSrc="/logo-192.jpg"
+          alt="Thirukkural Logo"
+          class="brand-logo"
+          width="36"
+          height="36">
         <span class="brand-text">Thirukkural</span>
       </div>
     </div>
