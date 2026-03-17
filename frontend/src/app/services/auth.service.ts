@@ -48,7 +48,7 @@ export class AuthService {
 
     async checkUser() {
         if (!this.isBrowser) {
-            this.zone.run(() => this.userSubject.next(null));
+            this.userSubject.next(null);
             return;
         }
 

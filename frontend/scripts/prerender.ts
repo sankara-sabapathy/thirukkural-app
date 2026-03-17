@@ -3,8 +3,10 @@ import * as path from 'path';
 import { getAdhigaramRoutes } from './adhigaram-utils';
 
 const ROUTES_FILE = path.join(process.cwd(), 'prerender-routes.txt');
-const KURAL_START = clampRouteNumber(process.env.PRERENDER_KURAL_START ?? '1');
-const KURAL_END = clampRouteNumber(process.env.PRERENDER_KURAL_END ?? '1330');
+const RAW_KURAL_START = process.env.PRERENDER_KURAL_START ?? '1';
+const RAW_KURAL_END = process.env.PRERENDER_KURAL_END ?? '1330';
+const KURAL_START = clampRouteNumber(RAW_KURAL_START);
+const KURAL_END = clampRouteNumber(RAW_KURAL_END);
 const INCLUDE_HOME_ROUTE = process.env.PRERENDER_INCLUDE_HOME !== 'false';
 const INCLUDE_LIBRARY_ROUTE = process.env.PRERENDER_INCLUDE_LIBRARY !== 'false';
 
@@ -18,6 +20,8 @@ function clampRouteNumber(value: string): number {
 }
 
 function getRoutesToPrerender(): string[] {
+  validateRouteRange();
+
   const routes: string[] = [];
 
   if (INCLUDE_HOME_ROUTE) {
@@ -36,6 +40,17 @@ function getRoutesToPrerender(): string[] {
   }
 
   return routes;
+}
+
+function validateRouteRange(): void {
+  if (KURAL_START <= KURAL_END) {
+    return;
+  }
+
+  throw new Error(
+    `Invalid prerender Kural range: start ${KURAL_START} is greater than end ${KURAL_END}. ` +
+    `Received PRERENDER_KURAL_START=${RAW_KURAL_START} and PRERENDER_KURAL_END=${RAW_KURAL_END}.`
+  );
 }
 
 function writeRoutesFile(routes: string[]): void {

@@ -221,7 +221,7 @@ export class PushNotificationService {
 
     private getDeviceId(): string {
         if (!this.isBrowser) {
-            return 'server-render';
+            return '';
         }
 
         let deviceId = localStorage.getItem(this.DEVICE_ID_KEY);

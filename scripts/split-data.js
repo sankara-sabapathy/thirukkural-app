@@ -5,7 +5,30 @@ const INPUT_FILE = path.join(__dirname, '../data/thirukkural/allKural.json');
 const OUTPUT_DIR = path.join(__dirname, '../frontend/public/data/thirukkural');
 const CHUNK_SIZE = 100;
 const EXPECTED_ADHIGARAMS = 133;
+const EXPECTED_KURAL_COUNT = 1330;
 const KURALS_PER_ADHIGARAM = 10;
+
+function validateKuralSequence(allKural) {
+    const numbers = allKural.map((kural) => Number(kural.number));
+
+    if (numbers.length !== EXPECTED_KURAL_COUNT) {
+        throw new Error(`Expected ${EXPECTED_KURAL_COUNT} Kurals, found ${numbers.length}.`);
+    }
+
+    const uniqueNumbers = new Set(numbers);
+    if (uniqueNumbers.size !== EXPECTED_KURAL_COUNT) {
+        throw new Error(`Expected ${EXPECTED_KURAL_COUNT} unique Kural numbers, found ${uniqueNumbers.size}.`);
+    }
+
+    const sortedNumbers = [...numbers].sort((left, right) => left - right);
+    const invalidNumber = sortedNumbers.find((value, index) => value !== index + 1);
+    if (invalidNumber !== undefined) {
+        throw new Error(
+            `Kural numbering is not sequential from 1 to ${EXPECTED_KURAL_COUNT}. ` +
+            `Found ${invalidNumber} where ${sortedNumbers.indexOf(invalidNumber) + 1} was expected.`
+        );
+    }
+}
 
 function buildAdhigarams(allKural) {
     const adhigarams = [];
@@ -87,6 +110,7 @@ function splitData() {
 
     console.log(`Found ${allKural.length} Kurals.`);
 
+    validateKuralSequence(allKural);
     const adhigarams = buildAdhigarams(allKural);
 
     // Create output directory

@@ -55,7 +55,7 @@ export class PwaService {
      * Check if the browser supports PWA installation
      */
     canInstall(): boolean {
-        return this.deferredPrompt !== null && this.deferredPrompt !== undefined;
+        return this.isBrowser && this.deferredPrompt !== null && this.deferredPrompt !== undefined;
     }
 
     /**

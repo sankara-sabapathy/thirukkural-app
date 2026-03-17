@@ -18,7 +18,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { KuralService, SearchIndexItem, AdhigaramSummary } from '../../services/kural.service';
 import { forkJoin, Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { KURAL_FILTER_MAPPING } from './kural-filter-mapping';
 
@@ -95,19 +95,22 @@ export class KuralListComponent implements OnInit {
             kurals: this.kuralService.getSearchIndex(),
             adhigarams: this.kuralService.getAdhigarams()
         })
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(({ kurals, adhigarams }) => {
+            .pipe(
+                switchMap(({ kurals, adhigarams }) =>
+                    this.route.queryParamMap.pipe(
+                        map((params) => ({ kurals, adhigarams, params }))
+                    )
+                ),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe(({ kurals, adhigarams, params }) => {
                 this.allKurals = [...kurals].sort((left, right) => left.n - right.n);
                 this.allAdhigarams = [...adhigarams].sort((left, right) => left.id - right.id);
 
-                this.route.queryParamMap
-                    .pipe(takeUntilDestroyed(this.destroyRef))
-                    .subscribe((params) => {
-                        this.hydrateStateFromQueryParams(params);
-                        this.applyFilters(false);
-                        this.syncQueryParamsIfNeeded(params);
-                        this.loading = false;
-                    });
+                this.hydrateStateFromQueryParams(params);
+                this.applyFilters(false);
+                this.syncQueryParamsIfNeeded(params);
+                this.loading = false;
             });
     }
 
@@ -131,6 +134,11 @@ export class KuralListComponent implements OnInit {
 
     get resultsLabel(): string {
         return this.isKuralScope ? 'kurals' : 'adhigarams';
+    }
+
+    get noResultsMessage(): string {
+        const baseMessage = `No ${this.resultsLabel} found`;
+        return this.searchQuery ? `${baseMessage} matching "${this.searchQuery}"` : baseMessage;
     }
 
     get selectedAdhigaram(): AdhigaramSummary | undefined {
@@ -188,8 +196,12 @@ export class KuralListComponent implements OnInit {
             return;
         }
 
-        const randomId = Math.floor(Math.random() * this.allAdhigarams.length) + 1;
-        this.router.navigate(['/adhigaram', randomId]);
+        if (this.allAdhigarams.length === 0) {
+            return;
+        }
+
+        const randomIndex = Math.floor(Math.random() * this.allAdhigarams.length);
+        this.router.navigate(['/adhigaram', this.allAdhigarams[randomIndex].id]);
     }
 
     toggleFilterLanguage(): void {

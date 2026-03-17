@@ -84,7 +84,7 @@ export class KuralService {
      * Fetches a specific Kural by its number (1-1330)
      */
     getKural(number: number): Observable<Kural | undefined> {
-        if (number < 1 || number > 1330) {
+        if (!Number.isInteger(number) || number < 1 || number > 1330) {
             return of(undefined);
         }
 

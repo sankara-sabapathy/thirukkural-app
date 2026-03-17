@@ -31,15 +31,19 @@ test('library can switch to adhigaram scope and preserve state after back naviga
 
     await page.locator('.scope-toggle-adhigaram').click();
     await page.locator('.hero-search-input').fill('108');
+    await expect(page.locator('.hero-search-input')).toHaveValue('108');
 
-    const adhigaramCard = page.locator('.adhigaram-item').first();
-    await expect(adhigaramCard).toContainText('108');
+    const adhigaramCard = page.locator('.adhigaram-item[href="/adhigaram/108"]');
+    await expect(adhigaramCard).toBeVisible();
 
     await adhigaramCard.click();
     await expect(page).toHaveURL(/\/adhigaram\/108$/);
 
     await page.goBack();
-    await expect(page).toHaveURL(/\/kurals\?view=adhigaram&q=108$/);
+    const url = new URL(page.url());
+    expect(url.pathname).toBe('/kurals');
+    expect(url.searchParams.get('view')).toBe('adhigaram');
+    expect(url.searchParams.get('q')).toBe('108');
     await expect(page.locator('.scope-toggle-adhigaram')).toHaveClass(/mat-button-toggle-checked/);
     await expect(page.locator('.hero-search-input')).toHaveValue('108');
 });

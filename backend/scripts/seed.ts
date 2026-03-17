@@ -9,7 +9,12 @@ const LOCAL_DATA_PATH = path.join(__dirname, '../../data/thirukkural/allKural.js
 async function loadDataset() {
     if (fs.existsSync(LOCAL_DATA_PATH)) {
         console.log(`Loading dataset from local file ${LOCAL_DATA_PATH}...`);
-        return JSON.parse(fs.readFileSync(LOCAL_DATA_PATH, 'utf-8'));
+        try {
+            return JSON.parse(fs.readFileSync(LOCAL_DATA_PATH, 'utf-8'));
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Failed to read or parse local dataset at ${LOCAL_DATA_PATH}: ${message}`);
+        }
     }
 
     console.log(`Fetching dataset from ${DATA_URL}...`);

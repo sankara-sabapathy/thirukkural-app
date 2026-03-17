@@ -1,10 +1,10 @@
 <div class="adhigaram-container">
-    <ng-container *ngIf="adhigaram$ | async as adhigaram">
+    <ng-container *ngIf="{ data: adhigaram$ | async } as vm">
         <div *ngIf="loading" class="loading-spinner">
             <mat-spinner diameter="50"></mat-spinner>
         </div>
 
-        <div *ngIf="adhigaram" class="adhigaram-content">
+        <div *ngIf="vm.data as adhigaram" class="adhigaram-content">
             <div class="adhigaram-card">
                 <div class="adhigaram-card-header">
                     <nav class="breadcrumb-nav" aria-label="Breadcrumb">
@@ -119,7 +119,7 @@
             </div>
         </div>
 
-        <div *ngIf="!loading && !adhigaram" class="error-message">
+        <div *ngIf="!loading && !vm.data" class="error-message">
             <mat-icon>error_outline</mat-icon>
             <p>Sorry, this adhigaram could not be found.</p>
             <a mat-raised-button color="primary" routerLink="/kurals">

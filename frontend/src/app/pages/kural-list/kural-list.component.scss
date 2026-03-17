@@ -85,6 +85,11 @@
                         background: rgba(24, 104, 219, 0.1);
                         color: var(--primary);
                     }
+
+                    .mat-button-toggle-button:focus-visible {
+                        outline: 2px solid rgba(24, 104, 219, 0.45);
+                        outline-offset: -2px;
+                    }
                 }
             }
         }
@@ -114,6 +119,12 @@
                 &::placeholder {
                     color: var(--text-tertiary);
                     font-weight: 400;
+                }
+
+                &:focus-visible {
+                    outline: 2px solid rgba(24, 104, 219, 0.35);
+                    outline-offset: 4px;
+                    border-radius: 10px;
                 }
             }
 
@@ -221,6 +232,7 @@
                         height: 40px;
                         display: flex;
                         align-items: center;
+                        border: 1px solid transparent;
                     }
 
                     .mdc-line-ripple,
@@ -248,6 +260,12 @@
 
                     .mat-mdc-select-arrow {
                         color: var(--primary);
+                    }
+
+                    .mat-mdc-form-field.mat-focused .mat-mdc-text-field-wrapper,
+                    .mat-mdc-form-field:focus-within .mat-mdc-text-field-wrapper {
+                        border-color: rgba(24, 104, 219, 0.35);
+                        box-shadow: 0 0 0 2px rgba(24, 104, 219, 0.12);
                     }
                 }
             }
@@ -444,6 +462,7 @@
             background-color: rgba(24, 104, 219, 0.05) !important;
             border-radius: 8px;
             padding: 0 0.5rem;
+            border: 1px solid transparent;
         }
 
         .mdc-notched-outline,
@@ -454,6 +473,22 @@
         .mat-mdc-select-value {
             color: var(--primary);
             font-weight: 600;
+        }
+
+        .mat-mdc-form-field.mat-focused .mat-mdc-text-field-wrapper,
+        .mat-mdc-form-field:focus-within .mat-mdc-text-field-wrapper {
+            border-color: rgba(24, 104, 219, 0.35);
+            box-shadow: 0 0 0 2px rgba(24, 104, 219, 0.12);
+        }
+
+        .mat-mdc-icon-button:focus-visible,
+        .mat-mdc-paginator-navigation-first:focus-visible,
+        .mat-mdc-paginator-navigation-previous:focus-visible,
+        .mat-mdc-paginator-navigation-next:focus-visible,
+        .mat-mdc-paginator-navigation-last:focus-visible {
+            outline: 2px solid rgba(24, 104, 219, 0.45);
+            outline-offset: 2px;
+            border-radius: 999px;
         }
     }
 }

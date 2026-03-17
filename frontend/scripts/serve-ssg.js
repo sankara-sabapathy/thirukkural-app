@@ -24,26 +24,42 @@ const CONTENT_TYPES = {
 };
 
 function resolveExistingPath(requestPath) {
-  const normalizedPath = decodeURIComponent(requestPath.split('?')[0]);
-  const safePath = normalizedPath.startsWith('/') ? normalizedPath.slice(1) : normalizedPath;
+  let normalizedPath;
 
-  if (safePath === '') {
-    return path.join(DIST_DIR, 'index.html');
+  try {
+    normalizedPath = decodeURIComponent(requestPath.split('?')[0]);
+  } catch {
+    return null;
   }
 
-  const directPath = path.join(DIST_DIR, safePath);
+  const safePath = normalizedPath.startsWith('/') ? normalizedPath.slice(1) : normalizedPath;
+  const distRoot = path.resolve(DIST_DIR);
+
+  if (safePath === '') {
+    return path.join(distRoot, 'index.html');
+  }
+
+  const directPath = path.resolve(distRoot, safePath);
+  if (!directPath.startsWith(distRoot + path.sep) && directPath !== distRoot) {
+    return null;
+  }
+
   if (fs.existsSync(directPath) && fs.statSync(directPath).isFile()) {
     return directPath;
   }
 
   if (!path.extname(safePath)) {
-    const nestedIndexPath = path.join(DIST_DIR, safePath, 'index.html');
-    if (fs.existsSync(nestedIndexPath)) {
+    const nestedIndexPath = path.resolve(distRoot, safePath, 'index.html');
+    if (
+      nestedIndexPath.startsWith(distRoot + path.sep) &&
+      fs.existsSync(nestedIndexPath) &&
+      fs.statSync(nestedIndexPath).isFile()
+    ) {
       return nestedIndexPath;
     }
   }
 
-  return path.join(DIST_DIR, 'index.html');
+  return path.join(distRoot, 'index.html');
 }
 
 function sendFile(filePath, response) {
@@ -60,6 +76,11 @@ function sendFile(filePath, response) {
   });
 }
 
+function sendNotFound(response) {
+  response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+  response.end('Not found');
+}
+
 if (!fs.existsSync(DIST_DIR)) {
   console.error(`Build output not found at ${DIST_DIR}. Run "npm run build:ssg" first.`);
   process.exit(1);
@@ -67,6 +88,11 @@ if (!fs.existsSync(DIST_DIR)) {
 
 const server = http.createServer((request, response) => {
   const targetPath = resolveExistingPath(request.url || '/');
+  if (!targetPath) {
+    sendNotFound(response);
+    return;
+  }
+
   sendFile(targetPath, response);
 });
 

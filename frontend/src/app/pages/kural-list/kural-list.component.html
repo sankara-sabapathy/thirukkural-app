@@ -140,7 +140,7 @@
 
         <div *ngIf="currentFilteredCount === 0" class="no-results">
             <mat-icon>search_off</mat-icon>
-            <p>No {{ resultsLabel }} found matching "{{ searchQuery }}"</p>
+            <p>{{ noResultsMessage }}</p>
             <p class="no-results-help">Try searching with different keywords or broader filters</p>
         </div>
 

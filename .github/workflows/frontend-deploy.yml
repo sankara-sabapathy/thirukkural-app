@@ -131,6 +131,13 @@ jobs:
     - name: Sync Local Kural Data
       run: npm run sync:kural-data
 
+    - name: Verify Kural Data
+      run: |
+        test -s ../data/thirukkural/allKural.json
+        test -s public/data/thirukkural/search-index.json
+        test -s public/data/thirukkural/adhigarams.json
+        test -s public/data/thirukkural/1-100.json
+
     - name: Build
       run: |
         if [ "${{ inputs.stage }}" = "prod" ]; then

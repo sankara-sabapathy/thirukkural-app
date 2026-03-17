@@ -50,15 +50,20 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
         let isInitialRouteLoad = true;
 
         this.adhigaram$ = paramMap$.pipe(
-            map(params => {
-                const id = params.get('id');
-                return id ? Number.parseInt(id, 10) : 1;
-            }),
+            map((params) => this.parseAdhigaramId(params.get('id'))),
             distinctUntilChanged(),
-            switchMap(id => {
-                this.currentId = Number.isInteger(id) ? id : 1;
+            switchMap((id) => {
+                const hasValidId = typeof id === 'number' && Number.isInteger(id);
+                this.currentId = hasValidId ? Math.min(this.totalAdhigarams, Math.max(1, id)) : 1;
                 this.loading = !isInitialRouteLoad;
                 isInitialRouteLoad = false;
+
+                if (!hasValidId) {
+                    this.loading = false;
+                    this.faqItems = [];
+                    this.seoService.removeStructuredData('structured-data-adhigaram');
+                    return of(undefined);
+                }
 
                 return this.kuralService.getAdhigaram(id).pipe(
                     tap((adhigaram) => {
@@ -239,5 +244,14 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
             `The opening verse is Thirukkural ${kural.number}: "${kural.line1} ${kural.line2}". ` +
             `Its English translation begins: "${kural.translation}".`
         );
+    }
+
+    private parseAdhigaramId(value: string | null): number | undefined {
+        if (!value) {
+            return 1;
+        }
+
+        const parsedValue = Number.parseInt(value, 10);
+        return Number.isInteger(parsedValue) ? parsedValue : undefined;
     }
 }

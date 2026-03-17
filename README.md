@@ -94,8 +94,6 @@ $env:GOOGLE_CLIENT_SECRET="your-google-client-secret"
 $env:VAPID_PUBLIC_KEY="BNxCpD0m...your-public-key..."
 $env:VAPID_PRIVATE_KEY="_HsT7zP9...your-private-key..."
 $env:VAPID_SUBJECT="mailto:your-email@example.com"
-$env:VAPID_PRIVATE_KEY="_HsT7zP9...your-private-key..."
-$env:VAPID_SUBJECT="mailto:your-email@example.com"
 # For Secure Unsubscribe
 $env:UNSUBSCRIBE_SECRET="your-random-hex-string"
 ```
@@ -108,7 +106,6 @@ export GOOGLE_CLIENT_SECRET="your-google-client-secret"
 # For Push Notifications
 export VAPID_PUBLIC_KEY="BNxCpD0m...your-public-key..."
 export VAPID_PRIVATE_KEY="_HsT7zP9...your-private-key..."
-export VAPID_SUBJECT="mailto:your-email@example.com"
 export VAPID_SUBJECT="mailto:your-email@example.com"
 # For Secure Unsubscribe
 export UNSUBSCRIBE_SECRET="your-random-hex-string"
