@@ -30,6 +30,17 @@ type PrerenderController = {
   navigate: (url: string) => Promise<boolean>;
 };
 
+function getBrowserLaunchArgs(): string[] {
+  const args = ['--disable-dev-shm-usage', '--disable-service-worker'];
+
+  // GitHub-hosted Linux runners can block Chromium's sandbox by default.
+  if (process.platform === 'linux' || process.env.CI === 'true') {
+    args.push('--no-sandbox', '--disable-setuid-sandbox');
+  }
+
+  return args;
+}
+
 function clampRouteNumber(value: string): number {
   const parsedValue = Number.parseInt(value, 10);
   if (Number.isNaN(parsedValue)) {
@@ -276,7 +287,7 @@ async function runPrerender(): Promise<void> {
 
   const browser = await puppeteer.launch({
     headless: true,
-    args: ['--disable-dev-shm-usage', '--disable-service-worker'],
+    args: getBrowserLaunchArgs(),
   });
 
   const routes = getRoutesToPrerender();
