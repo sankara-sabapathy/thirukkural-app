@@ -13,6 +13,9 @@ test('adhigaram page loads and links to 10 kurals', async ({ page }) => {
     await expect(page.locator('.adhigaram-title')).toContainText('1');
     await expect(page.locator('.adhigaram-kural-card')).toHaveCount(10);
     await expect(page.locator('.breadcrumb-nav')).toContainText('Library');
+    await expect(page.locator('.faq-item')).toHaveCount(4);
+    await page.locator('.faq-item').first().click();
+    await expect(page.locator('.faq-item').first()).toContainText('What is Adhigaram 1 in Thirukkural?');
 });
 
 test('kural detail links back to its adhigaram page', async ({ page }) => {

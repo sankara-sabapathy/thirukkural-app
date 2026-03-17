@@ -109,6 +109,9 @@
 - Service worker registration is enabled in both development and production configs.
 - The deploy pipeline must publish `ngsw-worker.js` and `ngsw.json` with correct MIME types; otherwise PWA registration breaks.
 - `npm run build:ssg` depends on `frontend/scripts/prerender.ts` and `frontend/scripts/sitemap.ts`.
+- Lighthouse CI config lives at `frontend/lighthouserc.js` and audits the prerendered static output, not the Angular dev server.
+- The header now uses `NgOptimizedImage` with a prerender-friendly local logo asset at `frontend/public/logo-192.jpg`; preserve explicit image dimensions on above-the-fold logos.
+- Font loading is centralized in `frontend/src/index.html`; avoid reintroducing duplicate Google Fonts imports in component styles or `styles.scss`.
 - `html2canvas` is intentionally lazy-loaded in the Kural detail page so it does not bloat the critical route/prerender path.
 - If you change public routes or canonical URLs, update:
   - `frontend/src/app/app.routes.ts`
@@ -120,9 +123,9 @@
 - The prerenderer now reuses a live Angular app per Puppeteer worker through `window.__PRERENDER_CONTROLLER__`. Do not revert to one fresh browser boot per route unless correctness requires it; that regresses build time from seconds back into minutes.
 - The prerenderer blocks fonts, images, media, and common analytics URLs during HTML generation. Keep that behavior unless a route depends on one of those assets for SEO-visible content.
 - `frontend/scripts/sitemap.ts` emits home, selected static routes, `/kurals`, numeric `/adhigaram/:id`, and numeric `/kural/:id` URLs.
-- Kural-specific and adhigaram-specific SEO metadata currently lives in `frontend/src/app/services/seo.service.ts`, `frontend/src/app/pages/kural-detail/kural-detail.component.ts`, and `frontend/src/app/pages/adhigaram-detail/adhigaram-detail.component.ts`.
+- Kural-specific and adhigaram-specific SEO metadata currently lives in `frontend/src/app/services/seo.service.ts`, `frontend/src/app/pages/kural-detail/kural-detail.component.ts`, and `frontend/src/app/pages/adhigaram-detail/adhigaram-detail.component.ts`. Chapter pages now include a visible FAQ section and `FAQPage` JSON-LD alongside `CollectionPage` and `BreadcrumbList`.
 - Chapter metadata is generated locally by `scripts/split-data.js` into `frontend/public/data/thirukkural/adhigarams.json`. Keep that file derived from `data/thirukkural/allKural.json`, not hand-edited.
-- `frontend/src/app/app.component.ts` has route-level default SEO plumbing, but most static routes do not currently define `data.seo`. Do not assume every static page already has bespoke metadata.
+- `frontend/src/app/app.component.ts` applies route-level `data.seo` metadata for the main public static pages and noindex flows such as callback, unsubscribe, and profile. Keep route metadata aligned with any new public or transactional route.
 - Local content data lives at `data/thirukkural/allKural.json` and is transformed by `scripts/split-data.js` into `frontend/public/data/thirukkural/*.json`.
 - CloudFront viewer-request rewriting is required so `/kural/1153` resolves to `/kural/1153/index.html` in S3. Without that rewrite, direct requests and Googlebot indexing regress to SPA fallback behavior.
 
@@ -133,6 +136,7 @@
   - `frontend/scripts/sitemap.ts`
   - route-level `SeoService` usage or `data.seo`
   - CloudFront rewrite logic if the path model changes
+- When editing adhigaram FAQs, keep the visible FAQ section and the `FAQPage` JSON-LD in `frontend/src/app/pages/adhigaram-detail/adhigaram-detail.component.ts` aligned. Do not add schema answers that are not present in page content.
 - When the canonical production host changes, update all hardcoded SEO references together:
   - `frontend/src/app/app.component.ts`
   - `frontend/src/app/pages/kural-detail/kural-detail.component.ts`
@@ -150,16 +154,14 @@
 
 ## SEO Gaps / Not Yet Implemented
 - No slugged Kural URLs such as `/kural/1-agara-mudhala...`; current production shape is `/kural/:id`.
-- No FAQ schema on chapter pages.
-- No bespoke route metadata entries for most static pages.
-- No Lighthouse CI workflow or automated SEO score gate in GitHub Actions.
-- No `NgOptimizedImage`, font preload strategy, or zoneless migration tied to SEO work.
+- No zoneless migration tied to SEO work.
 - No backlink widget, embeddable daily-Kural script, or other authority-building automation in this repo.
 
 ## CI/CD Reality
 - `.github/workflows/backend-deploy.yml`: manual backend deploy plus optional SSM setup and seed.
 - `.github/workflows/frontend-deploy.yml`: manual frontend deploy; fetches stack outputs and SSM values before building.
 - `.github/workflows/dev-auto-deploy.yml`: auto-deploys feature branches to dev after backend and frontend tests pass.
+- `.github/workflows/lighthouse.yml`: runs Lighthouse CI against the prerendered frontend on `main` pushes and PRs, failing on SEO regressions below the configured threshold.
 - `.github/workflows/test.yml`: frontend-focused main/PR test suite with Vitest coverage and Playwright.
 - Older docs mention some commands and outputs that no longer match these workflows. Prefer the workflows.
 

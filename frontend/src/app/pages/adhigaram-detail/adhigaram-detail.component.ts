@@ -6,9 +6,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Observable, of, merge } from 'rxjs';
 import { catchError, distinctUntilChanged, map, shareReplay, switchMap, tap } from 'rxjs/operators';
-import { AdhigaramPageData, KuralService } from '../../services/kural.service';
+import { AdhigaramPageData, Kural, KuralService } from '../../services/kural.service';
 import { SeoService } from '../../services/seo.service';
 import { TamilCategoryPipe } from '../../pipes/tamil-category.pipe';
+
+interface AdhigaramFaqItem {
+    question: string;
+    answer: string;
+}
 
 @Component({
     selector: 'app-adhigaram-detail',
@@ -28,6 +33,7 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
     readonly totalAdhigarams = 133;
 
     adhigaram$: Observable<AdhigaramPageData | undefined> = of(undefined);
+    faqItems: AdhigaramFaqItem[] = [];
     loading = false;
     currentId = 1;
 
@@ -59,15 +65,18 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
                         this.loading = false;
 
                         if (adhigaram) {
+                            this.faqItems = this.buildFaqItems(adhigaram);
                             this.updateMetaTags(adhigaram);
                             return;
                         }
 
+                        this.faqItems = [];
                         this.seoService.removeStructuredData('structured-data-adhigaram');
                     }),
                     catchError(error => {
                         console.error('Error fetching adhigaram:', error);
                         this.loading = false;
+                        this.faqItems = [];
                         return of(undefined);
                     })
                 );
@@ -117,6 +126,7 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
     }
 
     private injectStructuredData(adhigaram: AdhigaramPageData, url: string): void {
+        const faqItems = this.buildFaqItems(adhigaram);
         const itemListElements = adhigaram.kurals.map((kural, index) => ({
             '@type': 'ListItem',
             position: index + 1,
@@ -150,6 +160,19 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
                     }
                 },
                 {
+                    '@type': 'FAQPage',
+                    '@id': `${url}#faq`,
+                    url: `${url}#faq`,
+                    mainEntity: faqItems.map((faq) => ({
+                        '@type': 'Question',
+                        name: faq.question,
+                        acceptedAnswer: {
+                            '@type': 'Answer',
+                            text: faq.answer
+                        }
+                    }))
+                },
+                {
                     '@type': 'BreadcrumbList',
                     itemListElement: [
                         {
@@ -176,5 +199,45 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
         };
 
         this.seoService.setStructuredData(jsonLd, 'structured-data-adhigaram');
+    }
+
+    private buildFaqItems(adhigaram: AdhigaramPageData): AdhigaramFaqItem[] {
+        const firstKural = adhigaram.kurals[0];
+
+        return [
+            {
+                question: `What is Adhigaram ${adhigaram.id} in Thirukkural?`,
+                answer:
+                    `Adhigaram ${adhigaram.id} is "${adhigaram.adikaram_tr}" (${adhigaram.adikaram}). ` +
+                    `This chapter covers Kurals ${adhigaram.start}-${adhigaram.end}.`
+            },
+            {
+                question: `Which book and division does Adhigaram ${adhigaram.id} belong to?`,
+                answer:
+                    `Adhigaram ${adhigaram.id} belongs to the book ${adhigaram.pal_tr} (${adhigaram.pal}) ` +
+                    `and the division ${adhigaram.iyal_tr} (${adhigaram.iyal}).`
+            },
+            {
+                question: `Which Kurals are included in Adhigaram ${adhigaram.id}?`,
+                answer:
+                    `This chapter contains 10 Kurals, from Thirukkural ${adhigaram.start} to ` +
+                    `Thirukkural ${adhigaram.end}.`
+            },
+            {
+                question: `What is the opening Kural in Adhigaram ${adhigaram.id}?`,
+                answer: this.buildOpeningKuralAnswer(firstKural)
+            }
+        ];
+    }
+
+    private buildOpeningKuralAnswer(kural: Kural | undefined): string {
+        if (!kural) {
+            return 'Use the chapter list on this page to open each Kural and read its full meaning.';
+        }
+
+        return (
+            `The opening verse is Thirukkural ${kural.number}: "${kural.line1} ${kural.line2}". ` +
+            `Its English translation begins: "${kural.translation}".`
+        );
     }
 }

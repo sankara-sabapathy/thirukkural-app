@@ -76,6 +76,20 @@
                             </a>
                         </div>
                     </section>
+
+                    <section class="faq-section" *ngIf="faqItems.length">
+                        <div class="section-header">
+                            <h2>Frequently asked questions</h2>
+                            <p>Quick answers about this adhigaram, its place in the Thirukkural, and the Kurals it contains.</p>
+                        </div>
+
+                        <div class="faq-list">
+                            <details *ngFor="let faq of faqItems" class="faq-item">
+                                <summary>{{ faq.question }}</summary>
+                                <p>{{ faq.answer }}</p>
+                            </details>
+                        </div>
+                    </section>
                 </div>
 
                 <div class="adhigaram-card-footer">

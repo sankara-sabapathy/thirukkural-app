@@ -48,6 +48,26 @@ describe('SeoService', () => {
             .toBe('https://thirukkural.site/adhigaram/1');
     });
 
+    it('should remove stale optional metadata and apply robots defaults', () => {
+        service.generateTags({
+            title: 'Kural 1',
+            description: 'Kural page',
+            keywords: 'thirukkural, kural 1',
+            robots: 'noindex, nofollow',
+            url: 'https://thirukkural.site/kural/1'
+        });
+
+        service.generateTags({
+            title: 'About',
+            description: 'About page',
+            url: 'https://thirukkural.site/about'
+        });
+
+        expect(metaService.getTag("name='keywords'")).toBeNull();
+        expect(metaService.getTag("name='robots'")?.content).toBe('index, follow');
+        expect(metaService.getTag("name='author'")?.content).toBe('Thirukkural Daily');
+    });
+
     it('should replace structured data for the same script id', () => {
         service.setStructuredData({ name: 'first' }, 'structured-data-test');
         service.setStructuredData({ name: 'second' }, 'structured-data-test');

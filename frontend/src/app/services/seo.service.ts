@@ -10,6 +10,7 @@ export interface SeoConfig {
   url?: string;
   type?: string;
   author?: string;
+  robots?: string;
 }
 
 @Injectable({
@@ -37,12 +38,9 @@ export class SeoService {
     this.metaService.updateTag({ name: 'title', content: fullTitle });
     
     this.metaService.updateTag({ name: 'description', content: config.description });
-    if (config.keywords) {
-      this.metaService.updateTag({ name: 'keywords', content: config.keywords });
-    }
-    if (config.author) {
-      this.metaService.updateTag({ name: 'author', content: config.author });
-    }
+    this.updateOptionalMetaTag('keywords', config.keywords);
+    this.metaService.updateTag({ name: 'author', content: config.author || this.siteName });
+    this.metaService.updateTag({ name: 'robots', content: config.robots || 'index, follow' });
 
     // 2. OpenGraph Meta Tags (Facebook, LinkedIn, iMessage, WhatsApp)
     this.metaService.updateTag({ property: 'og:type', content: config.type || this.defaultType });
@@ -102,5 +100,14 @@ export class SeoService {
     if (script) {
       script.remove();
     }
+  }
+
+  private updateOptionalMetaTag(name: string, content?: string): void {
+    if (content) {
+      this.metaService.updateTag({ name, content });
+      return;
+    }
+
+    this.metaService.removeTag(`name='${name}'`);
   }
 }

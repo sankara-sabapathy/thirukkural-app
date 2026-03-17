@@ -93,16 +93,23 @@ export class AppComponent implements OnInit {
             
             // Set base Canonical URL on every route change
             const currentUrl = 'https://thirukkural.site' + this.router.url.split('?')[0];
-            this.seoService.updateCanonicalUrl(currentUrl);
             
             // Apply default titles and metadata configured in route data
             if (event['seo']) {
               this.seoService.generateTags({
                  title: event['seo'].title || 'Home',
                  description: event['seo'].description || 'Discover the timeless wisdom of Thirukkural.',
+                 keywords: event['seo'].keywords,
+                 robots: event['seo'].robots,
+                 type: event['seo'].type,
+                 author: event['seo'].author,
+                 image: event['seo'].image,
                  url: currentUrl
               });
+              return;
             }
+
+            this.seoService.updateCanonicalUrl(currentUrl);
         });
 
         // Handle push notification clicks
