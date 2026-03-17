@@ -59,20 +59,22 @@ export class AuthService {
                 try {
                     const parsedUser = JSON.parse(storedUser);
                     this.zone.run(() => this.userSubject.next(parsedUser));
+                    return;
                 } catch (error) {
                     console.warn('Failed to parse localhost dummy user. Clearing stored auth state.', error);
                     localStorage.removeItem('dummy_user');
                     this.zone.run(() => this.userSubject.next(null));
+                    return;
                 }
             }
+
+            this.zone.run(() => this.userSubject.next(null));
             return;
         }
 
         try {
             const user = await getCurrentUser();
-            console.log('Current user:', user);
             const attributes = await fetchUserAttributes();
-            console.log('User attributes:', attributes);
             this.zone.run(() => this.userSubject.next({ ...user, attributes }));
         } catch (error: any) {
             // If the error is simply that the user is not signed in, we don't need to log it as an error

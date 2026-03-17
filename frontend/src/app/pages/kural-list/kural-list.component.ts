@@ -18,7 +18,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { KuralService, SearchIndexItem, AdhigaramSummary } from '../../services/kural.service';
 import { forkJoin, Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, switchMap, tap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { KURAL_FILTER_MAPPING } from './kural-filter-mapping';
 
@@ -97,17 +97,14 @@ export class KuralListComponent implements OnInit {
             adhigarams: this.kuralService.getAdhigarams()
         })
             .pipe(
-                switchMap(({ kurals, adhigarams }) =>
-                    this.route.queryParamMap.pipe(
-                        map((params) => ({ kurals, adhigarams, params }))
-                    )
-                ),
+                tap(({ kurals, adhigarams }) => {
+                    this.allKurals = [...kurals].sort((left, right) => left.n - right.n);
+                    this.allAdhigarams = [...adhigarams].sort((left, right) => left.id - right.id);
+                }),
+                switchMap(() => this.route.queryParamMap),
                 takeUntilDestroyed(this.destroyRef)
             )
-            .subscribe(({ kurals, adhigarams, params }) => {
-                this.allKurals = [...kurals].sort((left, right) => left.n - right.n);
-                this.allAdhigarams = [...adhigarams].sort((left, right) => left.id - right.id);
-
+            .subscribe((params) => {
                 this.hydrateStateFromQueryParams(params);
                 this.applyFilters(false);
                 this.syncQueryParamsIfNeeded(params);
@@ -408,7 +405,7 @@ export class KuralListComponent implements OnInit {
     }
 
     private syncQueryParamsIfNeeded(currentParams: ParamMap = this.route.snapshot.queryParamMap): void {
-        const nextParams = this.buildQueryParams();
+        const nextParams = this.buildMergedQueryParams(currentParams);
 
         if (this.areQueryParamsEqual(currentParams, nextParams)) {
             return;
@@ -419,6 +416,27 @@ export class KuralListComponent implements OnInit {
             queryParams: nextParams,
             replaceUrl: true
         });
+    }
+
+    private buildMergedQueryParams(currentParams: ParamMap): Params {
+        const mergedParams = currentParams.keys.reduce<Params>((accumulator, key) => {
+            const value = currentParams.get(key);
+            if (value !== null) {
+                accumulator[key] = value;
+            }
+            return accumulator;
+        }, {});
+
+        for (const [key, value] of Object.entries(this.buildQueryParams())) {
+            if (value === null || value === undefined || value === '') {
+                delete mergedParams[key];
+                continue;
+            }
+
+            mergedParams[key] = value;
+        }
+
+        return mergedParams;
     }
 
     private buildQueryParams(): Params {
@@ -456,7 +474,12 @@ export class KuralListComponent implements OnInit {
             return null;
         }
 
-        const parsedValue = Number.parseInt(value, 10);
-        return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : null;
+        const normalizedValue = value.trim();
+        if (!/^[1-9]\d*$/.test(normalizedValue)) {
+            return null;
+        }
+
+        const parsedValue = Number(normalizedValue);
+        return Number.isSafeInteger(parsedValue) ? parsedValue : null;
     }
 }

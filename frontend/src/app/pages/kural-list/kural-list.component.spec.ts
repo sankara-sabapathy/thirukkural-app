@@ -126,13 +126,7 @@ describe('KuralListComponent', () => {
 
         expect(component.libraryScope).toBe('kural');
         expect(router.navigate).toHaveBeenCalledWith([], expect.objectContaining({
-            queryParams: {
-                view: null,
-                q: null,
-                pal: null,
-                iyal: null,
-                adikaram: null
-            }
+            queryParams: {}
         }));
     });
 
@@ -159,13 +153,29 @@ describe('KuralListComponent', () => {
         component.onScopeChange();
 
         expect(router.navigate).toHaveBeenCalledWith([], expect.objectContaining({
-            queryParams: {
+            queryParams: expect.objectContaining({
                 view: 'adhigaram',
-                q: '108',
-                pal: null,
-                iyal: null,
-                adikaram: null
-            },
+                q: '108'
+            }),
+            replaceUrl: true
+        }));
+    });
+
+    it('should preserve unrelated query params when syncing library filters', () => {
+        setQueryParams({ ref: 'newsletter' });
+        fixture.detectChanges();
+        vi.mocked(router.navigate).mockClear();
+
+        component.searchQuery = '108';
+        component.libraryScope = 'adhigaram';
+        component.onScopeChange();
+
+        expect(router.navigate).toHaveBeenCalledWith([], expect.objectContaining({
+            queryParams: expect.objectContaining({
+                ref: 'newsletter',
+                view: 'adhigaram',
+                q: '108'
+            }),
             replaceUrl: true
         }));
     });

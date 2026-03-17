@@ -7,6 +7,7 @@ const CHUNK_SIZE = 100;
 const EXPECTED_ADHIGARAMS = 133;
 const EXPECTED_KURAL_COUNT = 1330;
 const KURALS_PER_ADHIGARAM = 10;
+const GENERATED_JSON_PATTERN = /^(\d+-\d+|search-index|adhigarams)\.json$/;
 
 function validateKuralSequence(allKural) {
     const numbers = allKural.map((kural) => Number(kural.number));
@@ -34,6 +35,7 @@ function buildAdhigarams(allKural) {
     let currentAdhigaram = null;
 
     for (const kural of allKural) {
+        const kuralNumber = Number(kural.number);
         const isNewAdhigaram =
             currentAdhigaram === null ||
             currentAdhigaram.adikaram_tr !== kural.adikaram_tr ||
@@ -47,8 +49,8 @@ function buildAdhigarams(allKural) {
 
             currentAdhigaram = {
                 id: adhigarams.length + 1,
-                start: kural.number,
-                end: kural.number,
+                start: kuralNumber,
+                end: kuralNumber,
                 pal: kural.pal,
                 pal_tr: kural.pal_tr,
                 pal_tl: kural.pal_tl,
@@ -63,7 +65,7 @@ function buildAdhigarams(allKural) {
             continue;
         }
 
-        currentAdhigaram.end = kural.number;
+        currentAdhigaram.end = kuralNumber;
         currentAdhigaram.count += 1;
     }
 
@@ -118,7 +120,7 @@ function splitData() {
     }
 
     for (const existingFile of fs.readdirSync(OUTPUT_DIR)) {
-        if (existingFile.endsWith('.json')) {
+        if (GENERATED_JSON_PATTERN.test(existingFile)) {
             fs.unlinkSync(path.join(OUTPUT_DIR, existingFile));
         }
     }

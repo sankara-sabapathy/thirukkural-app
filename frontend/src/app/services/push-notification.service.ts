@@ -83,6 +83,9 @@ export class PushNotificationService {
                 if (subscription) {
                     return true;
                 }
+
+                localStorage.removeItem(this.STORAGE_KEY);
+                return false;
             } catch {
                 localStorage.removeItem(this.STORAGE_KEY);
                 return false;
