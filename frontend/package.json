@@ -7,17 +7,17 @@
     "start:e2e": "ng serve --host 127.0.0.1 --ssl=false",
     "config": "node scripts/set-env.js",
     "build": "ng build",
-    "build:ssg": "ng build && npm run prerender && npm run generate-sitemap",
-    "build:ssg:development": "ng build --configuration development && npm run prerender && npm run generate-sitemap",
-    "build:ssg:production": "ng build --configuration production && npm run prerender && npm run generate-sitemap",
+    "build:ssg": "npm run prerender && ng build && npm run generate-sitemap",
+    "build:ssg:development": "npm run prerender && ng build --configuration development && npm run generate-sitemap",
+    "build:ssg:production": "npm run prerender && ng build --configuration production && npm run generate-sitemap",
     "sync:kural-data": "node ../scripts/split-data.js",
     "serve:ssg": "node scripts/serve-ssg.js",
     "watch": "ng build --watch --configuration development",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
-    "prerender": "tsx scripts/prerender.ts",
-    "generate-sitemap": "tsx scripts/sitemap.ts"
+    "prerender": "tsx --tsconfig tsconfig.app.json scripts/prerender.ts",
+    "generate-sitemap": "tsx --tsconfig tsconfig.app.json scripts/sitemap.ts"
   },
   "prettier": {
     "printWidth": 100,

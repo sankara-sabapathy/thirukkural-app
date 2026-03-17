@@ -1,17 +1,41 @@
 <div class="list-container">
     <div class="search-header">
         <h1>Thirukkural Library</h1>
-        <p class="subtitle">Explore 1330 verses of timeless Tamil wisdom</p>
+        <p class="subtitle">Explore 1330 verses and 133 adhigarams of timeless Tamil wisdom</p>
 
-        <!-- Ultra Modern Search Hub -->
         <div class="search-hub">
+            <div class="scope-switch-row">
+                <div class="scope-switch-label">
+                    <mat-icon>library_books</mat-icon>
+                    Browse
+                </div>
+
+                <mat-button-toggle-group
+                    class="scope-toggle-group"
+                    [(ngModel)]="libraryScope"
+                    (ngModelChange)="onScopeChange()"
+                    aria-label="Library search scope"
+                >
+                    <mat-button-toggle value="kural" class="scope-toggle-kural">Kurals</mat-button-toggle>
+                    <mat-button-toggle value="adhigaram" class="scope-toggle-adhigaram">Adhigarams</mat-button-toggle>
+                </mat-button-toggle-group>
+            </div>
+
+            <div class="hub-divider"></div>
+
             <div class="search-main-row">
                 <mat-icon class="search-hero-icon">search</mat-icon>
-                <input class="hero-search-input" [(ngModel)]="searchQuery" (ngModelChange)="onSearch($event)"
-                    placeholder="Search by number, Tamil text, or meaning..." aria-label="Search Kurals">
+                <input
+                    class="hero-search-input"
+                    [(ngModel)]="searchQuery"
+                    (ngModelChange)="onSearch($event)"
+                    [placeholder]="searchPlaceholder"
+                    [attr.aria-label]="isKuralScope ? 'Search Kurals' : 'Search Adhigarams'"
+                >
 
-                <button mat-flat-button color="primary" (click)="goToRandomKural()" class="hero-random-btn">
-                    <mat-icon>shuffle</mat-icon> Random
+                <button mat-flat-button color="primary" (click)="goToRandomEntry()" class="hero-random-btn">
+                    <mat-icon>shuffle</mat-icon>
+                    Random
                 </button>
             </div>
 
@@ -20,12 +44,17 @@
             <div class="filter-row">
                 <div class="filter-header-group">
                     <div class="filter-label">
-                        <mat-icon>tune</mat-icon> Filters
+                        <mat-icon>tune</mat-icon>
+                        Filters
                     </div>
 
-                    <button mat-button class="lang-toggle-btn" (click)="toggleFilterLanguage()"
+                    <button
+                        mat-button
+                        class="lang-toggle-btn"
+                        (click)="toggleFilterLanguage()"
                         [attr.aria-label]="filterLanguage === 'en' ? 'Switch to Tamil Filters' : 'Switch to English Filters'"
-                        [attr.aria-pressed]="filterLanguage === 'ta'">
+                        [attr.aria-pressed]="filterLanguage === 'ta'"
+                    >
                         <span [class.active]="filterLanguage === 'en'">Eng</span>
                         <span class="divider">|</span>
                         <span [class.active]="filterLanguage === 'ta'">தமிழ்</span>
@@ -33,35 +62,54 @@
                 </div>
 
                 <mat-form-field class="ultra-filter" subscriptSizing="dynamic">
-                    <mat-select [(ngModel)]="selectedPal" (selectionChange)="onPalChange()"
-                        [placeholder]="filterLanguage === 'ta' ? 'பால் (Section)' : 'Section'"
-                        panelClass="ultra-select-panel">
-                        <mat-option value="">{{ filterLanguage === 'ta' ? 'அனைத்து பால்களும்' : 'All Sections'
-                            }}</mat-option>
-                        <mat-option *ngFor="let pal of palOptions" [value]="pal">{{ getTranslatedOption('pal', pal)
-                            }}</mat-option>
+                    <mat-select
+                        [(ngModel)]="selectedPal"
+                        (selectionChange)="onPalChange()"
+                        [placeholder]="filterLanguage === 'ta' ? 'பால் (Section)' : 'Pal (Section)'"
+                        panelClass="ultra-select-panel"
+                    >
+                        <mat-option value="">
+                            {{ filterLanguage === 'ta' ? 'அனைத்து பால்களும்' : 'All Sections' }}
+                        </mat-option>
+                        <mat-option *ngFor="let pal of palOptions" [value]="pal">
+                            {{ getTranslatedOption('pal', pal) }}
+                        </mat-option>
                     </mat-select>
                 </mat-form-field>
 
                 <mat-form-field class="ultra-filter" subscriptSizing="dynamic">
-                    <mat-select [(ngModel)]="selectedIyal" (selectionChange)="onIyalChange()"
-                        [placeholder]="filterLanguage === 'ta' ? 'இயல் (Chapter)' : 'Chapter'"
-                        panelClass="ultra-select-panel">
-                        <mat-option value="">{{ filterLanguage === 'ta' ? 'அனைத்து இயல்களும்' : 'All Chapters'
-                            }}</mat-option>
-                        <mat-option *ngFor="let iyal of iyalOptions" [value]="iyal">{{ getTranslatedOption('iyal', iyal)
-                            }}</mat-option>
+                    <mat-select
+                        [(ngModel)]="selectedIyal"
+                        (selectionChange)="onIyalChange()"
+                        [placeholder]="filterLanguage === 'ta' ? 'இயல் (Division)' : 'Iyal (Division)'"
+                        panelClass="ultra-select-panel"
+                    >
+                        <mat-option value="">
+                            {{ filterLanguage === 'ta' ? 'அனைத்து இயல்களும்' : 'All Divisions' }}
+                        </mat-option>
+                        <mat-option *ngFor="let iyal of iyalOptions" [value]="iyal">
+                            {{ getTranslatedOption('iyal', iyal) }}
+                        </mat-option>
                     </mat-select>
                 </mat-form-field>
 
-                <mat-form-field class="ultra-filter" subscriptSizing="dynamic">
-                    <mat-select [(ngModel)]="selectedAdikaram" (selectionChange)="onAdikaramChange()"
-                        [placeholder]="filterLanguage === 'ta' ? 'அதிகாரம் (Topic)' : 'Topic'"
-                        panelClass="ultra-select-panel">
-                        <mat-option value="">{{ filterLanguage === 'ta' ? 'அனைத்து அதிகாரங்களும்' : 'All Topics'
-                            }}</mat-option>
-                        <mat-option *ngFor="let adikaram of adikaramOptions" [value]="adikaram">{{
-                            getTranslatedOption('adikaram', adikaram) }}</mat-option>
+                <mat-form-field
+                    *ngIf="isKuralScope"
+                    class="ultra-filter chapter-filter-field"
+                    subscriptSizing="dynamic"
+                >
+                    <mat-select
+                        [(ngModel)]="selectedAdikaramId"
+                        (selectionChange)="onAdikaramChange()"
+                        [placeholder]="filterLanguage === 'ta' ? 'அதிகாரம் (Chapter)' : 'Adhigaram (Chapter)'"
+                        panelClass="ultra-select-panel"
+                    >
+                        <mat-option [value]="null">
+                            {{ filterLanguage === 'ta' ? 'அனைத்து அதிகாரங்களும்' : 'All Adhigarams' }}
+                        </mat-option>
+                        <mat-option *ngFor="let adhigaram of adikaramOptions" [value]="adhigaram.id">
+                            {{ getAdhigaramOptionLabel(adhigaram) }}
+                        </mat-option>
                     </mat-select>
                 </mat-form-field>
             </div>
@@ -73,19 +121,30 @@
     </div>
 
     <div *ngIf="!loading" class="results-container">
-        <div class="results-header" *ngIf="filteredKurals.length > 0">
+        <div class="results-header" *ngIf="currentFilteredCount > 0">
             <span class="results-count">
-                Showing {{ displayedKurals.length }} of {{ filteredKurals.length }} kurals
+                Showing {{ currentDisplayedCount }} of {{ currentFilteredCount }} {{ resultsLabel }}
             </span>
+
+            <a
+                *ngIf="isKuralScope && selectedAdhigaram as adhigaram"
+                class="open-adhigaram-cta"
+                mat-stroked-button
+                color="primary"
+                [routerLink]="['/adhigaram', adhigaram.id]"
+            >
+                <mat-icon>menu_book</mat-icon>
+                Open Adhigaram {{ adhigaram.id }}
+            </a>
         </div>
 
-        <div *ngIf="filteredKurals.length === 0" class="no-results">
+        <div *ngIf="currentFilteredCount === 0" class="no-results">
             <mat-icon>search_off</mat-icon>
-            <p>No kurals found matching "{{ searchQuery }}"</p>
-            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Try searching with different keywords</p>
+            <p>No {{ resultsLabel }} found matching "{{ searchQuery }}"</p>
+            <p class="no-results-help">Try searching with different keywords or broader filters</p>
         </div>
 
-        <div class="kural-grid" *ngIf="displayedKurals.length > 0">
+        <div class="kural-grid" *ngIf="isKuralScope && displayedKurals.length > 0">
             <a
                 *ngFor="let kural of displayedKurals"
                 [routerLink]="['/kural', kural.n]"
@@ -109,9 +168,39 @@
             </a>
         </div>
 
-        <mat-paginator *ngIf="filteredKurals.length > 0" [length]="filteredKurals.length" [pageSize]="pageSize"
-            [pageSizeOptions]="pageSizeOptions" [pageIndex]="pageIndex" (page)="onPageChange($event)"
-            showFirstLastButtons aria-label="Select page">
+        <div class="adhigaram-grid" *ngIf="!isKuralScope && displayedAdhigarams.length > 0">
+            <a
+                *ngFor="let adhigaram of displayedAdhigarams"
+                [routerLink]="['/adhigaram', adhigaram.id]"
+                class="adhigaram-item"
+                [attr.aria-label]="'Open Adhigaram ' + adhigaram.id"
+            >
+                <div class="adhigaram-header">
+                    <div class="adhigaram-number">{{ adhigaram.id }}</div>
+                    <div class="adhigaram-heading">
+                        <div class="adhigaram-title">{{ adhigaram.adikaram }}</div>
+                        <div class="adhigaram-subtitle">{{ getAdhigaramSubtitle(adhigaram) }}</div>
+                    </div>
+                </div>
+
+                <div class="adhigaram-meta">
+                    <span class="meta-tag">{{ adhigaram.pal_tr }}</span>
+                    <span class="meta-tag">{{ adhigaram.iyal_tr }}</span>
+                    <span class="meta-tag range-tag">{{ getAdhigaramRange(adhigaram) }}</span>
+                </div>
+            </a>
+        </div>
+
+        <mat-paginator
+            *ngIf="currentFilteredCount > 0"
+            [length]="currentFilteredCount"
+            [pageSize]="pageSize"
+            [pageSizeOptions]="pageSizeOptions"
+            [pageIndex]="pageIndex"
+            (page)="onPageChange($event)"
+            showFirstLastButtons
+            aria-label="Select page"
+        >
         </mat-paginator>
     </div>
 </div>

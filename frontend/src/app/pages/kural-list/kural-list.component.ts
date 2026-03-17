@@ -1,18 +1,30 @@
-import { Component, OnInit } from '@angular/core';
+import { DestroyRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import {
+    ActivatedRoute,
+    Params,
+    ParamMap,
+    Router,
+    RouterModule
+} from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatListModule } from '@angular/material/list';
+import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
-import { KuralService, SearchIndexItem } from '../../services/kural.service';
-import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { KuralService, SearchIndexItem, AdhigaramSummary } from '../../services/kural.service';
+import { forkJoin, Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { KURAL_FILTER_MAPPING } from './kural-filter-mapping';
+
+type LibraryScope = 'kural' | 'adhigaram';
+
+type AdhigaramFilterOption = AdhigaramSummary;
 
 @Component({
     selector: 'app-kural-list',
@@ -21,164 +33,163 @@ import { KURAL_FILTER_MAPPING } from './kural-filter-mapping';
         CommonModule,
         RouterModule,
         FormsModule,
-        MatInputModule,
+        MatButtonModule,
+        MatButtonToggleModule,
         MatFormFieldModule,
         MatIconModule,
-        MatListModule,
+        MatInputModule,
         MatPaginatorModule,
         MatProgressSpinnerModule,
-        MatButtonModule,
         MatSelectModule
     ],
     templateUrl: './kural-list.component.html',
     styleUrls: ['./kural-list.component.scss']
 })
 export class KuralListComponent implements OnInit {
+    private readonly destroyRef = inject(DestroyRef);
+    private readonly searchSubject = new Subject<string>();
+
     allKurals: SearchIndexItem[] = [];
     filteredKurals: SearchIndexItem[] = [];
     displayedKurals: SearchIndexItem[] = [];
+
+    allAdhigarams: AdhigaramSummary[] = [];
+    filteredAdhigarams: AdhigaramSummary[] = [];
+    displayedAdhigarams: AdhigaramSummary[] = [];
+
     loading = true;
+    libraryScope: LibraryScope = 'kural';
     searchQuery = '';
 
-    // Filter Options
     palOptions: string[] = [];
     iyalOptions: string[] = [];
-    adikaramOptions: string[] = [];
+    adikaramOptions: AdhigaramFilterOption[] = [];
 
-    // Selected Filters
-    selectedPal: string = '';
-    selectedIyal: string = '';
-    selectedAdikaram: string = '';
+    selectedPal = '';
+    selectedIyal = '';
+    selectedAdikaramId: number | null = null;
 
-    // Pagination
     pageSize = 10;
     pageIndex = 0;
     pageSizeOptions = [10, 25, 50, 100];
 
-    // Language Toggle
     filterLanguage: 'ta' | 'en' = 'ta';
-
-    private searchSubject = new Subject<string>();
 
     constructor(
         private kuralService: KuralService,
-        private router: Router
+        private router: Router,
+        private route: ActivatedRoute
     ) {
         this.searchSubject.pipe(
             debounceTime(300),
-            distinctUntilChanged()
-        ).subscribe(query => {
-            this.filterKurals(query);
+            distinctUntilChanged(),
+            takeUntilDestroyed(this.destroyRef)
+        ).subscribe((query) => {
+            this.searchQuery = query;
+            this.applyFilters(true);
         });
     }
 
     ngOnInit(): void {
-        this.kuralService.getSearchIndex().subscribe(index => {
-            this.allKurals = index;
-            this.filteredKurals = index;
-            this.extractFilterOptions();
-            this.updateDisplayedKurals();
-            this.loading = false;
-        });
+        forkJoin({
+            kurals: this.kuralService.getSearchIndex(),
+            adhigarams: this.kuralService.getAdhigarams()
+        })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(({ kurals, adhigarams }) => {
+                this.allKurals = [...kurals].sort((left, right) => left.n - right.n);
+                this.allAdhigarams = [...adhigarams].sort((left, right) => left.id - right.id);
+
+                this.route.queryParamMap
+                    .pipe(takeUntilDestroyed(this.destroyRef))
+                    .subscribe((params) => {
+                        this.hydrateStateFromQueryParams(params);
+                        this.applyFilters(false);
+                        this.syncQueryParamsIfNeeded(params);
+                        this.loading = false;
+                    });
+            });
     }
 
-    extractFilterOptions(): void {
-        this.palOptions = [...new Set(this.allKurals.map(k => k.p))];
-        this.updateIyalOptions();
+    get isKuralScope(): boolean {
+        return this.libraryScope === 'kural';
+    }
+
+    get currentDisplayedCount(): number {
+        return this.isKuralScope ? this.displayedKurals.length : this.displayedAdhigarams.length;
+    }
+
+    get currentFilteredCount(): number {
+        return this.isKuralScope ? this.filteredKurals.length : this.filteredAdhigarams.length;
+    }
+
+    get searchPlaceholder(): string {
+        return this.isKuralScope
+            ? 'Search by number, Tamil text, or meaning...'
+            : 'Search by adhigaram number, Tamil title, or English title...';
+    }
+
+    get resultsLabel(): string {
+        return this.isKuralScope ? 'kurals' : 'adhigarams';
+    }
+
+    get selectedAdhigaram(): AdhigaramSummary | undefined {
+        if (!this.selectedAdikaramId) {
+            return undefined;
+        }
+
+        return this.allAdhigarams.find((adhigaram) => adhigaram.id === this.selectedAdikaramId);
+    }
+
+    onScopeChange(): void {
+        if (!this.isKuralScope) {
+            this.selectedAdikaramId = null;
+        }
+
+        this.pageIndex = 0;
+        this.normalizeSelections();
+        this.applyFilters(true);
     }
 
     onPalChange(): void {
         this.selectedIyal = '';
-        this.selectedAdikaram = '';
-        this.updateIyalOptions();
-        this.applyFilters();
+        this.selectedAdikaramId = null;
+        this.pageIndex = 0;
+        this.normalizeSelections();
+        this.applyFilters(true);
     }
 
     onIyalChange(): void {
-        this.selectedAdikaram = '';
-        this.updateAdikaramOptions();
-        this.applyFilters();
+        this.selectedAdikaramId = null;
+        this.pageIndex = 0;
+        this.normalizeSelections();
+        this.applyFilters(true);
     }
 
     onAdikaramChange(): void {
-        this.applyFilters();
-    }
-
-    updateIyalOptions(): void {
-        let kurals = this.allKurals;
-        if (this.selectedPal) {
-            kurals = kurals.filter(k => k.p === this.selectedPal);
-        }
-        this.iyalOptions = [...new Set(kurals.map(k => k.i))];
-        this.updateAdikaramOptions();
-    }
-
-    updateAdikaramOptions(): void {
-        let kurals = this.allKurals;
-        if (this.selectedPal) {
-            kurals = kurals.filter(k => k.p === this.selectedPal);
-        }
-        if (this.selectedIyal) {
-            kurals = kurals.filter(k => k.i === this.selectedIyal);
-        }
-        this.adikaramOptions = [...new Set(kurals.map(k => k.a))];
+        this.pageIndex = 0;
+        this.applyFilters(true);
     }
 
     onSearch(query: string): void {
         this.searchSubject.next(query);
     }
 
-    filterKurals(query: string): void {
-        this.applyFilters(query);
-    }
-
-    applyFilters(query: string = this.searchQuery): void {
-        this.pageIndex = 0; // Reset to first page on search
-
-        let result = this.allKurals;
-
-        if (this.selectedPal) {
-            result = result.filter(k => k.p === this.selectedPal);
-        }
-        if (this.selectedIyal) {
-            result = result.filter(k => k.i === this.selectedIyal);
-        }
-        if (this.selectedAdikaram) {
-            result = result.filter(k => k.a === this.selectedAdikaram);
-        }
-
-        if (query && query.trim() !== '') {
-            const lowerQuery = query.toLowerCase();
-            result = result.filter(k =>
-                k.n.toString().includes(lowerQuery) ||
-                k.t.toLowerCase().includes(lowerQuery) ||
-                k.l1.toLowerCase().includes(lowerQuery) ||
-                k.mk.toLowerCase().includes(lowerQuery) ||
-                k.i.toLowerCase().includes(lowerQuery) ||
-                k.p.toLowerCase().includes(lowerQuery) ||
-                k.a.toLowerCase().includes(lowerQuery)
-            );
-        }
-
-        this.filteredKurals = result;
-        this.updateDisplayedKurals();
-    }
-
     onPageChange(event: PageEvent): void {
         this.pageIndex = event.pageIndex;
         this.pageSize = event.pageSize;
-        this.updateDisplayedKurals();
+        this.updateDisplayedResults();
     }
 
-    updateDisplayedKurals(): void {
-        const startIndex = this.pageIndex * this.pageSize;
-        const endIndex = startIndex + this.pageSize;
-        this.displayedKurals = this.filteredKurals.slice(startIndex, endIndex);
-    }
+    goToRandomEntry(): void {
+        if (this.isKuralScope) {
+            const randomId = Math.floor(Math.random() * 1330) + 1;
+            this.router.navigate(['/kural', randomId]);
+            return;
+        }
 
-    goToRandomKural(): void {
-        const randomId = Math.floor(Math.random() * 1330) + 1;
-        this.router.navigate(['/kural', randomId]);
+        const randomId = Math.floor(Math.random() * this.allAdhigarams.length) + 1;
+        this.router.navigate(['/adhigaram', randomId]);
     }
 
     toggleFilterLanguage(): void {
@@ -191,6 +202,248 @@ export class KuralListComponent implements OnInit {
         }
 
         const mappedValue = KURAL_FILTER_MAPPING[type]?.[value as keyof typeof KURAL_FILTER_MAPPING[typeof type]];
-        return mappedValue || value; // Fallback to English if translation is missing
+        return mappedValue || value;
+    }
+
+    getAdhigaramOptionLabel(option: AdhigaramFilterOption): string {
+        const label = this.filterLanguage === 'ta' ? option.adikaram : option.adikaram_tr;
+        return `${option.id}. ${label}`;
+    }
+
+    getAdhigaramSubtitle(adhigaram: AdhigaramSummary): string {
+        return [adhigaram.adikaram_tr, adhigaram.adikaram_tl].filter(Boolean).join(' • ');
+    }
+
+    getAdhigaramRange(adhigaram: AdhigaramSummary): string {
+        return `Kurals ${adhigaram.start}-${adhigaram.end}`;
+    }
+
+    private hydrateStateFromQueryParams(params: ParamMap): void {
+        this.libraryScope = params.get('view') === 'adhigaram' ? 'adhigaram' : 'kural';
+        this.searchQuery = (params.get('q') || '').trim();
+        this.selectedPal = params.get('pal') || '';
+        this.selectedIyal = params.get('iyal') || '';
+        this.selectedAdikaramId = this.libraryScope === 'kural'
+            ? this.parseAdikaramId(params.get('adikaram'))
+            : null;
+
+        this.pageIndex = 0;
+        this.normalizeSelections();
+    }
+
+    private normalizeSelections(): void {
+        this.updatePalOptions();
+
+        if (this.selectedPal && !this.palOptions.includes(this.selectedPal)) {
+            this.selectedPal = '';
+        }
+
+        this.updateIyalOptions();
+
+        if (this.selectedIyal && !this.iyalOptions.includes(this.selectedIyal)) {
+            this.selectedIyal = '';
+            this.updateIyalOptions();
+        }
+
+        if (!this.isKuralScope) {
+            this.selectedAdikaramId = null;
+            this.adikaramOptions = [];
+            return;
+        }
+
+        this.updateAdikaramOptions();
+
+        if (
+            this.selectedAdikaramId &&
+            !this.adikaramOptions.some((adhigaram) => adhigaram.id === this.selectedAdikaramId)
+        ) {
+            this.selectedAdikaramId = null;
+        }
+    }
+
+    private updatePalOptions(): void {
+        const source = this.isKuralScope
+            ? this.allKurals.map((kural) => kural.p)
+            : this.allAdhigarams.map((adhigaram) => adhigaram.pal_tr);
+
+        this.palOptions = [...new Set(source)];
+    }
+
+    private updateIyalOptions(): void {
+        if (this.isKuralScope) {
+            let kurals = this.allKurals;
+            if (this.selectedPal) {
+                kurals = kurals.filter((kural) => kural.p === this.selectedPal);
+            }
+            this.iyalOptions = [...new Set(kurals.map((kural) => kural.i))];
+            return;
+        }
+
+        let adhigarams = this.allAdhigarams;
+        if (this.selectedPal) {
+            adhigarams = adhigarams.filter((adhigaram) => adhigaram.pal_tr === this.selectedPal);
+        }
+        this.iyalOptions = [...new Set(adhigarams.map((adhigaram) => adhigaram.iyal_tr))];
+    }
+
+    private updateAdikaramOptions(): void {
+        let adhigarams = this.allAdhigarams;
+
+        if (this.selectedPal) {
+            adhigarams = adhigarams.filter((adhigaram) => adhigaram.pal_tr === this.selectedPal);
+        }
+
+        if (this.selectedIyal) {
+            adhigarams = adhigarams.filter((adhigaram) => adhigaram.iyal_tr === this.selectedIyal);
+        }
+
+        this.adikaramOptions = adhigarams;
+    }
+
+    private applyFilters(syncUrl: boolean): void {
+        this.normalizeSelections();
+
+        if (this.isKuralScope) {
+            let result = this.allKurals;
+
+            if (this.selectedPal) {
+                result = result.filter((kural) => kural.p === this.selectedPal);
+            }
+
+            if (this.selectedIyal) {
+                result = result.filter((kural) => kural.i === this.selectedIyal);
+            }
+
+            if (this.selectedAdikaramId) {
+                const adhigaram = this.selectedAdhigaram;
+                if (adhigaram) {
+                    result = result.filter(
+                        (kural) => kural.n >= adhigaram.start && kural.n <= adhigaram.end
+                    );
+                }
+            }
+
+            if (this.searchQuery) {
+                const lowerQuery = this.searchQuery.toLowerCase();
+                result = result.filter((kural) =>
+                    kural.n.toString().includes(lowerQuery) ||
+                    kural.t.toLowerCase().includes(lowerQuery) ||
+                    kural.l1.toLowerCase().includes(lowerQuery) ||
+                    kural.mk.toLowerCase().includes(lowerQuery) ||
+                    kural.i.toLowerCase().includes(lowerQuery) ||
+                    kural.p.toLowerCase().includes(lowerQuery) ||
+                    kural.a.toLowerCase().includes(lowerQuery)
+                );
+            }
+
+            this.filteredKurals = result;
+        } else {
+            let result = this.allAdhigarams;
+
+            if (this.selectedPal) {
+                result = result.filter((adhigaram) => adhigaram.pal_tr === this.selectedPal);
+            }
+
+            if (this.selectedIyal) {
+                result = result.filter((adhigaram) => adhigaram.iyal_tr === this.selectedIyal);
+            }
+
+            if (this.searchQuery) {
+                const lowerQuery = this.searchQuery.toLowerCase();
+                result = result.filter((adhigaram) => {
+                    const searchText = [
+                        adhigaram.id.toString(),
+                        adhigaram.adikaram,
+                        adhigaram.adikaram_tr,
+                        adhigaram.adikaram_tl || '',
+                        adhigaram.pal,
+                        adhigaram.pal_tr,
+                        adhigaram.pal_tl || '',
+                        adhigaram.iyal,
+                        adhigaram.iyal_tr,
+                        adhigaram.iyal_tl || '',
+                        `${adhigaram.start}-${adhigaram.end}`,
+                        `kurals ${adhigaram.start}-${adhigaram.end}`
+                    ].join(' ').toLowerCase();
+
+                    return searchText.includes(lowerQuery);
+                });
+            }
+
+            this.filteredAdhigarams = result;
+        }
+
+        this.updateDisplayedResults();
+
+        if (syncUrl) {
+            this.syncQueryParamsIfNeeded();
+        }
+    }
+
+    private updateDisplayedResults(): void {
+        const startIndex = this.pageIndex * this.pageSize;
+        const endIndex = startIndex + this.pageSize;
+
+        if (this.isKuralScope) {
+            this.displayedKurals = this.filteredKurals.slice(startIndex, endIndex);
+            this.displayedAdhigarams = [];
+            return;
+        }
+
+        this.displayedAdhigarams = this.filteredAdhigarams.slice(startIndex, endIndex);
+        this.displayedKurals = [];
+    }
+
+    private syncQueryParamsIfNeeded(currentParams: ParamMap = this.route.snapshot.queryParamMap): void {
+        const nextParams = this.buildQueryParams();
+
+        if (this.areQueryParamsEqual(currentParams, nextParams)) {
+            return;
+        }
+
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: nextParams,
+            replaceUrl: true
+        });
+    }
+
+    private buildQueryParams(): Params {
+        return {
+            view: this.libraryScope === 'adhigaram' ? 'adhigaram' : null,
+            q: this.searchQuery.trim() || null,
+            pal: this.selectedPal || null,
+            iyal: this.selectedIyal || null,
+            adikaram: this.isKuralScope && this.selectedAdikaramId
+                ? String(this.selectedAdikaramId)
+                : null
+        };
+    }
+
+    private areQueryParamsEqual(currentParams: ParamMap, nextParams: Params): boolean {
+        const normalizedNext = Object.entries(nextParams)
+            .filter(([, value]) => value !== null && value !== undefined && value !== '')
+            .reduce<Record<string, string>>((accumulator, [key, value]) => {
+                accumulator[key] = String(value);
+                return accumulator;
+            }, {});
+
+        const currentKeys = currentParams.keys.filter((key) => currentParams.get(key) !== null).sort();
+        const nextKeys = Object.keys(normalizedNext).sort();
+
+        if (currentKeys.length !== nextKeys.length) {
+            return false;
+        }
+
+        return nextKeys.every((key) => currentParams.get(key) === normalizedNext[key]);
+    }
+
+    private parseAdikaramId(value: string | null): number | null {
+        if (!value) {
+            return null;
+        }
+
+        const parsedValue = Number.parseInt(value, 10);
+        return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : null;
     }
 }

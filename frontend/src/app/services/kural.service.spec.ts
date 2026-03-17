@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { DOCUMENT } from '@angular/common';
 import { AdhigaramSummary, Kural, KuralService } from './kural.service';
 
 const createKural = (number: number): Kural => ({
@@ -25,7 +24,6 @@ const createKural = (number: number): Kural => ({
 describe('KuralService', () => {
     let service: KuralService;
     let httpMock: HttpTestingController;
-    let document: Document;
 
     beforeEach(() => {
         TestBed.configureTestingModule({
@@ -37,11 +35,9 @@ describe('KuralService', () => {
         });
         service = TestBed.inject(KuralService);
         httpMock = TestBed.inject(HttpTestingController);
-        document = TestBed.inject(DOCUMENT);
     });
 
     afterEach(() => {
-        document.getElementById('prerender-route-data')?.remove();
         httpMock.verify();
     });
 
@@ -51,7 +47,6 @@ describe('KuralService', () => {
 
     it('should fetch a kural by number', () => {
         const dummyKural = createKural(1);
-        const chunkId = '1-100';
 
         service.getKural(1).subscribe(kural => {
             expect(kural).toBeTruthy();
@@ -59,29 +54,9 @@ describe('KuralService', () => {
             expect(kural?.line1).toBe('Line 1 1');
         });
 
-        const req = httpMock.expectOne(`/data/thirukkural/${chunkId}.json`);
+        const req = httpMock.expectOne('/data/thirukkural/1-100.json');
         expect(req.request.method).toBe('GET');
         req.flush([dummyKural]);
-    });
-
-    it('should use prerendered kural snapshot without issuing an http request', () => {
-        const prerenderedKural = createKural(42);
-        const script = document.createElement('script');
-        script.id = 'prerender-route-data';
-        script.type = 'application/json';
-        script.textContent = JSON.stringify({
-            type: 'kural',
-            payload: prerenderedKural
-        });
-        document.body.appendChild(script);
-
-        service.getKural(42).subscribe(kural => {
-            expect(kural?.number).toBe(42);
-            expect(kural?.translation).toBe('Translation 42');
-        });
-
-        httpMock.expectNone('/data/thirukkural/1-100.json');
-        expect(document.getElementById('prerender-route-data')).toBeNull();
     });
 
     it('should return undefined for invalid kural number', () => {
@@ -126,43 +101,6 @@ describe('KuralService', () => {
 
         const chunkReq = httpMock.expectOne('/data/thirukkural/1-100.json');
         chunkReq.flush(chunk);
-    });
-
-    it('should use prerendered adhigaram snapshot without issuing http requests', () => {
-        const prerenderedAdhigaram = {
-            id: 12,
-            start: 111,
-            end: 120,
-            pal: 'à®ªà®¾à®²à¯',
-            pal_tr: 'Section',
-            pal_tl: 'Paal',
-            iyal: 'à®‡à®¯à®²à¯',
-            iyal_tr: 'Division',
-            iyal_tl: 'Iyal',
-            adikaram: 'à®…à®¤à®¿à®•à®¾à®°à®®à¯',
-            adikaram_tr: 'Chapter',
-            adikaram_tl: 'Adhigaram',
-            kurals: Array.from({ length: 10 }, (_, index) => createKural(111 + index))
-        };
-
-        const script = document.createElement('script');
-        script.id = 'prerender-route-data';
-        script.type = 'application/json';
-        script.textContent = JSON.stringify({
-            type: 'adhigaram',
-            payload: prerenderedAdhigaram
-        });
-        document.body.appendChild(script);
-
-        service.getAdhigaram(12).subscribe(page => {
-            expect(page?.id).toBe(12);
-            expect(page?.kurals).toHaveLength(10);
-            expect(page?.kurals[0].number).toBe(111);
-        });
-
-        httpMock.expectNone('/data/thirukkural/adhigarams.json');
-        httpMock.expectNone('/data/thirukkural/101-200.json');
-        expect(document.getElementById('prerender-route-data')).toBeNull();
     });
 
     it('should return undefined for invalid adhigaram number', () => {

@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, Optional, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { Router, NavigationEnd, RouterOutlet, ActivatedRoute } from '@angular/router';
 import { HeaderComponent } from './components/header/header.component';
 import { FooterComponent } from './components/footer/footer.component';
@@ -7,13 +8,6 @@ import { filter, map, mergeMap } from 'rxjs/operators';
 import { SwPush } from '@angular/service-worker';
 import { environment } from '../environments/environment';
 import { SeoService } from './services/seo.service';
-
-type PrerenderWindow = Window & {
-    __PRERENDER__?: boolean;
-    __PRERENDER_CONTROLLER__?: {
-        navigate: (url: string) => Promise<boolean>;
-    };
-};
 
 @Component({
     selector: 'app-root',
@@ -69,20 +63,16 @@ type PrerenderWindow = Window & {
 export class AppComponent implements OnInit {
     title = 'frontend';
     telegramUrl = environment.telegramChannelUrl;
-    private readonly isPrerender =
-        typeof window !== 'undefined' && (window as PrerenderWindow).__PRERENDER__ === true;
+    private readonly isBrowser: boolean;
 
     constructor(
         private router: Router,
         private activatedRoute: ActivatedRoute,
-        private swPush: SwPush,
-        private seoService: SeoService
+        @Optional() private swPush: SwPush | null,
+        private seoService: SeoService,
+        @Inject(PLATFORM_ID) platformId: Object
     ) {
-        if (this.isPrerender) {
-            (window as PrerenderWindow).__PRERENDER_CONTROLLER__ = {
-                navigate: (url: string) => this.router.navigateByUrl(url, { replaceUrl: true })
-            };
-        }
+        this.isBrowser = isPlatformBrowser(platformId);
     }
 
     ngOnInit() {
@@ -97,7 +87,9 @@ export class AppComponent implements OnInit {
             filter(route => route.outlet === 'primary'),
             mergeMap(route => route.data)
         ).subscribe((event: any) => {
-            window.scrollTo(0, 0);
+            if (this.isBrowser) {
+                window.scrollTo(0, 0);
+            }
             
             // Set base Canonical URL on every route change
             const currentUrl = 'https://thirukkural.site' + this.router.url.split('?')[0];
@@ -114,14 +106,16 @@ export class AppComponent implements OnInit {
         });
 
         // Handle push notification clicks
-        this.setupNotificationClickHandler();
+        if (this.isBrowser) {
+            this.setupNotificationClickHandler();
+        }
     }
 
     /**
      * Listen for push notification clicks and navigate to the relevant kural
      */
     private setupNotificationClickHandler() {
-        if (!this.swPush.isEnabled) {
+        if (!this.swPush?.isEnabled) {
             return;
         }
 

@@ -28,7 +28,7 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
     readonly totalAdhigarams = 133;
 
     adhigaram$: Observable<AdhigaramPageData | undefined> = of(undefined);
-    loading = true;
+    loading = false;
     currentId = 1;
 
     constructor(
@@ -41,6 +41,7 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         const initialValue$ = of(this.route.snapshot.paramMap);
         const paramMap$ = merge(initialValue$, this.route.paramMap);
+        let isInitialRouteLoad = true;
 
         this.adhigaram$ = paramMap$.pipe(
             map(params => {
@@ -50,12 +51,12 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
             distinctUntilChanged(),
             switchMap(id => {
                 this.currentId = Number.isInteger(id) ? id : 1;
-                this.loading = !this.kuralService.hasPrerenderedAdhigaram(this.currentId);
+                this.loading = !isInitialRouteLoad;
+                isInitialRouteLoad = false;
 
                 return this.kuralService.getAdhigaram(id).pipe(
                     tap((adhigaram) => {
                         this.loading = false;
-                        this.syncPrerenderRouteData(adhigaram);
 
                         if (adhigaram) {
                             this.updateMetaTags(adhigaram);
@@ -67,7 +68,6 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
                     catchError(error => {
                         console.error('Error fetching adhigaram:', error);
                         this.loading = false;
-                        this.syncPrerenderRouteData(undefined);
                         return of(undefined);
                     })
                 );
@@ -176,19 +176,5 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
         };
 
         this.seoService.setStructuredData(jsonLd, 'structured-data-adhigaram');
-    }
-
-    private syncPrerenderRouteData(adhigaram: AdhigaramPageData | undefined): void {
-        if (typeof window === 'undefined') {
-            return;
-        }
-
-        const target = window as Window & {
-            __PRERENDER_ROUTE_DATA__?: { type: 'adhigaram'; payload: AdhigaramPageData } | null;
-        };
-
-        target.__PRERENDER_ROUTE_DATA__ = adhigaram
-            ? { type: 'adhigaram', payload: adhigaram }
-            : null;
     }
 }

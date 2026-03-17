@@ -22,3 +22,21 @@ test('kural detail links back to its adhigaram page', async ({ page }) => {
     await expect(page).toHaveURL(/\/kural\/1$/);
     await expect(page.locator('.chapter-link-row')).toContainText('Adhigaram 1');
 });
+
+test('library can switch to adhigaram scope and preserve state after back navigation', async ({ page }) => {
+    await page.goto('/kurals');
+
+    await page.locator('.scope-toggle-adhigaram').click();
+    await page.locator('.hero-search-input').fill('108');
+
+    const adhigaramCard = page.locator('.adhigaram-item').first();
+    await expect(adhigaramCard).toContainText('108');
+
+    await adhigaramCard.click();
+    await expect(page).toHaveURL(/\/adhigaram\/108$/);
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/kurals\?view=adhigaram&q=108$/);
+    await expect(page.locator('.scope-toggle-adhigaram')).toHaveClass(/mat-button-toggle-checked/);
+    await expect(page.locator('.hero-search-input')).toHaveValue('108');
+});

@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject } from 'rxjs';
 
 @Injectable({
@@ -7,8 +8,15 @@ import { BehaviorSubject } from 'rxjs';
 export class PwaService {
     private deferredPrompt: any;
     showInstallBanner$ = new BehaviorSubject<boolean>(false);
+    private readonly isBrowser: boolean;
 
-    constructor() {
+    constructor(@Inject(PLATFORM_ID) platformId: Object) {
+        this.isBrowser = isPlatformBrowser(platformId);
+
+        if (!this.isBrowser) {
+            return;
+        }
+
         // Check if already installed
         if (this.isStandalone()) {
             console.log('App is already installed (standalone mode)');
@@ -35,6 +43,10 @@ export class PwaService {
      * Check if the app is running in standalone mode (installed)
      */
     isStandalone(): boolean {
+        if (!this.isBrowser) {
+            return false;
+        }
+
         return window.matchMedia('(display-mode: standalone)').matches ||
             (window.navigator as any).standalone === true;
     }
@@ -51,6 +63,10 @@ export class PwaService {
      * iOS doesn't support beforeinstallprompt, users must use "Add to Home Screen"
      */
     isIOS(): boolean {
+        if (!this.isBrowser) {
+            return false;
+        }
+
         return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     }
 
@@ -58,6 +74,10 @@ export class PwaService {
      * Trigger the native install prompt
      */
     async installPwa(): Promise<boolean> {
+        if (!this.isBrowser) {
+            return false;
+        }
+
         if (!this.deferredPrompt) {
             console.warn('No install prompt available');
             return false;

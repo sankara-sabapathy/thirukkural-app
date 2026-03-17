@@ -35,7 +35,7 @@ import { TamilCategoryPipe } from '../../pipes/tamil-category.pipe';
 })
 export class KuralDetailComponent implements OnInit, OnDestroy {
     kural$: Observable<Kural | undefined> = of(undefined);
-    loading = true;
+    loading = false;
     currentNumber = 1;
     isSharing = false;
     isCopied = false;
@@ -56,6 +56,7 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
         // Create an observable that immediately emits the snapshot value, then listens to paramMap changes
         const initialValue$ = of(this.route.snapshot.paramMap);
         const paramMap$ = merge(initialValue$, this.route.paramMap);
+        let isInitialRouteLoad = true;
 
         this.kural$ = paramMap$.pipe(
             map(params => {
@@ -65,11 +66,11 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
             distinctUntilChanged(), // Prevent duplicate emissions with the same ID
             switchMap(id => {
                 this.currentNumber = id;
-                this.loading = !this.kuralService.hasPrerenderedKural(id);
+                this.loading = !isInitialRouteLoad;
+                isInitialRouteLoad = false;
                 return this.kuralService.getKural(id).pipe(
                     tap((kural) => {
                         this.loading = false;
-                        this.syncPrerenderRouteData(kural);
                         this.cdr.markForCheck();
                         if (kural) {
                             this.updateMetaTags(kural);
@@ -78,7 +79,6 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
                     catchError(error => {
                         console.error('Error fetching kural:', error);
                         this.loading = false;
-                        this.syncPrerenderRouteData(undefined);
                         this.cdr.markForCheck();
                         return of(undefined);
                     })
@@ -161,20 +161,6 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
 
     getAdhigaramId(kuralNumber: number): number {
         return Math.floor((kuralNumber - 1) / 10) + 1;
-    }
-
-    private syncPrerenderRouteData(kural: Kural | undefined): void {
-        if (typeof window === 'undefined') {
-            return;
-        }
-
-        const target = window as Window & {
-            __PRERENDER_ROUTE_DATA__?: { type: 'kural'; payload: Kural } | null;
-        };
-
-        target.__PRERENDER_ROUTE_DATA__ = kural
-            ? { type: 'kural', payload: kural }
-            : null;
     }
 
     private writeToClipboard(text: string, onSuccess: () => void, onError: (err: any) => void): void {
