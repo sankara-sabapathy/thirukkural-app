@@ -52,3 +52,5 @@ Thumbs.db
 .env
 */environment.ts
 */environment.prod.ts
+
+.lighthouseci/*

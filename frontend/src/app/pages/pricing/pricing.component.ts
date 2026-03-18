@@ -2,7 +2,6 @@ import { Component, OnInit, NgZone, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { PaymentService } from '../../services/payment.service';
-import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
 import { Router, RouterModule } from '@angular/router';
 import { environment } from '../../../environments/environment';
@@ -56,7 +55,7 @@ export class PricingComponent implements OnInit {
         this.isLoading = true;
         try {
             const order = await this.paymentService.createOrder(amount, this.currency);
-            this.paymentService.openCheckout({
+            await this.paymentService.openCheckout({
                 key: environment.razorpay.keyId,
                 amount: order.amount,
                 currency: order.currency,
@@ -121,7 +120,7 @@ export class PricingComponent implements OnInit {
 
         try {
             const sub = await this.paymentService.createSubscription(planId, planType, totalCount);
-            this.paymentService.openCheckout({
+            await this.paymentService.openCheckout({
                 key: environment.razorpay.keyId,
                 subscription_id: sub.id,
                 name: 'Thirukkural Plus',

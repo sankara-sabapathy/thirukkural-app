@@ -123,6 +123,7 @@
 - The prerenderer now reuses a live Angular app per Puppeteer worker through `window.__PRERENDER_CONTROLLER__`. Do not revert to one fresh browser boot per route unless correctness requires it; that regresses build time from seconds back into minutes.
 - The prerenderer blocks fonts, images, media, and common analytics URLs during HTML generation. Keep that behavior unless a route depends on one of those assets for SEO-visible content.
 - `frontend/scripts/sitemap.ts` emits home, selected static routes, `/kurals`, numeric `/adhigaram/:id`, and numeric `/kural/:id` URLs.
+- Static crawl control now ships from `frontend/public/robots.txt`. Keep it plain text, standards-compliant, and free of HTML fallback content.
 - Kural-specific and adhigaram-specific SEO metadata currently lives in `frontend/src/app/services/seo.service.ts`, `frontend/src/app/pages/kural-detail/kural-detail.component.ts`, and `frontend/src/app/pages/adhigaram-detail/adhigaram-detail.component.ts`. Chapter pages now include a visible FAQ section and `FAQPage` JSON-LD alongside `CollectionPage` and `BreadcrumbList`.
 - Chapter metadata is generated locally by `scripts/split-data.js` into `frontend/public/data/thirukkural/adhigarams.json`. Keep that file derived from `data/thirukkural/allKural.json`, not hand-edited.
 - `frontend/src/app/app.component.ts` applies route-level `data.seo` metadata for the main public static pages and noindex flows such as callback, unsubscribe, and profile. Keep route metadata aligned with any new public or transactional route.

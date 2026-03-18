@@ -104,7 +104,7 @@ export class ProfileComponent implements OnInit {
 
             if (intent.type === 'credits') {
                 const order = await this.paymentService.createOrder(intent.amount, intent.currency);
-                this.openCheckout({
+                await this.openCheckout({
                     key: environment.razorpay.keyId,
                     amount: order.amount,
                     currency: order.currency,
@@ -119,7 +119,7 @@ export class ProfileComponent implements OnInit {
                 }
                 const totalCount = this.paymentService.getSubscriptionCycleCount(intent.planType);
                 const sub = await this.paymentService.createSubscription(intent.planId, intent.planType, totalCount);
-                this.openCheckout({
+                await this.openCheckout({
                     key: environment.razorpay.keyId,
                     subscription_id: sub.id,
                     name: 'Thirukkural Plus',
@@ -134,7 +134,7 @@ export class ProfileComponent implements OnInit {
         }
     }
 
-    openCheckout(options: any, type: string) {
+    async openCheckout(options: any, type: string) {
         options.handler = async (response: any) => {
             try {
                 const verifyRes = await this.paymentService.verifyPayment(response);
@@ -167,7 +167,16 @@ export class ProfileComponent implements OnInit {
             }
         };
 
-        this.paymentService.openCheckout(options);
+        try {
+            await this.paymentService.openCheckout(options);
+        } catch (error) {
+            console.error('Checkout initialization failed', error);
+            this.snackBar.open('Unable to open the payment window right now. Please try again.', 'Close', {
+                duration: 5000,
+                panelClass: ['snackbar-error'],
+                verticalPosition: 'top'
+            });
+        }
     }
 
     fetchProfile(silent = false) {

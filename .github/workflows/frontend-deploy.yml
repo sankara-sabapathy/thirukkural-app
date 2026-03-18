@@ -145,6 +145,13 @@ jobs:
         else
           npm run build:ssg:development
         fi
+    - name: Verify SEO Assets
+      run: |
+        test -s dist/frontend/browser/robots.txt
+        ! grep -qi '<html' dist/frontend/browser/robots.txt
+        ! grep -qi 'Content-Signal' dist/frontend/browser/robots.txt
+        grep -q 'Read about Thirukkural on Wikipedia' dist/frontend/browser/index.html
+        ! grep -q 'https://checkout.razorpay.com/v1/checkout.js' dist/frontend/browser/index.html
 
     - name: Sync to S3
       run: |
