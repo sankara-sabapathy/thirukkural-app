@@ -60,7 +60,6 @@
                                 *ngFor="let kural of adhigaram.kurals"
                                 class="adhigaram-kural-card"
                                 [routerLink]="['/kural', kural.number]"
-                                [attr.aria-label]="'Open Thirukkural ' + kural.number"
                             >
                                 <div class="kural-card-header">
                                     <div class="kural-number">{{ kural.number }}</div>

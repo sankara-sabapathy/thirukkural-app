@@ -52,7 +52,7 @@
                         mat-button
                         class="lang-toggle-btn"
                         (click)="toggleFilterLanguage()"
-                        [attr.aria-label]="filterLanguage === 'en' ? 'Switch to Tamil Filters' : 'Switch to English Filters'"
+                        title="Toggle filter language"
                         [attr.aria-pressed]="filterLanguage === 'ta'"
                     >
                         <span [class.active]="filterLanguage === 'en'">Eng</span>
@@ -149,7 +149,6 @@
                 *ngFor="let kural of displayedKurals"
                 [routerLink]="['/kural', kural.n]"
                 class="kural-item"
-                [attr.aria-label]="'Open Thirukkural ' + kural.n"
             >
                 <div class="kural-header">
                     <div class="kural-number">{{ kural.n }}</div>
@@ -173,7 +172,6 @@
                 *ngFor="let adhigaram of displayedAdhigarams"
                 [routerLink]="['/adhigaram', adhigaram.id]"
                 class="adhigaram-item"
-                [attr.aria-label]="'Open Adhigaram ' + adhigaram.id"
             >
                 <div class="adhigaram-header">
                     <div class="adhigaram-number">{{ adhigaram.id }}</div>
