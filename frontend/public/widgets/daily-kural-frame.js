@@ -89,16 +89,17 @@
     }, '*');
   }
 
-  function getDailyKuralId() {
-    var todayUtc = Date.UTC(
-      new Date().getUTCFullYear(),
-      new Date().getUTCMonth(),
-      new Date().getUTCDate()
-    );
-    var daysSinceEpoch = Math.floor((todayUtc - DAILY_EPOCH_UTC) / MS_PER_DAY);
-    var normalized = ((daysSinceEpoch % TOTAL_KURALS) + TOTAL_KURALS) % TOTAL_KURALS;
-    return normalized + 1;
-  }
+function getDailyKuralId() {
+  var now = new Date();
+  var todayUtc = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate()
+  );
+  var daysSinceEpoch = Math.floor((todayUtc - DAILY_EPOCH_UTC) / MS_PER_DAY);
+  var normalized = ((daysSinceEpoch % TOTAL_KURALS) + TOTAL_KURALS) % TOTAL_KURALS;
+  return normalized + 1;
+}
 
   function getChunkId(kuralId) {
     var start = Math.floor((kuralId - 1) / 100) * 100 + 1;
