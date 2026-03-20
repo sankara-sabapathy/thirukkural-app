@@ -1,0 +1,72 @@
+<div class="widget-docs-container">
+    <section class="widget-hero">
+        <div class="widget-eyebrow">Embeddable Widget</div>
+        <h1>Daily Kural Widget</h1>
+        <p class="widget-intro">
+            Add a compact Thirukkural card to any website. The widget updates daily, links back to the full Kural page,
+            and gives you a lightweight attribution surface that can earn backlinks naturally.
+        </p>
+    </section>
+
+    <section class="widget-preview card">
+        <div class="section-header">
+            <h2>Live Preview</h2>
+            <p>This preview uses the same public widget files that external sites load.</p>
+        </div>
+
+        <div class="preview-frame">
+            <iframe
+                src="/widgets/daily-kural-frame.html?kural=1&theme=light"
+                title="Daily Kural widget preview"
+                loading="lazy"
+            ></iframe>
+        </div>
+    </section>
+
+    <section class="widget-install card">
+        <div class="section-header">
+            <h2>Default Embed</h2>
+            <p>Paste this script where you want the widget to appear.</p>
+        </div>
+
+        <pre class="code-block"><code>{{ scriptSnippet }}</code></pre>
+        <button mat-flat-button color="primary" (click)="copySnippet(scriptSnippet)">
+            <mat-icon>content_copy</mat-icon>
+            Copy Embed Code
+        </button>
+    </section>
+
+    <section class="widget-install card">
+        <div class="section-header">
+            <h2>Customization</h2>
+            <p>You can control theme, accent color, and a fixed Kural for editorial placements or previews.</p>
+        </div>
+
+        <pre class="code-block"><code>{{ customSnippet }}</code></pre>
+        <button mat-stroked-button color="primary" (click)="copySnippet(customSnippet)">
+            <mat-icon>content_copy</mat-icon>
+            Copy Custom Snippet
+        </button>
+
+        <div class="options-list">
+            <div class="option-item"><strong>data-theme</strong><span>`light` or `dark`</span></div>
+            <div class="option-item"><strong>data-accent</strong><span>hex color such as `#0f766e`</span></div>
+            <div class="option-item"><strong>data-kural</strong><span>optional fixed Kural number from `1` to `1330`</span></div>
+            <div class="option-item"><strong>data-width</strong><span>optional inline width, for example `360px`</span></div>
+            <div class="option-item"><strong>data-max-width</strong><span>optional maximum width, default `420px`</span></div>
+        </div>
+    </section>
+
+    <section class="widget-notes card">
+        <div class="section-header">
+            <h2>Implementation Notes</h2>
+        </div>
+
+        <ul>
+            <li>The widget is rendered inside a hosted iframe, so it stays visually stable on third-party sites.</li>
+            <li>It links back to the full Kural page on `thirukkural.site` with attribution.</li>
+            <li>The default widget rotates daily using a UTC-based schedule.</li>
+            <li>For editorial placements, you can pin a specific Kural with `data-kural`.</li>
+        </ul>
+    </section>
+</div>

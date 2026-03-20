@@ -1,0 +1,295 @@
+.adhigaram-index-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 4rem;
+}
+
+.loading-spinner {
+    min-height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.adhigaram-index-content {
+    display: grid;
+    gap: 1.75rem;
+}
+
+.hub-hero {
+    background:
+        radial-gradient(circle at top left, rgba(24, 104, 219, 0.12), transparent 42%),
+        linear-gradient(180deg, rgba(24, 104, 219, 0.04), rgba(24, 104, 219, 0.01));
+    border: 1px solid rgba(24, 104, 219, 0.08);
+    border-radius: 28px;
+    box-shadow: 0 18px 44px rgba(24, 104, 219, 0.08);
+    padding: 2.5rem;
+    text-align: center;
+}
+
+.hub-eyebrow,
+.pal-eyebrow {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--primary);
+}
+
+.hub-hero h1 {
+    font-size: 2.8rem;
+    letter-spacing: -0.04em;
+    margin: 0.8rem 0 1rem;
+}
+
+.hub-description {
+    max-width: 760px;
+    margin: 0 auto;
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+    line-height: 1.8;
+}
+
+.hub-stats {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0 1.5rem;
+    flex-wrap: wrap;
+}
+
+.hub-stat {
+    min-width: 160px;
+    padding: 1rem 1.25rem;
+    border-radius: 18px;
+    border: 1px solid rgba(24, 104, 219, 0.08);
+    background: rgba(255, 255, 255, 0.72);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.hub-stat-value {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.hub-stat-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.hub-actions {
+    display: flex;
+    justify-content: center;
+}
+
+.jump-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.jump-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding: 0.7rem 1.1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(24, 104, 219, 0.16);
+    background: rgba(24, 104, 219, 0.04);
+    color: var(--primary);
+    font-weight: 700;
+    transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.jump-link:hover {
+    transform: translateY(-1px);
+    border-color: rgba(24, 104, 219, 0.28);
+    background: rgba(24, 104, 219, 0.08);
+}
+
+.pal-section {
+    background: var(--bg-card);
+    border: 1px solid rgba(24, 104, 219, 0.06);
+    border-radius: 24px;
+    box-shadow: 0 14px 40px rgba(24, 104, 219, 0.06);
+    padding: 2rem;
+}
+
+.pal-section-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(24, 104, 219, 0.08);
+}
+
+.pal-section-header h2 {
+    margin: 0.5rem 0 0.4rem;
+    font-size: 2rem;
+    color: var(--text-primary);
+}
+
+.pal-section-header p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.pal-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.pal-meta span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.4rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(24, 104, 219, 0.06);
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.iyal-section {
+    padding-top: 1.5rem;
+}
+
+.iyal-section + .iyal-section {
+    margin-top: 1rem;
+    border-top: 1px solid rgba(24, 104, 219, 0.06);
+}
+
+.iyal-header {
+    margin-bottom: 1rem;
+}
+
+.iyal-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--text-primary);
+}
+
+.iyal-header p {
+    margin: 0.35rem 0 0;
+    color: var(--text-secondary);
+}
+
+.adhigaram-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1rem;
+}
+
+.adhigaram-hub-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 180px;
+    border-radius: 18px;
+    border: 1px solid var(--border-color);
+    background: linear-gradient(180deg, rgba(24, 104, 219, 0.03), rgba(24, 104, 219, 0.01));
+    box-shadow: var(--shadow-sm);
+    padding: 1.15rem;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.adhigaram-hub-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(24, 104, 219, 0.28);
+    box-shadow: var(--shadow-md);
+}
+
+.adhigaram-card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.adhigaram-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3rem;
+    height: 3rem;
+    border-radius: 12px;
+    background: rgba(24, 104, 219, 0.1);
+    color: var(--primary);
+    border: 1px solid rgba(24, 104, 219, 0.16);
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+.adhigaram-range {
+    color: var(--text-tertiary);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-align: right;
+}
+
+.adhigaram-card-body h4 {
+    margin: 0 0 0.45rem;
+    font-family: var(--font-tamil);
+    font-size: 1.2rem;
+    color: var(--text-primary);
+}
+
+.adhigaram-card-body p {
+    margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.error-message {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.error-message mat-icon {
+    font-size: 4rem;
+    width: 4rem;
+    height: 4rem;
+    color: #ef4444;
+    margin-bottom: 1rem;
+}
+
+.error-message p {
+    margin-bottom: 1.5rem;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+    .adhigaram-index-container {
+        padding: 1rem 0.75rem 2rem;
+    }
+
+    .hub-hero,
+    .pal-section {
+        padding: 1.35rem;
+    }
+
+    .hub-hero h1 {
+        font-size: 2rem;
+    }
+
+    .pal-section-header {
+        flex-direction: column;
+    }
+
+    .pal-meta {
+        justify-content: flex-start;
+    }
+
+    .adhigaram-grid {
+        grid-template-columns: 1fr;
+    }
+}

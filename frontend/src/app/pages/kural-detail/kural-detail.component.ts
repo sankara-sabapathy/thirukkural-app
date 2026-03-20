@@ -34,6 +34,8 @@ import { TamilCategoryPipe } from '../../pipes/tamil-category.pipe';
     styleUrls: ['./kural-detail.component.scss']
 })
 export class KuralDetailComponent implements OnInit, OnDestroy {
+    private readonly baseUrl = 'https://thirukkural.site';
+
     kural$: Observable<Kural | undefined> = of(undefined);
     loading = false;
     currentNumber = 1;
@@ -96,7 +98,7 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
         const title = `Thirukkural #${kural.number} - ${kural.translation.substring(0, 50)}...`;
         const description = `Read Thirukkural ${kural.number} with Tamil text, English translation, and meanings by Mu. Varadarajan, Kalaignar, and Solomon Pappaiya.`;
         const keywords = `Thirukkural ${kural.number}, Tirukkural ${kural.number}, ${kural.pal_tr}, ${kural.iyal_tr}, ${kural.adikaram_tr}, Thiruvalluvar, Tamil wisdom`;
-        const url = `https://thirukkural.site/kural/${kural.number}`;
+        const url = `${this.baseUrl}/kural/${kural.number}`;
 
         this.seoService.generateTags({
            title,
@@ -110,10 +112,13 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
 
     injectStructuredData(kural: Kural): void {
         const explanation = this.getBestExplanation(kural);
+        const adhigaramId = this.getAdhigaramId(kural.number);
+        const url = `${this.baseUrl}/kural/${kural.number}`;
+        const adhigaramUrl = `${this.baseUrl}/adhigaram/${adhigaramId}`;
 
-        const jsonLd = {
-            "@context": "https://schema.org",
+        const creativeWork = {
             "@type": "CreativeWork",
+            "@id": `${url}#creativework`,
             "name": `Thirukkural ${kural.number}`,
             "author": {
                 "@type": "Person",
@@ -133,16 +138,70 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
                 "name": "Thirukkural",
                 "author": { "@type": "Person", "name": "Thiruvalluvar" }
             },
-            "url": `https://thirukkural.site/kural/${kural.number}`
+            "url": url
         };
 
         if (explanation) {
-            (jsonLd as any)["comment"] = {
+            (creativeWork as Record<string, unknown>)["comment"] = {
                 "@type": "Comment",
                 "author": { "@type": "Person", "name": explanation.author },
                 "text": explanation.text
             };
         }
+
+        const jsonLd = {
+            "@context": "https://schema.org",
+            "@graph": [
+                {
+                    "@type": "WebPage",
+                    "@id": url,
+                    "url": url,
+                    "name": `Thirukkural ${kural.number}`,
+                    "isPartOf": {
+                        "@type": "WebSite",
+                        "name": "Thirukkural Daily",
+                        "url": this.baseUrl
+                    },
+                    "breadcrumb": {
+                        "@id": `${url}#breadcrumb`
+                    },
+                    "mainEntity": {
+                        "@id": `${url}#creativework`
+                    }
+                },
+                creativeWork,
+                {
+                    "@type": "BreadcrumbList",
+                    "@id": `${url}#breadcrumb`,
+                    "itemListElement": [
+                        {
+                            "@type": "ListItem",
+                            "position": 1,
+                            "name": "Home",
+                            "item": `${this.baseUrl}/`
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 2,
+                            "name": "Kurals",
+                            "item": `${this.baseUrl}/kurals`
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 3,
+                            "name": `Adhigaram ${adhigaramId}: ${kural.adikaram_tr}`,
+                            "item": adhigaramUrl
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 4,
+                            "name": `Thirukkural ${kural.number}`,
+                            "item": url
+                        }
+                    ]
+                }
+            ]
+        };
 
         this.seoService.setStructuredData(jsonLd);
     }

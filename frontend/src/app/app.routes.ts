@@ -17,6 +17,18 @@ const routeSeo = {
         keywords: 'Thirukkural library, search Thirukkural, browse kurals, adhigaram search, Tamil literature',
         type: 'website'
     },
+    adhigaramIndex: {
+        title: 'Thirukkural Adhigaram Index',
+        description: 'Browse all 133 Thirukkural adhigarams by book and division, and open each chapter with its full set of Kurals.',
+        keywords: 'Thirukkural adhigaram index, Thirukkural chapters, browse adhigarams, Tamil chapter list',
+        type: 'website'
+    },
+    widgetDocs: {
+        title: 'Daily Kural Widget',
+        description: 'Embed a Daily Thirukkural widget on your website with a lightweight script and direct links back to the full Kural pages.',
+        keywords: 'Thirukkural widget, embed daily kural, daily wisdom widget, Tamil quote widget',
+        type: 'website'
+    },
     pricing: {
         title: 'Pricing and Subscription Plans',
         description: 'Explore Thirukkural Daily pricing, credit packs, and subscription plans for daily Kural delivery and premium access.',
@@ -98,6 +110,16 @@ export const routes: Routes = [
         path: 'kurals',
         loadComponent: () => import('./pages/kural-list/kural-list.component').then(m => m.KuralListComponent),
         data: { seo: routeSeo.library }
+    },
+    {
+        path: 'adhigaram',
+        loadComponent: () => import('./pages/adhigaram-index/adhigaram-index.component').then(m => m.AdhigaramIndexComponent),
+        data: { seo: routeSeo.adhigaramIndex }
+    },
+    {
+        path: 'widgets/daily-kural',
+        loadComponent: () => import('./pages/widget-docs/widget-docs.component').then(m => m.WidgetDocsComponent),
+        data: { seo: routeSeo.widgetDocs }
     },
     {
         path: 'adhigaram/:id',

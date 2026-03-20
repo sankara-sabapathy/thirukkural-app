@@ -12,10 +12,50 @@ test('adhigaram page loads and links to 10 kurals', async ({ page }) => {
 
     await expect(page.locator('.adhigaram-title')).toContainText('1');
     await expect(page.locator('.adhigaram-kural-card')).toHaveCount(10);
-    await expect(page.locator('.breadcrumb-nav')).toContainText('Library');
+    await expect(page.locator('.breadcrumb-nav')).toContainText('Adhigarams');
     await expect(page.locator('.faq-item')).toHaveCount(4);
     await page.locator('.faq-item').first().click();
     await expect(page.locator('.faq-item').first()).toContainText('What is Adhigaram 1 in Thirukkural?');
+});
+
+test('adhigaram index loads and links to chapter detail pages', async ({ page }) => {
+    await page.goto('/adhigaram');
+
+    await expect(page.locator('h1')).toContainText('Browse All 133 Adhigarams');
+    await expect(page.locator('.adhigaram-hub-card[href="/adhigaram/1"]')).toBeVisible();
+    await expect(page.locator('.adhigaram-hub-card')).toHaveCount(133);
+
+    await page.locator('.adhigaram-hub-card[href="/adhigaram/108"]').click();
+    await expect(page).toHaveURL(/\/adhigaram\/108$/);
+});
+
+test('widget docs page shows install snippet and preview', async ({ page }) => {
+    await page.goto('/widgets/daily-kural');
+
+    const defaultEmbedSection = page.locator('.widget-install').first();
+
+    await expect(page.locator('h1')).toContainText('Daily Kural Widget');
+    await expect(defaultEmbedSection.locator('.code-block')).toContainText('widgets/daily-kural.js');
+    await expect(page.locator('.preview-frame iframe')).toBeVisible();
+});
+
+test('public widget script can render a fixed kural embed', async ({ page }) => {
+    await page.goto('/');
+    const widgetScriptUrl = new URL('/widgets/daily-kural.js', page.url()).toString();
+
+    await page.setContent(`
+        <div id="widget-host"></div>
+        <script
+          src="${widgetScriptUrl}"
+          data-target="#widget-host"
+          data-kural="1"
+          data-theme="light"
+        ></script>
+    `);
+
+    const frame = page.frameLocator('iframe[title="Daily Thirukkural widget"]');
+    await expect(frame.locator('.widget-title')).toContainText('Thirukkural 1');
+    await expect(frame.locator('.widget-link')).toContainText('Read full meaning');
 });
 
 test('kural detail links back to its adhigaram page', async ({ page }) => {

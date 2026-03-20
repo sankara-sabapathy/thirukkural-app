@@ -1,5 +1,7 @@
 /
 /kurals
+/adhigaram
+/widgets/daily-kural
 /pricing
 /about
 /contact
