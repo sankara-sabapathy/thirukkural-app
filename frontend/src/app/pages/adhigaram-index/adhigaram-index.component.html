@@ -1,0 +1,94 @@
+<div class="adhigaram-index-container">
+    <ng-container *ngIf="{ groups: groups$ | async } as vm">
+        <div *ngIf="loading" class="loading-spinner">
+            <mat-spinner diameter="50"></mat-spinner>
+        </div>
+
+        <div *ngIf="!loading && (vm.groups?.length ?? 0) > 0" class="adhigaram-index-content">
+            <section class="hub-hero">
+                <div class="hub-eyebrow">Thirukkural Chapter Hub</div>
+                <h1>Browse All 133 Adhigarams</h1>
+                <p class="hub-description">
+                    Explore every Thirukkural chapter in order, grouped by book and division, with direct links to each adhigaram page.
+                </p>
+
+                <div class="hub-stats">
+                    <div class="hub-stat">
+                        <span class="hub-stat-value">{{ totalAdhigarams }}</span>
+                        <span class="hub-stat-label">Chapters</span>
+                    </div>
+                    <div class="hub-stat">
+                        <span class="hub-stat-value">{{ totalKurals }}</span>
+                        <span class="hub-stat-label">Kurals</span>
+                    </div>
+                    <div class="hub-stat">
+                        <span class="hub-stat-value">{{ vm.groups?.length ?? 0 }}</span>
+                        <span class="hub-stat-label">Books</span>
+                    </div>
+                </div>
+
+                <div class="hub-actions">
+                    <a mat-flat-button color="primary" routerLink="/kurals">
+                        <mat-icon>search</mat-icon>
+                        Search in Library
+                    </a>
+                </div>
+            </section>
+
+            <nav class="jump-nav" aria-label="Jump to book">
+                <a *ngFor="let group of vm.groups" class="jump-link" [attr.href]="'#' + getPalAnchor(group)">
+                    {{ group.pal_tr }}
+                </a>
+            </nav>
+
+            <section *ngFor="let group of vm.groups" class="pal-section" [attr.id]="getPalAnchor(group)">
+                <div class="pal-section-header">
+                    <div>
+                        <div class="pal-eyebrow">Book</div>
+                        <h2>{{ group.pal }}</h2>
+                        <p>{{ group.pal_tr }}<span *ngIf="group.pal_tl"> • {{ group.pal_tl }}</span></p>
+                    </div>
+
+                    <div class="pal-meta">
+                        <span>{{ group.adhigaramCount }} adhigarams</span>
+                        <span>{{ group.kuralCount }} kurals</span>
+                    </div>
+                </div>
+
+                <div *ngFor="let iyal of group.iyals" class="iyal-section">
+                    <div class="iyal-header">
+                        <h3>{{ iyal.iyal }}</h3>
+                        <p>{{ iyal.iyal_tr }}<span *ngIf="iyal.iyal_tl"> • {{ iyal.iyal_tl }}</span></p>
+                    </div>
+
+                    <div class="adhigaram-grid">
+                        <a
+                            *ngFor="let adhigaram of iyal.adhigarams"
+                            class="adhigaram-hub-card"
+                            [routerLink]="['/adhigaram', adhigaram.id]"
+                        >
+                            <div class="adhigaram-card-header">
+                                <span class="adhigaram-number">{{ adhigaram.id }}</span>
+                                <span class="adhigaram-range">{{ getKuralRange(adhigaram) }}</span>
+                            </div>
+
+                            <div class="adhigaram-card-body">
+                                <h4>{{ adhigaram.adikaram }}</h4>
+                                <p>{{ adhigaram.adikaram_tr }}<span *ngIf="adhigaram.adikaram_tl"> • {{ adhigaram.adikaram_tl }}</span></p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div *ngIf="!loading && (vm.groups?.length ?? 0) === 0" class="error-message">
+            <mat-icon>error_outline</mat-icon>
+            <p>Sorry, the adhigaram index is unavailable right now.</p>
+            <a mat-raised-button color="primary" routerLink="/kurals">
+                <mat-icon>list</mat-icon>
+                Open Library
+            </a>
+        </div>
+    </ng-container>
+</div>

@@ -190,8 +190,8 @@ export class AdhigaramDetailComponent implements OnInit, OnDestroy {
                         {
                             '@type': 'ListItem',
                             position: 2,
-                            name: 'Kurals',
-                            item: `${this.baseUrl}/kurals`
+                            name: 'Adhigarams',
+                            item: `${this.baseUrl}/adhigaram`
                         },
                         {
                             '@type': 'ListItem',

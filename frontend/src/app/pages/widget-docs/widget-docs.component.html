@@ -1,0 +1,132 @@
+<div class="widget-docs-container">
+    <section class="widget-hero">
+        <div class="widget-eyebrow">Embeddable Widget</div>
+        <h1>Customizable Thirukkural Widget</h1>
+        <p class="widget-intro">
+            Add a hosted Thirukkural widget to any website with random, daily, or fixed Kural modes, flexible layouts,
+            and a lightweight iframe delivery model that stays isolated from the host site.
+        </p>
+    </section>
+
+    <section class="widget-preview card">
+        <div class="section-header">
+            <h2>Layout Previews</h2>
+            <p>These previews are rendered by the exact public widget frame used in external embeds. Refresh the page to see different random Kurals across each layout.</p>
+        </div>
+
+        <div class="preview-grid">
+            <article class="preview-card" *ngFor="let preview of previews" [ngClass]="preview.cardClass">
+                <div class="preview-copy">
+                    <h3>{{ preview.title }}</h3>
+                    <p>{{ preview.description }}</p>
+                </div>
+                <div class="preview-frame" [ngClass]="preview.frameClass">
+                    <iframe
+                        [src]="preview.src"
+                        [title]="preview.title + ' widget preview'"
+                        [style.height.px]="preview.height"
+                        loading="lazy"
+                        sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+                    ></iframe>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="widget-install card">
+        <div class="section-header">
+            <h2>Quick Start</h2>
+            <p>
+                This is the default integration. It renders a random Kural in the spotlight layout with bilingual
+                content.
+            </p>
+        </div>
+
+        <pre class="code-block"><code>{{ quickStartSnippet }}</code></pre>
+        <button
+            mat-flat-button
+            color="primary"
+            class="copy-button"
+            [class.copied]="copiedKey === 'quick-start'"
+            aria-label="Copy Quick Start snippet to clipboard"
+            (click)="copySnippet(quickStartSnippet, 'quick-start')">
+            <mat-icon aria-hidden="true">{{ copiedKey === 'quick-start' ? 'check' : 'content_copy' }}</mat-icon>
+            {{ copiedKey === 'quick-start' ? 'Copied' : 'Copy Quick Start' }}
+        </button>
+    </section>
+
+    <section class="widget-install card">
+        <div class="section-header">
+            <h2>Preset Integrations</h2>
+            <p>Choose a preset that fits your site, then fine-tune the options below.</p>
+        </div>
+
+        <div class="preset-grid">
+            <article class="preset-card" *ngFor="let preset of presetSnippets">
+                <h3>{{ preset.title }}</h3>
+                <p>{{ preset.description }}</p>
+                <pre class="code-block"><code>{{ preset.code }}</code></pre>
+                <button
+                    mat-stroked-button
+                    color="primary"
+                    class="copy-button"
+                    [class.copied]="copiedKey === 'preset-' + preset.title"
+                    [attr.aria-label]="'Copy ' + preset.title + ' preset snippet to clipboard'"
+                    (click)="copySnippet(preset.code, 'preset-' + preset.title)">
+                    <mat-icon aria-hidden="true">{{ copiedKey === 'preset-' + preset.title ? 'check' : 'content_copy' }}</mat-icon>
+                    {{ copiedKey === 'preset-' + preset.title ? 'Copied' : 'Copy Preset' }}
+                </button>
+            </article>
+        </div>
+    </section>
+
+    <section class="widget-install card">
+        <div class="section-header">
+            <h2>Advanced API</h2>
+            <p>
+                If you need to mount the widget into a specific host element after loading the script, use the public
+                JavaScript API.
+            </p>
+        </div>
+
+        <pre class="code-block"><code>{{ advancedSnippet }}</code></pre>
+        <button
+            mat-stroked-button
+            color="primary"
+            class="copy-button"
+            [class.copied]="copiedKey === 'advanced'"
+            aria-label="Copy advanced API example to clipboard"
+            (click)="copySnippet(advancedSnippet, 'advanced')">
+            <mat-icon aria-hidden="true">{{ copiedKey === 'advanced' ? 'check' : 'content_copy' }}</mat-icon>
+            {{ copiedKey === 'advanced' ? 'Copied' : 'Copy API Example' }}
+        </button>
+    </section>
+
+    <section class="widget-install card">
+        <div class="section-header">
+            <h2>Customization Options</h2>
+            <p>The widget is configurable through `data-*` attributes or the JS API options object.</p>
+        </div>
+
+        <div class="options-list">
+            <div class="option-item" *ngFor="let option of options">
+                <div class="option-main">
+                    <strong>{{ option.name }}</strong>
+                    <span>{{ option.values }}</span>
+                </div>
+                <p>{{ option.description }}</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="widget-notes card">
+        <div class="section-header">
+            <h2>Implementation Best Practices</h2>
+            <p>These are the standards this widget now follows and the rules integrators should keep in mind.</p>
+        </div>
+
+        <ul>
+            <li *ngFor="let practice of bestPractices">{{ practice }}</li>
+        </ul>
+    </section>
+</div>

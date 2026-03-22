@@ -36,7 +36,8 @@ function getRoutesToPrerender(): string[] {
     routes.push('/kurals');
   }
 
-  routes.push('/pricing', '/about', '/contact', '/privacy', '/terms');
+  routes.push('/adhigaram');
+  routes.push('/widgets/daily-kural', '/pricing', '/about', '/contact', '/privacy', '/terms');
   routes.push(...getAdhigaramRoutes());
 
   for (let i = KURAL_START; i <= KURAL_END; i++) {

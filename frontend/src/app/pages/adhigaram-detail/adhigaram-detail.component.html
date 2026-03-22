@@ -9,7 +9,7 @@
                 <div class="adhigaram-card-header">
                     <nav class="breadcrumb-nav" aria-label="Breadcrumb">
                         <a routerLink="/">Home</a>
-                        <a routerLink="/kurals">Library</a>
+                        <a routerLink="/adhigaram">Adhigarams</a>
                         <span aria-current="page">Adhigaram {{ adhigaram.id }}</span>
                     </nav>
 
@@ -109,9 +109,9 @@
                     </div>
 
                     <div class="back-to-list">
-                        <a mat-button color="primary" routerLink="/kurals">
+                        <a mat-button color="primary" routerLink="/adhigaram">
                             <mat-icon>list</mat-icon>
-                            Library
+                            All Adhigarams
                         </a>
                     </div>
                 </div>
@@ -121,9 +121,9 @@
         <div *ngIf="!loading && !vm.data" class="error-message">
             <mat-icon>error_outline</mat-icon>
             <p>Sorry, this adhigaram could not be found.</p>
-            <a mat-raised-button color="primary" routerLink="/kurals">
+            <a mat-raised-button color="primary" routerLink="/adhigaram">
                 <mat-icon>home</mat-icon>
-                Go to Library
+                Open Adhigaram Index
             </a>
         </div>
     </ng-container>
