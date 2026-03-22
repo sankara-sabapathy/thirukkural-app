@@ -2,7 +2,7 @@
     <section class="hero-section">
         <div class="container">
             <div class="hero-content fade-in">
-                <div class="hero-badge">✨ Daily Wisdom Delivered</div>
+                <div class="hero-badge">Daily Wisdom Delivered</div>
                 <h1 class="hero-title">
                     Start Your Day with<br>
                     <span class="gradient-text">Thirukkural</span>
@@ -15,13 +15,21 @@
                 <div class="hero-cta">
                     <button class="btn btn-primary" (click)="onStartJourney()">
                         Start Daily Wisdom
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                             <path d="M10 4l6 6-6 6M4 10h12" stroke="currentColor" stroke-width="2"
                                 stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
                     </button>
                     <button class="btn btn-secondary" (click)="goToRandomKural()">
-                        <span class="icon">🎲</span> Random Kural
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <rect x="3" y="3" width="8" height="8" rx="2"></rect>
+                            <rect x="13" y="13" width="8" height="8" rx="2"></rect>
+                            <path d="M7 7h.01"></path>
+                            <path d="M17 17h.01"></path>
+                            <path d="M17 7h.01"></path>
+                            <path d="M7 17h.01"></path>
+                        </svg>
+                        Random Kural
                     </button>
                     <a href="https://en.wikipedia.org/wiki/Tirukku%E1%B9%9Ba%E1%B8%B7" target="_blank"
                         rel="noopener noreferrer" class="btn btn-outline">
@@ -48,7 +56,6 @@
             </div>
         </div>
 
-        <!-- Decorative background elements -->
         <div class="hero-glow glow-1"></div>
         <div class="hero-glow glow-2"></div>
     </section>
@@ -63,16 +70,22 @@
             <div class="features-grid">
                 <div class="feature-card card">
                     <div class="feature-icon-wrapper">
-                        <span class="feature-icon">📖</span>
+                        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v17.5A2.5 2.5 0 0 0 17.5 17H5z"></path>
+                            <path d="M5 4.5V22"></path>
+                            <path d="M9 7h7"></path>
+                            <path d="M9 11h7"></path>
+                        </svg>
                     </div>
                     <h3>Ancient Wisdom</h3>
-                    <p>Timeless insights from one of the greatest works in Tamil literature, curated for modern life.
-                    </p>
+                    <p>Timeless insights from one of the greatest works in Tamil literature, curated for modern life.</p>
                 </div>
 
                 <div class="feature-card card">
                     <div class="feature-icon-wrapper">
-                        <span class="feature-icon">⚡</span>
+                        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"></path>
+                        </svg>
                     </div>
                     <h3>Daily Inspiration</h3>
                     <p>A fresh couplet delivered to your inbox every morning at 9 AM to start your day with purpose.</p>
@@ -80,113 +93,13 @@
 
                 <div class="feature-card card">
                     <div class="feature-icon-wrapper">
-                        <span class="feature-icon">🛡️</span>
+                        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path d="M12 3 5 6v5c0 5 3.5 8.5 7 10 3.5-1.5 7-5 7-10V6z"></path>
+                            <path d="M12 8v7"></path>
+                        </svg>
                     </div>
                     <h3>Privacy First</h3>
                     <p>Secure Google OAuth authentication. We respect your privacy and never share your data.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="widget-feature-section">
-        <div class="container">
-            <div class="widget-feature-shell card fade-in">
-                <div class="widget-feature-copy">
-                    <div class="widget-feature-eyebrow">Embeddable Widget</div>
-                    <h2>Embed Thirukkural Anywhere</h2>
-                    <p>
-                        Add a live Thirukkural widget to any website with random rotation, layout presets for banners,
-                        squares, and rails, and a hosted iframe that stays isolated from your site's CSS.
-                    </p>
-                    <div class="widget-feature-points">
-                        <div class="widget-point">
-                            <strong>Dynamic by default</strong>
-                            <span>Render a different Kural on each load or switch to daily and fixed modes.</span>
-                        </div>
-                        <div class="widget-point">
-                            <strong>Flexible layouts</strong>
-                            <span>Use banner, spotlight, square, compact, or minimal treatments to fit your design.</span>
-                        </div>
-                        <div class="widget-point">
-                            <strong>Easy to style</strong>
-                            <span>Control language, accent, shape, spacing, metadata, and CTA behavior without custom CSS.</span>
-                        </div>
-                    </div>
-                    <div class="widget-feature-actions">
-                        <button class="btn btn-primary" (click)="goToWidgetDocs()">Explore Widget Docs</button>
-                        <button class="btn btn-secondary" (click)="goToWidgetDocs()">See Embed Presets</button>
-                    </div>
-                </div>
-
-                <div class="widget-feature-showcase">
-                    <article class="widget-showcase-item" *ngFor="let preview of widgetPreviews" [ngClass]="preview.frameClass">
-                        <div class="widget-showcase-copy">
-                            <h3>{{ preview.title }}</h3>
-                            <p>{{ preview.description }}</p>
-                        </div>
-                        <iframe
-                            [src]="preview.src"
-                            [title]="preview.title + ' Thirukkural widget preview'"
-                            loading="lazy"
-                        ></iframe>
-                    </article>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="push-notification-section">
-        <div class="container">
-            <div class="push-wrapper card fade-in">
-                <div class="push-content">
-                    <div class="push-header">
-                        <div class="push-icon">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                            </svg>
-                        </div>
-                        <div class="push-text">
-                            <h2>Daily Wisdom via Push Notifications</h2>
-                            <p>Receive Thirukkural directly on your device at 8 AM daily. No login required!</p>
-                            <div class="push-highlights">
-                                <span>One tap setup</span>
-                                <span>No login required</span>
-                                <span>Delivered at 8 AM</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="push-toggle-container">
-                        <!-- Loading State -->
-                        <div class="toggle-loading" *ngIf="isCheckingPush">
-                            <div class="spinner-small"></div>
-                            <span>Checking status...</span>
-                        </div>
-
-                        <!-- Toggle Switch -->
-                        <div class="toggle-wrapper" *ngIf="!isCheckingPush">
-                            <span class="toggle-label" [class.active]="!isPushSubscribed">Off</span>
-                            <button class="toggle-switch" [class.enabled]="isPushSubscribed"
-                                [class.toggling]="isTogglingPush" (click)="togglePushNotifications()"
-                                [disabled]="isTogglingPush"
-                                [attr.aria-label]="isPushSubscribed ? 'Disable push notifications' : 'Enable push notifications'"
-                                role="switch" [attr.aria-checked]="isPushSubscribed">
-                                <span class="toggle-slider">
-                                    <span class="toggle-spinner" *ngIf="isTogglingPush"></span>
-                                </span>
-                            </button>
-                            <span class="toggle-label" [class.active]="isPushSubscribed">On</span>
-                        </div>
-
-                        <!-- Status Badge -->
-                        <div class="push-status" *ngIf="!isCheckingPush">
-                            <span class="status-indicator" [class.enabled]="isPushSubscribed"></span>
-                            <span class="status-text">{{ isPushSubscribed ? 'Notifications enabled' : 'Notifications disabled' }}</span>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -256,14 +169,119 @@
         </div>
     </section>
 
-    <!-- Notification Prompt Banner -->
+    <section class="push-notification-section">
+        <div class="container">
+            <div class="push-wrapper card fade-in">
+                <div class="push-content">
+                    <div class="push-header">
+                        <div class="push-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" aria-hidden="true">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
+                        </div>
+                        <div class="push-text">
+                            <h2>Daily Wisdom via Push Notifications</h2>
+                            <p>Receive Thirukkural directly on your device at 8 AM daily. No login required!</p>
+                            <div class="push-highlights">
+                                <span>One tap setup</span>
+                                <span>No login required</span>
+                                <span>Delivered at 8 AM</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="push-toggle-container">
+                        <div class="toggle-loading" *ngIf="isCheckingPush">
+                            <div class="spinner-small"></div>
+                            <span>Checking status...</span>
+                        </div>
+
+                        <div class="toggle-wrapper" *ngIf="!isCheckingPush">
+                            <span class="toggle-label" [class.active]="!isPushSubscribed">Off</span>
+                            <button class="toggle-switch" [class.enabled]="isPushSubscribed"
+                                [class.toggling]="isTogglingPush" (click)="togglePushNotifications()"
+                                [disabled]="isTogglingPush"
+                                [attr.aria-label]="isPushSubscribed ? 'Disable push notifications' : 'Enable push notifications'"
+                                role="switch" [attr.aria-checked]="isPushSubscribed">
+                                <span class="toggle-slider">
+                                    <span class="toggle-spinner" *ngIf="isTogglingPush"></span>
+                                </span>
+                            </button>
+                            <span class="toggle-label" [class.active]="isPushSubscribed">On</span>
+                        </div>
+
+                        <div class="push-status" *ngIf="!isCheckingPush">
+                            <span class="status-indicator" [class.enabled]="isPushSubscribed"></span>
+                            <span class="status-text">{{ isPushSubscribed ? 'Notifications enabled' : 'Notifications disabled' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="widget-feature-section">
+        <div class="container">
+            <div class="widget-feature-shell card fade-in">
+                <div class="widget-feature-copy">
+                    <div class="widget-feature-eyebrow">Embeddable Widget</div>
+                    <h2>Embed Thirukkural Anywhere</h2>
+                    <p>
+                        Add a live Thirukkural widget to any website with clean layouts, random rotation, and an isolated embed that
+                        won't fight your site's CSS.
+                    </p>
+                    <div class="widget-feature-highlights">
+                        <span class="widget-feature-pill">Random or daily rotation</span>
+                        <span class="widget-feature-pill">Banner, ticker, square, and compact layouts</span>
+                        <span class="widget-feature-pill">Safe iframe embed</span>
+                    </div>
+                    <div class="widget-feature-actions">
+                        <button class="btn btn-primary" (click)="goToWidgetDocs()">Explore Widget Docs</button>
+                        <button class="btn btn-secondary" (click)="goToWidgetDocs()">See Embed Presets</button>
+                    </div>
+                </div>
+
+                <div class="widget-feature-showcase">
+                    <article class="widget-showcase-stage" [ngClass]="activeWidgetPreview.frameClass">
+                        <div class="widget-showcase-copy">
+                            <h3>{{ activeWidgetPreview.title }}</h3>
+                            <p>{{ activeWidgetPreview.description }}</p>
+                        </div>
+                        <iframe
+                            [src]="activeWidgetPreview.src"
+                            [title]="activeWidgetPreview.title + ' Thirukkural widget preview'"
+                            loading="lazy"
+                            (load)="onWidgetPreviewLoad($event)"
+                        ></iframe>
+                    </article>
+
+                    <div class="widget-preview-switcher">
+                        <button
+                            type="button"
+                            class="widget-preview-chip"
+                            *ngFor="let preview of widgetPreviews"
+                            [class.active]="preview.id === activeWidgetPreviewId"
+                            (click)="setActiveWidgetPreview(preview.id)"
+                        >
+                            <strong>{{ preview.title }}</strong>
+                            <span>{{ preview.summary }}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <div class="notification-banner" *ngIf="showNotificationPrompt">
         <div class="banner-content">
             <span class="banner-text">Enable notifications to get your daily wisdom!</span>
             <div class="banner-actions">
                 <button class="btn btn-primary btn-sm" (click)="enableNotifications()">Enable</button>
                 <button class="btn btn-icon" (click)="dismissNotificationPrompt()" aria-label="Dismiss notification">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M18 6L6 18M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>

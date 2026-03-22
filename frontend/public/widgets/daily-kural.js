@@ -1,6 +1,6 @@
 (function () {
   var script = document.currentScript;
-  var version = '2.0.0';
+  var version = '2.1.0';
   var scriptOrigin = resolveOrigin(script);
   var defaultConfig = {
     mode: 'random',
@@ -13,6 +13,9 @@
     radius: '22',
     shadow: 'soft',
     fontScale: '1',
+    speed: 'normal',
+    scrollDirection: 'rtl',
+    pauseOnHover: 'true',
     loading: 'lazy',
     showMeta: 'true',
     showTags: 'true',
@@ -66,6 +69,9 @@
     query.set('radius', config.radius);
     query.set('shadow', config.shadow);
     query.set('fontScale', config.fontScale);
+    query.set('speed', config.speed);
+    query.set('scrollDirection', config.scrollDirection);
+    query.set('pauseOnHover', config.pauseOnHover);
     query.set('showMeta', config.showMeta);
     query.set('showTags', config.showTags);
     query.set('showRefresh', config.showRefresh);
@@ -135,9 +141,10 @@
     var requestedMode = normalizeChoice(raw.mode, ['random', 'daily', 'fixed']);
     var resolvedMode = requestedMode || (requestedKural ? 'fixed' : defaultConfig.mode);
     var finalMode = resolvedMode === 'fixed' && !requestedKural ? defaultConfig.mode : resolvedMode;
-    var layout = normalizeChoice(raw.layout, ['spotlight', 'compact', 'minimal', 'banner', 'square']) || defaultConfig.layout;
+    var layout = normalizeChoice(raw.layout, ['spotlight', 'compact', 'minimal', 'banner', 'square', 'ticker']) || defaultConfig.layout;
     var widthDefaults = getWidthDefaults(layout);
     var showTagsDefault = layout === 'minimal' ? 'false' : defaultConfig.showTags;
+    var showRefreshDefault = finalMode === 'random' ? (layout === 'ticker' ? 'false' : 'true') : 'false';
 
     return {
       target: raw.target || '',
@@ -152,10 +159,13 @@
       radius: normalizeNumber(raw.radius, 0, 32, defaultConfig.radius),
       shadow: normalizeChoice(raw.shadow, ['none', 'soft', 'strong']) || defaultConfig.shadow,
       fontScale: normalizeFloat(raw.fontScale, 0.9, 1.2, defaultConfig.fontScale),
+      speed: normalizeChoice(raw.speed, ['slow', 'normal', 'fast']) || defaultConfig.speed,
+      scrollDirection: normalizeChoice(raw.scrollDirection, ['rtl', 'ltr']) || defaultConfig.scrollDirection,
+      pauseOnHover: normalizeBoolean(raw.pauseOnHover, defaultConfig.pauseOnHover),
       loading: normalizeChoice(raw.loading, ['lazy', 'eager']) || defaultConfig.loading,
       showMeta: normalizeBoolean(raw.showMeta, defaultConfig.showMeta),
       showTags: normalizeBoolean(raw.showTags, showTagsDefault),
-      showRefresh: normalizeBoolean(raw.showRefresh, finalMode === 'random' ? 'true' : 'false'),
+      showRefresh: normalizeBoolean(raw.showRefresh, showRefreshDefault),
       ctaText: normalizeText(raw.ctaText, 48),
       width: normalizeDimension(raw.width),
       maxWidth: normalizeDimension(raw.maxWidth) || widthDefaults.maxWidth,
@@ -203,6 +213,10 @@
       return 390;
     }
 
+    if (layout === 'ticker') {
+      return 116;
+    }
+
     if (layout === 'compact') {
       return 300;
     }
@@ -226,6 +240,13 @@
       return {
         maxWidth: '360px',
         minWidth: '280px'
+      };
+    }
+
+    if (layout === 'ticker') {
+      return {
+        maxWidth: '100%',
+        minWidth: '320px'
       };
     }
 

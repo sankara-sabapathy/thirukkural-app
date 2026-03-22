@@ -8,7 +8,7 @@
   var requestedKural = parseKuralId(params.get('kural'));
   var mode = normalizeMode(params.get('mode'), requestedKural);
   var theme = resolveTheme(params.get('theme'));
-  var layout = normalizeChoice(params.get('layout'), ['spotlight', 'compact', 'minimal', 'banner', 'square']) || 'spotlight';
+  var layout = normalizeChoice(params.get('layout'), ['spotlight', 'compact', 'minimal', 'banner', 'square', 'ticker']) || 'spotlight';
   var language = normalizeChoice(params.get('language'), ['bilingual', 'tamil', 'english']) || 'bilingual';
   var meaning = normalizeChoice(params.get('meaning'), ['translation', 'couplet', 'explanation']) || 'translation';
   var align = normalizeChoice(params.get('align'), ['left', 'center']) || 'left';
@@ -16,9 +16,12 @@
   var radius = normalizeNumber(params.get('radius'), 0, 32, 22);
   var shadow = normalizeChoice(params.get('shadow'), ['none', 'soft', 'strong']) || 'soft';
   var fontScale = normalizeFloat(params.get('fontScale'), 0.9, 1.2, 1);
+  var speed = normalizeChoice(params.get('speed'), ['slow', 'normal', 'fast']) || 'normal';
+  var scrollDirection = normalizeChoice(params.get('scrollDirection'), ['rtl', 'ltr']) || 'rtl';
+  var pauseOnHover = normalizeBoolean(params.get('pauseOnHover'), true);
   var showMeta = normalizeBoolean(params.get('showMeta'), true);
   var showTags = normalizeBoolean(params.get('showTags'), layout !== 'minimal');
-  var showRefresh = mode === 'random' && normalizeBoolean(params.get('showRefresh'), true);
+  var showRefresh = mode === 'random' && normalizeBoolean(params.get('showRefresh'), layout !== 'ticker');
   var ctaText = normalizeText(params.get('ctaText'), 48);
   var parentOrigin = resolveParentOrigin();
   var root = document.getElementById('widget-root');
@@ -33,11 +36,14 @@
   document.documentElement.setAttribute('data-layout', layout);
   document.documentElement.setAttribute('data-align', align);
   document.documentElement.setAttribute('data-shadow', shadow);
+  document.documentElement.setAttribute('data-scroll-direction', scrollDirection);
+  document.documentElement.setAttribute('data-pause-hover', pauseOnHover ? 'true' : 'false');
   document.documentElement.style.setProperty('--widget-accent', accent);
   document.documentElement.style.setProperty('--widget-accent-soft', hexToSoftRgba(accent, 0.16));
   document.documentElement.style.setProperty('--widget-accent-outline', hexToSoftRgba(accent, 0.24));
   document.documentElement.style.setProperty('--widget-radius', radius + 'px');
   document.documentElement.style.setProperty('--widget-font-scale', String(fontScale));
+  document.documentElement.style.setProperty('--widget-ticker-duration', getTickerDuration(speed));
 
   if (window.ResizeObserver) {
     resizeObserver = new ResizeObserver(postHeight);
@@ -106,6 +112,13 @@
         : 'Random Thirukkural';
 
     root.className = 'widget-ready';
+    if (layout === 'ticker') {
+      root.innerHTML = buildTickerCard(kural, meaningText, detailUrl, eyebrowLabel);
+      bindActions();
+      postHeight();
+      return;
+    }
+
     root.innerHTML =
       '<article class="widget-card" data-layout="' + escapeHtml(layout) + '">' +
         '<div class="widget-inner">' +
@@ -134,6 +147,61 @@
 
     bindActions();
     postHeight();
+  }
+
+  function buildTickerCard(kural, meaningText, detailUrl, eyebrowLabel) {
+    var tickerText = buildTickerText(kural, meaningText);
+    var chapterId = Math.floor((kural.number - 1) / 10) + 1;
+    var defaultCta = mode === 'fixed' ? 'Open Kural' : 'Read ' + kural.number;
+
+    return (
+      '<article class="widget-card" data-layout="ticker">' +
+        '<div class="widget-ticker-shell">' +
+          '<div class="widget-ticker-badge">' +
+            '<span class="widget-ticker-badge-title">Thirukkural Daily</span>' +
+            '<span class="widget-ticker-badge-mode">' + escapeHtml(eyebrowLabel) + '</span>' +
+          '</div>' +
+          '<div class="widget-ticker-viewport" aria-label="Scrolling Thirukkural ticker">' +
+            '<div class="widget-ticker-track">' +
+              buildTickerRun(kural, chapterId, tickerText, false) +
+              buildTickerRun(kural, chapterId, tickerText, true) +
+            '</div>' +
+          '</div>' +
+          '<div class="widget-ticker-tools">' +
+            (showRefresh ? '<button class="widget-refresh widget-control-inline" type="button" data-action="refresh">Next</button>' : '') +
+            '<a class="widget-link widget-control-inline" href="' + escapeHtml(detailUrl) + '" target="_blank" rel="nofollow noopener noreferrer">' +
+              escapeHtml(ctaText || defaultCta) +
+            '</a>' +
+          '</div>' +
+        '</div>' +
+      '</article>'
+    );
+  }
+
+  function buildTickerRun(kural, chapterId, tickerText, isDuplicate) {
+    return (
+      '<div class="widget-ticker-run"' + (isDuplicate ? ' aria-hidden="true"' : '') + '>' +
+        '<span class="widget-ticker-token widget-ticker-kural">Thirukkural ' + escapeHtml(String(kural.number)) + '</span>' +
+        '<span class="widget-ticker-separator">&bull;</span>' +
+        '<span class="widget-ticker-copy">' + escapeHtml(tickerText) + '</span>' +
+        '<span class="widget-ticker-separator">&bull;</span>' +
+        '<span class="widget-ticker-token">' + escapeHtml(kural.adikaram_tr) + '</span>' +
+        '<span class="widget-ticker-separator">&bull;</span>' +
+        '<span class="widget-ticker-token">Adhigaram ' + escapeHtml(String(chapterId)) + '</span>' +
+      '</div>'
+    );
+  }
+
+  function buildTickerText(kural, meaningText) {
+    if (language === 'tamil') {
+      return kural.line1 + ' ' + kural.line2;
+    }
+
+    if (language === 'english') {
+      return meaningText;
+    }
+
+    return kural.line1 + ' ' + kural.line2 + ' - ' + meaningText;
   }
 
   function buildBody(kural, meaningText) {
@@ -381,6 +449,18 @@
     }
 
     return String(value).trim().slice(0, maxLength);
+  }
+
+  function getTickerDuration(value) {
+    if (value === 'slow') {
+      return '34s';
+    }
+
+    if (value === 'fast') {
+      return '18s';
+    }
+
+    return '24s';
   }
 
   function hexToSoftRgba(hex, alpha) {

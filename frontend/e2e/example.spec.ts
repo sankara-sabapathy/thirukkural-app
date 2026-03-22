@@ -33,18 +33,28 @@ test('widget docs page shows install snippet and preview', async ({ page }) => {
     await page.goto('/widgets/daily-kural');
 
     const defaultEmbedSection = page.locator('.widget-install').first();
+    const quickStartCopyButton = defaultEmbedSection.locator('.copy-button');
 
     await expect(page.locator('h1')).toContainText('Customizable Thirukkural Widget');
     await expect(defaultEmbedSection.locator('.code-block')).toContainText('data-mode="random"');
-    await expect(page.locator('.preview-card')).toHaveCount(5);
+    await expect(page.locator('.preview-card')).toHaveCount(6);
     await expect(page.locator('.preview-frame iframe').first()).toBeVisible();
+    await expect(page.locator('.preset-card', { hasText: 'Ticker Bar' })).toBeVisible();
+
+    await quickStartCopyButton.click();
+    await expect(quickStartCopyButton).toContainText('Copied');
+    await expect(page.locator('.mat-mdc-snack-bar-container')).toContainText('Embed code copied.');
 });
 
 test('home page highlights the widget feature', async ({ page }) => {
     await page.goto('/');
 
     await expect(page.locator('.widget-feature-section h2')).toContainText('Embed Thirukkural Anywhere');
-    await expect(page.locator('.widget-showcase-item')).toHaveCount(3);
+    await expect(page.locator('.widget-showcase-stage iframe')).toBeVisible();
+    await expect(page.locator('.widget-preview-chip')).toHaveCount(3);
+
+    await page.locator('.widget-preview-chip', { hasText: 'Square Card' }).click();
+    await expect(page.locator('.widget-showcase-copy h3')).toContainText('Square Card');
 
     await page.locator('.widget-feature-actions .btn').first().click();
     await expect(page).toHaveURL(/\/widgets\/daily-kural$/);
@@ -89,6 +99,29 @@ test('public widget script can render a random compact embed', async ({ page }) 
     const frame = page.frameLocator('iframe[title="Random Thirukkural widget"]');
     await expect(frame.locator('.widget-title')).toContainText(/Thirukkural \d+/);
     await expect(frame.locator('.widget-refresh')).toContainText('Show another');
+});
+
+test('public widget script can render a ticker embed', async ({ page }) => {
+    await page.goto('/');
+    const widgetScriptUrl = new URL('/widgets/daily-kural.js', page.url()).toString();
+
+    await page.setContent(`
+        <div id="widget-host"></div>
+        <script
+          src="${widgetScriptUrl}"
+          data-target="#widget-host"
+          data-mode="random"
+          data-layout="ticker"
+          data-speed="fast"
+          data-scroll-direction="ltr"
+          data-loading="eager"
+        ></script>
+    `);
+
+    const frame = page.frameLocator('iframe[title="Random Thirukkural widget"]');
+    await expect(frame.locator('.widget-ticker-badge-title')).toContainText('Thirukkural Daily');
+    await expect(frame.locator('.widget-ticker-track')).toBeVisible();
+    await expect(frame.locator('.widget-control-inline').last()).toContainText(/Read|Open/);
 });
 
 test('kural detail links back to its adhigaram page', async ({ page }) => {

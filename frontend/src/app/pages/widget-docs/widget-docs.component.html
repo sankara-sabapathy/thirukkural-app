@@ -15,7 +15,7 @@
         </div>
 
         <div class="preview-grid">
-            <article class="preview-card" *ngFor="let preview of previews">
+            <article class="preview-card" *ngFor="let preview of previews" [ngClass]="preview.cardClass">
                 <div class="preview-copy">
                     <h3>{{ preview.title }}</h3>
                     <p>{{ preview.description }}</p>
@@ -24,6 +24,7 @@
                     <iframe
                         [src]="preview.src"
                         [title]="preview.title + ' widget preview'"
+                        [style.height.px]="preview.height"
                         loading="lazy"
                     ></iframe>
                 </div>
@@ -41,9 +42,14 @@
         </div>
 
         <pre class="code-block"><code>{{ quickStartSnippet }}</code></pre>
-        <button mat-flat-button color="primary" (click)="copySnippet(quickStartSnippet)">
-            <mat-icon>content_copy</mat-icon>
-            Copy Quick Start
+        <button
+            mat-flat-button
+            color="primary"
+            class="copy-button"
+            [class.copied]="copiedKey === 'quick-start'"
+            (click)="copySnippet(quickStartSnippet, 'quick-start')">
+            <mat-icon>{{ copiedKey === 'quick-start' ? 'check' : 'content_copy' }}</mat-icon>
+            {{ copiedKey === 'quick-start' ? 'Copied' : 'Copy Quick Start' }}
         </button>
     </section>
 
@@ -58,9 +64,14 @@
                 <h3>{{ preset.title }}</h3>
                 <p>{{ preset.description }}</p>
                 <pre class="code-block"><code>{{ preset.code }}</code></pre>
-                <button mat-stroked-button color="primary" (click)="copySnippet(preset.code)">
-                    <mat-icon>content_copy</mat-icon>
-                    Copy Preset
+                <button
+                    mat-stroked-button
+                    color="primary"
+                    class="copy-button"
+                    [class.copied]="copiedKey === 'preset-' + preset.title"
+                    (click)="copySnippet(preset.code, 'preset-' + preset.title)">
+                    <mat-icon>{{ copiedKey === 'preset-' + preset.title ? 'check' : 'content_copy' }}</mat-icon>
+                    {{ copiedKey === 'preset-' + preset.title ? 'Copied' : 'Copy Preset' }}
                 </button>
             </article>
         </div>
@@ -76,9 +87,14 @@
         </div>
 
         <pre class="code-block"><code>{{ advancedSnippet }}</code></pre>
-        <button mat-stroked-button color="primary" (click)="copySnippet(advancedSnippet)">
-            <mat-icon>content_copy</mat-icon>
-            Copy API Example
+        <button
+            mat-stroked-button
+            color="primary"
+            class="copy-button"
+            [class.copied]="copiedKey === 'advanced'"
+            (click)="copySnippet(advancedSnippet, 'advanced')">
+            <mat-icon>{{ copiedKey === 'advanced' ? 'check' : 'content_copy' }}</mat-icon>
+            {{ copiedKey === 'advanced' ? 'Copied' : 'Copy API Example' }}
         </button>
     </section>
 

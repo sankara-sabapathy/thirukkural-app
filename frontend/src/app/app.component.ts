@@ -34,10 +34,10 @@ import { SeoService } from './services/seo.service';
         }
         .telegram-float {
             position: fixed;
-            width: 55px;
-            height: 55px;
-            bottom: 25px;
-            right: 25px;
+            width: 52px;
+            height: 52px;
+            bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+            right: 18px;
             background-color: #0088cc;
             color: #FFF;
             border-radius: 50px;
@@ -55,8 +55,21 @@ import { SeoService } from './services/seo.service';
             box-shadow: 0 6px 12px rgba(0,0,0,0.4);
         }
         .telegram-icon {
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
+        }
+        @media (max-width: 768px) {
+            .telegram-float {
+                width: 46px;
+                height: 46px;
+                right: 12px;
+                bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+                box-shadow: 0 4px 10px rgba(0,0,0,0.26);
+            }
+            .telegram-icon {
+                width: 24px;
+                height: 24px;
+            }
         }
     `]
 })
@@ -127,8 +140,6 @@ export class AppComponent implements OnInit {
         }
 
         this.swPush.notificationClicks.subscribe(({ action, notification }) => {
-            console.log('Notification clicked:', notification);
-
             // Extract kural ID from notification data
             const kuralId = notification.data?.kuralId || notification.data?.kural_id;
 

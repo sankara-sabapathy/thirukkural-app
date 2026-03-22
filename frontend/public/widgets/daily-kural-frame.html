@@ -51,6 +51,7 @@
       --widget-border: rgba(37, 99, 235, 0.14);
       --widget-radius: 22px;
       --widget-font-scale: 1;
+      --widget-ticker-duration: 24s;
       --widget-shadow: 0 22px 46px rgba(15, 23, 42, 0.14);
       color-scheme: light;
     }
@@ -123,6 +124,11 @@
       gap: 18px;
     }
 
+    [data-layout="ticker"] .widget-card,
+    .widget-card[data-layout="ticker"] {
+      border-radius: min(var(--widget-radius), 18px);
+    }
+
     [data-layout="square"] .widget-card,
     .widget-card[data-layout="square"] {
       min-height: 360px;
@@ -139,6 +145,106 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
+    }
+
+    .widget-ticker-shell {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+    }
+
+    .widget-ticker-badge {
+      display: grid;
+      gap: 2px;
+      flex-shrink: 0;
+      min-width: 140px;
+    }
+
+    .widget-ticker-badge-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--widget-text);
+    }
+
+    .widget-ticker-badge-mode {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--widget-accent);
+    }
+
+    .widget-ticker-viewport {
+      position: relative;
+      overflow: hidden;
+      min-width: 0;
+      mask-image: linear-gradient(to right, transparent 0, black 6%, black 94%, transparent 100%);
+    }
+
+    .widget-ticker-track {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      width: max-content;
+      min-width: 100%;
+      animation: widget-ticker-rtl var(--widget-ticker-duration) linear infinite;
+      will-change: transform;
+    }
+
+    [data-scroll-direction="ltr"] .widget-ticker-track {
+      animation-name: widget-ticker-ltr;
+    }
+
+    [data-pause-hover="true"] [data-layout="ticker"]:hover .widget-ticker-track {
+      animation-play-state: paused;
+    }
+
+    .widget-ticker-run {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      min-width: max-content;
+      white-space: nowrap;
+    }
+
+    .widget-ticker-copy {
+      font-family: 'Noto Sans Tamil', 'Inter', sans-serif;
+      font-size: calc(0.95rem * var(--widget-font-scale));
+      line-height: 1.4;
+      color: var(--widget-text);
+    }
+
+    .widget-ticker-token {
+      font-size: 0.83rem;
+      font-weight: 700;
+      color: var(--widget-subtle);
+    }
+
+    .widget-ticker-kural {
+      color: var(--widget-accent);
+    }
+
+    .widget-ticker-separator {
+      color: var(--widget-accent);
+      opacity: 0.72;
+      font-size: 0.8rem;
+    }
+
+    .widget-ticker-tools {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .widget-control-inline {
+      min-height: 36px;
+      padding: 0 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      white-space: nowrap;
     }
 
     .widget-title-wrap {
@@ -399,6 +505,24 @@
       }
     }
 
+    @keyframes widget-ticker-rtl {
+      from {
+        transform: translateX(0);
+      }
+      to {
+        transform: translateX(calc(-50% - 14px));
+      }
+    }
+
+    @keyframes widget-ticker-ltr {
+      from {
+        transform: translateX(calc(-50% - 14px));
+      }
+      to {
+        transform: translateX(0);
+      }
+    }
+
     @media (max-width: 420px) {
       .widget-inner {
         padding: 16px;
@@ -425,6 +549,20 @@
     }
 
     @media (max-width: 720px) {
+      .widget-ticker-shell {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+      }
+
+      .widget-ticker-badge,
+      .widget-ticker-tools {
+        min-width: 0;
+      }
+
+      .widget-ticker-tools {
+        justify-content: flex-start;
+      }
+
       .widget-body-banner {
         grid-template-columns: 1fr;
       }
@@ -432,6 +570,13 @@
       [data-layout="banner"] .widget-head {
         flex-direction: column;
         align-items: stretch;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .widget-ticker-track {
+        animation: none !important;
+        transform: none !important;
       }
     }
   </style>

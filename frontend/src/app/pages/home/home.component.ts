@@ -13,7 +13,9 @@ import { PushNotificationService } from '../../services/push-notification.servic
 import { Observable, firstValueFrom } from 'rxjs';
 
 interface HomeWidgetPreview {
+    id: string;
     title: string;
+    summary: string;
     description: string;
     frameClass: string;
     src: SafeResourceUrl;
@@ -31,6 +33,7 @@ export class HomeComponent implements OnInit {
     sampleEmail: string = '';
     isLoadingSample: boolean = false;
     readonly widgetPreviews: HomeWidgetPreview[];
+    activeWidgetPreviewId: string = 'banner';
 
     showNotificationPrompt = false;
 
@@ -54,19 +57,25 @@ export class HomeComponent implements OnInit {
         this.isBrowser = isPlatformBrowser(platformId);
         this.widgetPreviews = [
             {
+                id: 'banner',
                 title: 'Top Banner',
+                summary: 'Best for headers and wide editorial sections.',
                 description: 'A horizontal embed for homepages, hubs, and magazine-style headers.',
                 frameClass: 'widget-showcase-banner',
                 src: this.trustWidgetPreview('/widgets/daily-kural-frame.html?mode=random&layout=banner&language=bilingual&meaning=translation&align=center&showRefresh=false')
             },
             {
+                id: 'square',
                 title: 'Square Card',
+                summary: 'Best for card grids and visual modules.',
                 description: 'A square module for grids, sidebars, and card-based layouts.',
                 frameClass: 'widget-showcase-square',
                 src: this.trustWidgetPreview('/widgets/daily-kural-frame.html?mode=random&layout=square&language=english&meaning=explanation&accent=%230f766e&showTags=false&showRefresh=false')
             },
             {
+                id: 'compact',
                 title: 'Compact Rail',
+                summary: 'Best for sidebars, rails, and tighter content areas.',
                 description: 'A tighter version for article rails and footer areas.',
                 frameClass: 'widget-showcase-compact',
                 src: this.trustWidgetPreview('/widgets/daily-kural-frame.html?mode=random&layout=compact&language=bilingual&meaning=explanation&showTags=false&showRefresh=false')
@@ -194,6 +203,42 @@ export class HomeComponent implements OnInit {
         this.router.navigate(['/widgets/daily-kural']);
     }
 
+    setActiveWidgetPreview(id: string) {
+        if (this.widgetPreviews.some(preview => preview.id === id)) {
+            this.activeWidgetPreviewId = id;
+        }
+    }
+
+    onWidgetPreviewLoad(event: Event) {
+        if (!this.isBrowser) {
+            return;
+        }
+
+        const iframe = event.target as HTMLIFrameElement | null;
+        if (!iframe) {
+            return;
+        }
+
+        const syncHeight = () => {
+            try {
+                const doc = iframe.contentDocument;
+                const height = Math.max(
+                    doc?.body?.scrollHeight ?? 0,
+                    doc?.documentElement?.scrollHeight ?? 0,
+                    this.getPreviewFallbackHeight()
+                );
+
+                iframe.style.height = `${height}px`;
+            } catch {
+                iframe.style.height = `${this.getPreviewFallbackHeight()}px`;
+            }
+        };
+
+        syncHeight();
+        window.setTimeout(syncHeight, 150);
+        window.setTimeout(syncHeight, 700);
+    }
+
     goToRandomKural() {
         const randomId = Math.floor(Math.random() * 1330) + 1;
         this.router.navigate(['/kural', randomId]);
@@ -233,7 +278,23 @@ export class HomeComponent implements OnInit {
         });
     }
 
+    get activeWidgetPreview(): HomeWidgetPreview {
+        return this.widgetPreviews.find(preview => preview.id === this.activeWidgetPreviewId) ?? this.widgetPreviews[0];
+    }
+
     private trustWidgetPreview(url: string): SafeResourceUrl {
         return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    }
+
+    private getPreviewFallbackHeight(): number {
+        if (this.activeWidgetPreviewId === 'square') {
+            return 520;
+        }
+
+        if (this.activeWidgetPreviewId === 'compact') {
+            return 410;
+        }
+
+        return 340;
     }
 }

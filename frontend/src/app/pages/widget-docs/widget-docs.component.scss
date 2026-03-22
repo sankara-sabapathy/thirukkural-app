@@ -58,12 +58,14 @@
 .preview-grid {
     display: grid;
     gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: 1fr;
 }
 
 .preview-card {
     display: grid;
-    gap: 1rem;
+    grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+    align-items: start;
+    gap: 1.25rem;
     padding: 1.1rem;
     border-radius: 18px;
     background: rgba(24, 104, 219, 0.03);
@@ -85,36 +87,40 @@
 
 .preview-frame {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
+    align-items: flex-start;
+    min-width: 0;
 }
 
 .preview-frame iframe {
     width: 100%;
     max-width: 460px;
-    min-height: 280px;
+    display: block;
     border: 0;
     border-radius: 22px;
     background: transparent;
+    overflow: hidden;
+    transition: height 0.24s ease;
 }
 
 .preview-frame-banner iframe {
     max-width: none;
-    min-height: 250px;
+}
+
+.preview-frame-ticker iframe {
+    max-width: none;
 }
 
 .preview-frame-square iframe {
     max-width: 340px;
-    min-height: 380px;
 }
 
 .preview-frame-compact iframe {
     max-width: 380px;
-    min-height: 290px;
 }
 
 .preview-frame-minimal iframe {
     max-width: 360px;
-    min-height: 250px;
 }
 
 .preset-grid {
@@ -145,6 +151,41 @@
 
 .code-block code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.copy-button {
+    margin-top: 1rem;
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 999px !important;
+    padding-inline: 1rem !important;
+    min-height: 44px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease,
+        border-color 0.2s ease, color 0.2s ease;
+
+    .mat-icon {
+        margin: 0;
+        font-size: 1.1rem;
+        width: 1.1rem;
+        height: 1.1rem;
+    }
+
+    &:hover {
+        transform: translateY(-1px);
+    }
+
+    &:not(.copied) {
+        box-shadow: 0 8px 20px rgba(37, 99, 235, 0.14);
+    }
+
+    &.copied {
+        background: linear-gradient(135deg, #0f766e, #0d9488) !important;
+        border-color: transparent !important;
+        color: #ffffff !important;
+        box-shadow: 0 10px 24px rgba(13, 148, 136, 0.24);
+    }
 }
 
 .options-list {
@@ -207,11 +248,33 @@
         padding: 1.15rem;
     }
 
+    .preview-card {
+        grid-template-columns: minmax(140px, 180px) minmax(0, 1fr);
+        gap: 1rem;
+    }
+
     .option-main {
         flex-direction: column;
     }
 
     .option-main span {
         text-align: left;
+    }
+}
+
+@media (max-width: 560px) {
+    .preview-card {
+        grid-template-columns: minmax(120px, 150px) minmax(0, 1fr);
+        gap: 0.85rem;
+        padding: 0.95rem;
+    }
+
+    .preview-copy h3 {
+        font-size: 1rem;
+    }
+
+    .preview-copy p {
+        font-size: 0.92rem;
+        line-height: 1.55;
     }
 }
