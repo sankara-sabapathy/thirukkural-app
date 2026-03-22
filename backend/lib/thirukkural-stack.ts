@@ -496,13 +496,27 @@ export class ThirukkuralStack extends cdk.Stack {
             });
         }
 
+        const websiteOrigin = S3BucketOrigin.withOriginAccessControl(websiteBucket);
+        const websiteBehavior = {
+            origin: websiteOrigin,
+            viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+            cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
+            functionAssociations: functionAssociations,
+        };
+
+        const widgetAssetBehavior = {
+            ...websiteBehavior,
+            // The embeddable widget runs in a sandboxed iframe with an opaque "null" origin,
+            // so the specific public asset paths it consumes must allow cross-origin reads.
+            responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS,
+        };
+
         const distribution = new cloudfront.Distribution(this, 'WebsiteDistribution', {
-            defaultBehavior: {
-                origin: S3BucketOrigin.withOriginAccessControl(websiteBucket),
-                viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-                allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
-                cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
-                functionAssociations: functionAssociations,
+            defaultBehavior: websiteBehavior,
+            additionalBehaviors: {
+                'data/thirukkural/*': widgetAssetBehavior,
+                'fonts/*': widgetAssetBehavior,
             },
             defaultRootObject: 'index.html',
             domainNames: [siteDomainName],
