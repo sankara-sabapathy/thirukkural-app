@@ -8,7 +8,7 @@
   var requestedKural = parseKuralId(params.get('kural'));
   var mode = normalizeMode(params.get('mode'), requestedKural);
   var theme = resolveTheme(params.get('theme'));
-  var layout = normalizeChoice(params.get('layout'), ['spotlight', 'compact', 'minimal']) || 'spotlight';
+  var layout = normalizeChoice(params.get('layout'), ['spotlight', 'compact', 'minimal', 'banner', 'square']) || 'spotlight';
   var language = normalizeChoice(params.get('language'), ['bilingual', 'tamil', 'english']) || 'bilingual';
   var meaning = normalizeChoice(params.get('meaning'), ['translation', 'couplet', 'explanation']) || 'translation';
   var align = normalizeChoice(params.get('align'), ['left', 'center']) || 'left';
@@ -154,6 +154,14 @@
 
     if (layout === 'minimal') {
       return '<div class="widget-body widget-body-minimal">' + linesHtml + meaningHtml + '</div>';
+    }
+
+    if (layout === 'banner') {
+      return '<div class="widget-body widget-body-banner">' + linesHtml + meaningHtml + '</div>';
+    }
+
+    if (layout === 'square') {
+      return '<div class="widget-body widget-body-square">' + linesHtml + meaningHtml + '</div>';
     }
 
     if (layout === 'compact') {

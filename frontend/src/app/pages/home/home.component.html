@@ -89,6 +89,53 @@
         </div>
     </section>
 
+    <section class="widget-feature-section">
+        <div class="container">
+            <div class="widget-feature-shell card fade-in">
+                <div class="widget-feature-copy">
+                    <div class="widget-feature-eyebrow">Embeddable Widget</div>
+                    <h2>Embed Thirukkural Anywhere</h2>
+                    <p>
+                        Add a live Thirukkural widget to any website with random rotation, layout presets for banners,
+                        squares, and rails, and a hosted iframe that stays isolated from your site's CSS.
+                    </p>
+                    <div class="widget-feature-points">
+                        <div class="widget-point">
+                            <strong>Dynamic by default</strong>
+                            <span>Render a different Kural on each load or switch to daily and fixed modes.</span>
+                        </div>
+                        <div class="widget-point">
+                            <strong>Flexible layouts</strong>
+                            <span>Use banner, spotlight, square, compact, or minimal treatments to fit your design.</span>
+                        </div>
+                        <div class="widget-point">
+                            <strong>Easy to style</strong>
+                            <span>Control language, accent, shape, spacing, metadata, and CTA behavior without custom CSS.</span>
+                        </div>
+                    </div>
+                    <div class="widget-feature-actions">
+                        <button class="btn btn-primary" (click)="goToWidgetDocs()">Explore Widget Docs</button>
+                        <button class="btn btn-secondary" (click)="goToWidgetDocs()">See Embed Presets</button>
+                    </div>
+                </div>
+
+                <div class="widget-feature-showcase">
+                    <article class="widget-showcase-item" *ngFor="let preview of widgetPreviews" [ngClass]="preview.frameClass">
+                        <div class="widget-showcase-copy">
+                            <h3>{{ preview.title }}</h3>
+                            <p>{{ preview.description }}</p>
+                        </div>
+                        <iframe
+                            [src]="preview.src"
+                            [title]="preview.title + ' Thirukkural widget preview'"
+                            loading="lazy"
+                        ></iframe>
+                    </article>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section class="push-notification-section">
         <div class="container">
             <div class="push-wrapper card fade-in">

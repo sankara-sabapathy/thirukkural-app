@@ -135,7 +135,8 @@
     var requestedMode = normalizeChoice(raw.mode, ['random', 'daily', 'fixed']);
     var resolvedMode = requestedMode || (requestedKural ? 'fixed' : defaultConfig.mode);
     var finalMode = resolvedMode === 'fixed' && !requestedKural ? defaultConfig.mode : resolvedMode;
-    var layout = normalizeChoice(raw.layout, ['spotlight', 'compact', 'minimal']) || defaultConfig.layout;
+    var layout = normalizeChoice(raw.layout, ['spotlight', 'compact', 'minimal', 'banner', 'square']) || defaultConfig.layout;
+    var widthDefaults = getWidthDefaults(layout);
     var showTagsDefault = layout === 'minimal' ? 'false' : defaultConfig.showTags;
 
     return {
@@ -157,8 +158,8 @@
       showRefresh: normalizeBoolean(raw.showRefresh, finalMode === 'random' ? 'true' : 'false'),
       ctaText: normalizeText(raw.ctaText, 48),
       width: normalizeDimension(raw.width),
-      maxWidth: normalizeDimension(raw.maxWidth) || defaultConfig.maxWidth,
-      minWidth: normalizeDimension(raw.minWidth) || defaultConfig.minWidth
+      maxWidth: normalizeDimension(raw.maxWidth) || widthDefaults.maxWidth,
+      minWidth: normalizeDimension(raw.minWidth) || widthDefaults.minWidth
     };
   }
 
@@ -194,6 +195,14 @@
   }
 
   function getInitialHeight(layout) {
+    if (layout === 'banner') {
+      return 240;
+    }
+
+    if (layout === 'square') {
+      return 390;
+    }
+
     if (layout === 'compact') {
       return 300;
     }
@@ -203,6 +212,34 @@
     }
 
     return 420;
+  }
+
+  function getWidthDefaults(layout) {
+    if (layout === 'banner') {
+      return {
+        maxWidth: '100%',
+        minWidth: '320px'
+      };
+    }
+
+    if (layout === 'square') {
+      return {
+        maxWidth: '360px',
+        minWidth: '280px'
+      };
+    }
+
+    if (layout === 'minimal') {
+      return {
+        maxWidth: '380px',
+        minWidth: defaultConfig.minWidth
+      };
+    }
+
+    return {
+      maxWidth: defaultConfig.maxWidth,
+      minWidth: defaultConfig.minWidth
+    };
   }
 
   function buildIframeTitle(mode) {

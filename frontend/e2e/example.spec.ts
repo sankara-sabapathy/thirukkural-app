@@ -36,8 +36,18 @@ test('widget docs page shows install snippet and preview', async ({ page }) => {
 
     await expect(page.locator('h1')).toContainText('Customizable Thirukkural Widget');
     await expect(defaultEmbedSection.locator('.code-block')).toContainText('data-mode="random"');
-    await expect(page.locator('.preview-card')).toHaveCount(3);
+    await expect(page.locator('.preview-card')).toHaveCount(5);
     await expect(page.locator('.preview-frame iframe').first()).toBeVisible();
+});
+
+test('home page highlights the widget feature', async ({ page }) => {
+    await page.goto('/');
+
+    await expect(page.locator('.widget-feature-section h2')).toContainText('Embed Thirukkural Anywhere');
+    await expect(page.locator('.widget-showcase-item')).toHaveCount(3);
+
+    await page.locator('.widget-feature-actions .btn').first().click();
+    await expect(page).toHaveURL(/\/widgets\/daily-kural$/);
 });
 
 test('public widget script can render a fixed kural embed', async ({ page }) => {

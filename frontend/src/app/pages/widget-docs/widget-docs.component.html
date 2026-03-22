@@ -11,7 +11,7 @@
     <section class="widget-preview card">
         <div class="section-header">
             <h2>Layout Previews</h2>
-            <p>These previews are rendered by the exact public widget frame used in external embeds.</p>
+            <p>These previews are rendered by the exact public widget frame used in external embeds. Refresh the page to see different random Kurals across each layout.</p>
         </div>
 
         <div class="preview-grid">
@@ -20,7 +20,7 @@
                     <h3>{{ preview.title }}</h3>
                     <p>{{ preview.description }}</p>
                 </div>
-                <div class="preview-frame">
+                <div class="preview-frame" [ngClass]="preview.frameClass">
                     <iframe
                         [src]="preview.src"
                         [title]="preview.title + ' widget preview'"

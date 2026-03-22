@@ -8,6 +8,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 interface WidgetPreview {
     title: string;
     description: string;
+    frameClass: string;
     src: SafeResourceUrl;
 }
 
@@ -83,6 +84,31 @@ export class WidgetDocsComponent {
 ></script>`
         },
         {
+            title: 'Top Navigation Banner',
+            description: 'A horizontal layout designed for the top of a homepage, article hub, or magazine front page.',
+            code: `<script
+  src="https://thirukkural.site/widgets/daily-kural.js"
+  data-mode="random"
+  data-layout="banner"
+  data-language="bilingual"
+  data-max-width="100%"
+  data-align="center"
+></script>`
+        },
+        {
+            title: 'Square Feature Card',
+            description: 'A square treatment for grid systems, side modules, or portfolio-style homepages.',
+            code: `<script
+  src="https://thirukkural.site/widgets/daily-kural.js"
+  data-mode="random"
+  data-layout="square"
+  data-language="english"
+  data-meaning="explanation"
+  data-max-width="340px"
+  data-show-tags="false"
+></script>`
+        },
+        {
             title: 'Fixed Editorial Feature',
             description: 'Pin a specific Kural for a story, essay, or campaign page.',
             code: `<script
@@ -104,8 +130,8 @@ export class WidgetDocsComponent {
         },
         {
             name: 'data-layout',
-            values: '`spotlight`, `compact`, `minimal`',
-            description: 'Changes the layout shape so the widget can fit blogs, rails, or denser UIs.'
+            values: '`spotlight`, `banner`, `square`, `compact`, `minimal`',
+            description: 'Changes the widget shape so it can fit top-of-page banners, square cards, blog rails, or compact embeds.'
         },
         {
             name: 'data-language',
@@ -145,12 +171,13 @@ export class WidgetDocsComponent {
         {
             name: 'data-width / data-max-width / data-min-width',
             values: 'CSS dimensions such as `360px` or `100%`',
-            description: 'Helps reserve space and avoid layout shift.'
+            description: 'Helps reserve space, control the final shape, and avoid layout shift.'
         }
     ];
 
     readonly bestPractices: string[] = [
         'Use the hosted iframe model for isolation and compatibility instead of injecting large DOM or CSS payloads directly into the host page.',
+        'Pick the layout that matches the available real estate: `banner` for horizontal hero areas, `square` for card grids, and `compact` or `minimal` for rails.',
         'Reserve space with width and max-width settings so the widget does not create unnecessary layout shift when it loads.',
         'Lazy-load widgets that appear below the fold; switch to eager loading only when the widget is part of the initial viewport.',
         'Keep widget messaging strict. This implementation validates both the iframe origin and source window before accepting resize messages.',
@@ -164,19 +191,34 @@ export class WidgetDocsComponent {
     ) {
         this.previews = [
             {
+                title: 'Banner',
+                description: 'A horizontal treatment for the top of homepages, article hubs, and editorial sections.',
+                frameClass: 'preview-frame-banner',
+                src: this.trustPreview('/widgets/daily-kural-frame.html?mode=random&layout=banner&language=bilingual&meaning=translation&align=center&showRefresh=false')
+            },
+            {
                 title: 'Spotlight',
-                description: 'A rich bilingual card for blogs, landing pages, and content sidebars.',
-                src: this.trustPreview('/widgets/daily-kural-frame.html?mode=fixed&kural=1&layout=spotlight&language=bilingual&meaning=translation&showRefresh=false')
+                description: 'A rich bilingual card for blogs, landing pages, and feature modules.',
+                frameClass: '',
+                src: this.trustPreview('/widgets/daily-kural-frame.html?mode=random&layout=spotlight&language=bilingual&meaning=translation&showRefresh=false')
+            },
+            {
+                title: 'Square',
+                description: 'A square card for grid layouts, side modules, and visual homepages.',
+                frameClass: 'preview-frame-square',
+                src: this.trustPreview('/widgets/daily-kural-frame.html?mode=random&layout=square&language=english&meaning=explanation&accent=%230f766e&showTags=false&showRefresh=false')
             },
             {
                 title: 'Compact',
                 description: 'A tighter layout for article rails, footers, and newsletter landing pages.',
-                src: this.trustPreview('/widgets/daily-kural-frame.html?mode=fixed&kural=97&layout=compact&language=bilingual&meaning=explanation&accent=%230f766e&showTags=false&showRefresh=false')
+                frameClass: 'preview-frame-compact',
+                src: this.trustPreview('/widgets/daily-kural-frame.html?mode=random&layout=compact&language=bilingual&meaning=explanation&accent=%230f766e&showTags=false&showRefresh=false')
             },
             {
                 title: 'Minimal',
                 description: 'A low-profile quote block for dense interfaces that still needs a clear source link.',
-                src: this.trustPreview('/widgets/daily-kural-frame.html?mode=fixed&kural=1080&layout=minimal&language=english&meaning=couplet&showMeta=false&showTags=false&showRefresh=false')
+                frameClass: 'preview-frame-minimal',
+                src: this.trustPreview('/widgets/daily-kural-frame.html?mode=random&layout=minimal&language=english&meaning=couplet&showMeta=false&showTags=false&showRefresh=false')
             }
         ];
     }

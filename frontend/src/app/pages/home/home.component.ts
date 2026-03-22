@@ -5,11 +5,19 @@ import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SubscriptionComponent } from '../../components/subscription/subscription.component';
 import { AuthService } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
 import { PushNotificationService } from '../../services/push-notification.service';
 import { Observable, firstValueFrom } from 'rxjs';
+
+interface HomeWidgetPreview {
+    title: string;
+    description: string;
+    frameClass: string;
+    src: SafeResourceUrl;
+}
 
 @Component({
     selector: 'app-home',
@@ -22,6 +30,7 @@ export class HomeComponent implements OnInit {
     user$: Observable<any>;
     sampleEmail: string = '';
     isLoadingSample: boolean = false;
+    readonly widgetPreviews: HomeWidgetPreview[];
 
     showNotificationPrompt = false;
 
@@ -37,11 +46,32 @@ export class HomeComponent implements OnInit {
         private snackBar: MatSnackBar,
         private router: Router,
         private pushService: PushNotificationService,
+        private sanitizer: DomSanitizer,
         private destroyRef: DestroyRef,
         @Inject(PLATFORM_ID) platformId: Object
     ) {
         this.user$ = this.authService.user$;
         this.isBrowser = isPlatformBrowser(platformId);
+        this.widgetPreviews = [
+            {
+                title: 'Top Banner',
+                description: 'A horizontal embed for homepages, hubs, and magazine-style headers.',
+                frameClass: 'widget-showcase-banner',
+                src: this.trustWidgetPreview('/widgets/daily-kural-frame.html?mode=random&layout=banner&language=bilingual&meaning=translation&align=center&showRefresh=false')
+            },
+            {
+                title: 'Square Card',
+                description: 'A square module for grids, sidebars, and card-based layouts.',
+                frameClass: 'widget-showcase-square',
+                src: this.trustWidgetPreview('/widgets/daily-kural-frame.html?mode=random&layout=square&language=english&meaning=explanation&accent=%230f766e&showTags=false&showRefresh=false')
+            },
+            {
+                title: 'Compact Rail',
+                description: 'A tighter version for article rails and footer areas.',
+                frameClass: 'widget-showcase-compact',
+                src: this.trustWidgetPreview('/widgets/daily-kural-frame.html?mode=random&layout=compact&language=bilingual&meaning=explanation&showTags=false&showRefresh=false')
+            }
+        ];
     }
 
     async ngOnInit() {
@@ -159,6 +189,11 @@ export class HomeComponent implements OnInit {
     scrollToSubscribe() {
         this.onStartJourney();
     }
+
+    goToWidgetDocs() {
+        this.router.navigate(['/widgets/daily-kural']);
+    }
+
     goToRandomKural() {
         const randomId = Math.floor(Math.random() * 1330) + 1;
         this.router.navigate(['/kural', randomId]);
@@ -196,5 +231,9 @@ export class HomeComponent implements OnInit {
             horizontalPosition: 'center',
             verticalPosition: 'bottom'
         });
+    }
+
+    private trustWidgetPreview(url: string): SafeResourceUrl {
+        return this.sanitizer.bypassSecurityTrustResourceUrl(url);
     }
 }

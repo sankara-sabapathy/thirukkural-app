@@ -168,6 +168,135 @@
     font-size: 2rem;
 }
 
+.widget-feature-section {
+    padding: 4rem 0;
+}
+
+.widget-feature-shell {
+    display: grid;
+    gap: 2rem;
+    padding: 2rem !important;
+    background:
+        radial-gradient(circle at top left, rgba(99, 102, 241, 0.12), transparent 45%),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.92));
+    border-radius: 28px;
+}
+
+.widget-feature-copy {
+    display: grid;
+    gap: 1.25rem;
+    max-width: 680px;
+
+    h2 {
+        font-size: 2.4rem;
+        margin: 0;
+        letter-spacing: -0.04em;
+    }
+
+    p {
+        margin: 0;
+        color: var(--text-secondary);
+        font-size: 1.05rem;
+        line-height: 1.8;
+    }
+}
+
+.widget-feature-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--accent-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.widget-feature-points {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.widget-point {
+    display: grid;
+    gap: 0.2rem;
+    padding: 1rem 1.1rem;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.58);
+    border: 1px solid rgba(99, 102, 241, 0.12);
+
+    strong {
+        font-size: 0.98rem;
+        color: var(--text-primary);
+    }
+
+    span {
+        color: var(--text-secondary);
+        line-height: 1.7;
+    }
+}
+
+.widget-feature-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.widget-feature-showcase {
+    display: grid;
+    gap: 1rem;
+}
+
+.widget-showcase-item {
+    display: grid;
+    gap: 0.85rem;
+    padding: 1rem;
+    border-radius: 22px;
+    background: rgba(15, 23, 42, 0.02);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+
+    iframe {
+        width: 100%;
+        border: 0;
+        border-radius: 24px;
+        background: transparent;
+    }
+}
+
+.widget-showcase-copy {
+    display: grid;
+    gap: 0.25rem;
+
+    h3 {
+        margin: 0;
+        font-size: 1rem;
+    }
+
+    p {
+        margin: 0;
+        color: var(--text-secondary);
+        line-height: 1.7;
+        font-size: 0.95rem;
+    }
+}
+
+.widget-showcase-banner iframe {
+    min-height: 255px;
+}
+
+.widget-showcase-square iframe {
+    max-width: 340px;
+    min-height: 385px;
+}
+
+.widget-showcase-compact iframe {
+    max-width: 420px;
+    min-height: 295px;
+}
+
 // Push Notification Section with Toggle
 .push-notification-section {
     padding: 4rem 0;
@@ -531,5 +660,14 @@
 
     .hero-cta {
         flex-direction: column;
+    }
+
+    .widget-feature-copy h2 {
+        font-size: 2rem;
+    }
+
+    .widget-showcase-square iframe,
+    .widget-showcase-compact iframe {
+        max-width: none;
     }
 }
