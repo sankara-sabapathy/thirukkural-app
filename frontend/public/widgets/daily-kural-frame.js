@@ -2,7 +2,6 @@
   var TOTAL_KURALS = 1330;
   var MS_PER_DAY = 24 * 60 * 60 * 1000;
   var DAILY_EPOCH_UTC = Date.UTC(2024, 0, 1);
-  var SITE_ORIGIN = window.location.origin;
   var params = new URLSearchParams(window.location.search);
   var widgetId = params.get('widgetId') || '';
   var requestedKural = parseKuralId(params.get('kural'));
@@ -103,7 +102,7 @@
   function renderKural(kural) {
     var chapterId = Math.floor((kural.number - 1) / 10) + 1;
     var detailUrl = buildDetailUrl(kural.number);
-    var homeUrl = SITE_ORIGIN + '/?utm_source=thirukkural_widget&utm_medium=embed';
+    var homeUrl = buildHomeUrl();
     var meaningText = pickMeaning(kural);
     var eyebrowLabel = mode === 'daily'
       ? 'Today\'s Thirukkural'
@@ -307,7 +306,11 @@
   }
 
   function buildDetailUrl(kuralNumber) {
-    return SITE_ORIGIN + '/kural/' + kuralNumber + '?utm_source=thirukkural_widget&utm_medium=embed';
+    return '/kural/' + kuralNumber + '?utm_source=thirukkural_widget&utm_medium=embed';
+  }
+
+  function buildHomeUrl() {
+    return '/?utm_source=thirukkural_widget&utm_medium=embed';
   }
 
   function pickMeaning(kural) {

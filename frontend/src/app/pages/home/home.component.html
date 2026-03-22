@@ -252,8 +252,9 @@
                         <iframe
                             [src]="activeWidgetPreview.src"
                             [title]="activeWidgetPreview.title + ' Thirukkural widget preview'"
+                            [style.height.px]="activeWidgetPreview.height"
                             loading="lazy"
-                            (load)="onWidgetPreviewLoad($event)"
+                            sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
                         ></iframe>
                     </article>
 

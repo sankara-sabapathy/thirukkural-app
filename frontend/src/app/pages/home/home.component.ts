@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, OnDestroy, DestroyRef, Inject, PLATFORM_ID } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { isPlatformBrowser } from '@angular/common';
@@ -14,10 +14,13 @@ import { Observable, firstValueFrom } from 'rxjs';
 
 interface HomeWidgetPreview {
     id: string;
+    widgetId: string;
     title: string;
     summary: string;
     description: string;
     frameClass: string;
+    minHeight: number;
+    height: number;
     src: SafeResourceUrl;
 }
 
@@ -28,7 +31,7 @@ interface HomeWidgetPreview {
     templateUrl: './home.component.html',
     styleUrls: ['./home.component.scss']
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
     user$: Observable<any>;
     sampleEmail: string = '';
     isLoadingSample: boolean = false;
@@ -42,6 +45,7 @@ export class HomeComponent implements OnInit {
     isCheckingPush = true;
     isTogglingPush = false;
     private readonly isBrowser: boolean;
+    private readonly previewMessageHandler = (event: MessageEvent) => this.updateWidgetPreviewHeight(event);
 
     constructor(
         private authService: AuthService,
@@ -56,31 +60,41 @@ export class HomeComponent implements OnInit {
         this.user$ = this.authService.user$;
         this.isBrowser = isPlatformBrowser(platformId);
         this.widgetPreviews = [
-            {
-                id: 'banner',
-                title: 'Top Banner',
-                summary: 'Best for headers and wide editorial sections.',
-                description: 'A horizontal embed for homepages, hubs, and magazine-style headers.',
-                frameClass: 'widget-showcase-banner',
-                src: this.trustWidgetPreview('/widgets/daily-kural-frame.html?mode=random&layout=banner&language=bilingual&meaning=translation&align=center&showRefresh=false')
-            },
-            {
-                id: 'square',
-                title: 'Square Card',
-                summary: 'Best for card grids and visual modules.',
-                description: 'A square module for grids, sidebars, and card-based layouts.',
-                frameClass: 'widget-showcase-square',
-                src: this.trustWidgetPreview('/widgets/daily-kural-frame.html?mode=random&layout=square&language=english&meaning=explanation&accent=%230f766e&showTags=false&showRefresh=false')
-            },
-            {
-                id: 'compact',
-                title: 'Compact Rail',
-                summary: 'Best for sidebars, rails, and tighter content areas.',
-                description: 'A tighter version for article rails and footer areas.',
-                frameClass: 'widget-showcase-compact',
-                src: this.trustWidgetPreview('/widgets/daily-kural-frame.html?mode=random&layout=compact&language=bilingual&meaning=explanation&showTags=false&showRefresh=false')
-            }
+            this.createWidgetPreview(
+                'banner',
+                'home-preview-banner',
+                'Top Banner',
+                'Best for headers and wide editorial sections.',
+                'A horizontal embed for homepages, hubs, and magazine-style headers.',
+                'widget-showcase-banner',
+                'mode=random&layout=banner&language=bilingual&meaning=translation&align=center&showRefresh=false',
+                340
+            ),
+            this.createWidgetPreview(
+                'square',
+                'home-preview-square',
+                'Square Card',
+                'Best for card grids and visual modules.',
+                'A square module for grids, sidebars, and card-based layouts.',
+                'widget-showcase-square',
+                'mode=random&layout=square&language=english&meaning=explanation&accent=%230f766e&showTags=false&showRefresh=false',
+                520
+            ),
+            this.createWidgetPreview(
+                'compact',
+                'home-preview-compact',
+                'Compact Rail',
+                'Best for sidebars, rails, and tighter content areas.',
+                'A tighter version for article rails and footer areas.',
+                'widget-showcase-compact',
+                'mode=random&layout=compact&language=bilingual&meaning=explanation&showTags=false&showRefresh=false',
+                410
+            )
         ];
+
+        if (this.isBrowser) {
+            window.addEventListener('message', this.previewMessageHandler);
+        }
     }
 
     async ngOnInit() {
@@ -199,6 +213,12 @@ export class HomeComponent implements OnInit {
         this.onStartJourney();
     }
 
+    ngOnDestroy(): void {
+        if (this.isBrowser) {
+            window.removeEventListener('message', this.previewMessageHandler);
+        }
+    }
+
     goToWidgetDocs() {
         this.router.navigate(['/widgets/daily-kural']);
     }
@@ -207,36 +227,6 @@ export class HomeComponent implements OnInit {
         if (this.widgetPreviews.some(preview => preview.id === id)) {
             this.activeWidgetPreviewId = id;
         }
-    }
-
-    onWidgetPreviewLoad(event: Event) {
-        if (!this.isBrowser) {
-            return;
-        }
-
-        const iframe = event.target as HTMLIFrameElement | null;
-        if (!iframe) {
-            return;
-        }
-
-        const syncHeight = () => {
-            try {
-                const doc = iframe.contentDocument;
-                const height = Math.max(
-                    doc?.body?.scrollHeight ?? 0,
-                    doc?.documentElement?.scrollHeight ?? 0,
-                    this.getPreviewFallbackHeight()
-                );
-
-                iframe.style.height = `${height}px`;
-            } catch {
-                iframe.style.height = `${this.getPreviewFallbackHeight()}px`;
-            }
-        };
-
-        syncHeight();
-        window.setTimeout(syncHeight, 150);
-        window.setTimeout(syncHeight, 700);
     }
 
     goToRandomKural() {
@@ -282,19 +272,48 @@ export class HomeComponent implements OnInit {
         return this.widgetPreviews.find(preview => preview.id === this.activeWidgetPreviewId) ?? this.widgetPreviews[0];
     }
 
+    private createWidgetPreview(
+        id: string,
+        widgetId: string,
+        title: string,
+        summary: string,
+        description: string,
+        frameClass: string,
+        query: string,
+        minHeight: number
+    ): HomeWidgetPreview {
+        return {
+            id,
+            widgetId,
+            title,
+            summary,
+            description,
+            frameClass,
+            minHeight,
+            height: minHeight,
+            src: this.trustWidgetPreview(`/widgets/daily-kural-frame.html?widgetId=${widgetId}&${query}`)
+        };
+    }
+
     private trustWidgetPreview(url: string): SafeResourceUrl {
         return this.sanitizer.bypassSecurityTrustResourceUrl(url);
     }
 
-    private getPreviewFallbackHeight(): number {
-        if (this.activeWidgetPreviewId === 'square') {
-            return 520;
+    private updateWidgetPreviewHeight(event: MessageEvent): void {
+        if (!this.isBrowser || (event.origin !== window.location.origin && event.origin !== 'null')) {
+            return;
         }
 
-        if (this.activeWidgetPreviewId === 'compact') {
-            return 410;
+        const data = event.data as { source?: string; widgetId?: string; height?: number } | null;
+        if (!data || data.source !== 'thirukkural-widget' || typeof data.widgetId !== 'string' || typeof data.height !== 'number') {
+            return;
         }
 
-        return 340;
+        const preview = this.widgetPreviews.find((item) => item.widgetId === data.widgetId);
+        if (!preview) {
+            return;
+        }
+
+        preview.height = Math.max(preview.minHeight, Math.ceil(data.height));
     }
 }

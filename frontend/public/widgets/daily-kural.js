@@ -89,7 +89,7 @@
     iframe.loading = config.loading;
     iframe.referrerPolicy = 'strict-origin-when-cross-origin';
     iframe.scrolling = 'no';
-    iframe.sandbox = 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox';
+    iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox';
     iframe.style.width = config.width || '100%';
     iframe.style.maxWidth = config.maxWidth;
     iframe.style.minWidth = config.minWidth;
@@ -101,7 +101,7 @@
     iframe.style.borderRadius = config.radius + 'px';
 
     function onMessage(event) {
-      if (event.origin !== scriptOrigin || event.source !== iframe.contentWindow) {
+      if ((event.origin !== scriptOrigin && event.origin !== 'null') || event.source !== iframe.contentWindow) {
         return;
       }
 

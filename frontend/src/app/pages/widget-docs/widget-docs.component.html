@@ -26,6 +26,7 @@
                         [title]="preview.title + ' widget preview'"
                         [style.height.px]="preview.height"
                         loading="lazy"
+                        sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
                     ></iframe>
                 </div>
             </article>
@@ -47,8 +48,9 @@
             color="primary"
             class="copy-button"
             [class.copied]="copiedKey === 'quick-start'"
+            aria-label="Copy Quick Start snippet to clipboard"
             (click)="copySnippet(quickStartSnippet, 'quick-start')">
-            <mat-icon>{{ copiedKey === 'quick-start' ? 'check' : 'content_copy' }}</mat-icon>
+            <mat-icon aria-hidden="true">{{ copiedKey === 'quick-start' ? 'check' : 'content_copy' }}</mat-icon>
             {{ copiedKey === 'quick-start' ? 'Copied' : 'Copy Quick Start' }}
         </button>
     </section>
@@ -69,8 +71,9 @@
                     color="primary"
                     class="copy-button"
                     [class.copied]="copiedKey === 'preset-' + preset.title"
+                    [attr.aria-label]="'Copy ' + preset.title + ' preset snippet to clipboard'"
                     (click)="copySnippet(preset.code, 'preset-' + preset.title)">
-                    <mat-icon>{{ copiedKey === 'preset-' + preset.title ? 'check' : 'content_copy' }}</mat-icon>
+                    <mat-icon aria-hidden="true">{{ copiedKey === 'preset-' + preset.title ? 'check' : 'content_copy' }}</mat-icon>
                     {{ copiedKey === 'preset-' + preset.title ? 'Copied' : 'Copy Preset' }}
                 </button>
             </article>
@@ -92,8 +95,9 @@
             color="primary"
             class="copy-button"
             [class.copied]="copiedKey === 'advanced'"
+            aria-label="Copy advanced API example to clipboard"
             (click)="copySnippet(advancedSnippet, 'advanced')">
-            <mat-icon>{{ copiedKey === 'advanced' ? 'check' : 'content_copy' }}</mat-icon>
+            <mat-icon aria-hidden="true">{{ copiedKey === 'advanced' ? 'check' : 'content_copy' }}</mat-icon>
             {{ copiedKey === 'advanced' ? 'Copied' : 'Copy API Example' }}
         </button>
     </section>

@@ -374,7 +374,7 @@ export class WidgetDocsComponent implements OnDestroy {
     }
 
     private updatePreviewHeight(event: MessageEvent): void {
-        if (!this.isBrowser || event.origin !== window.location.origin) {
+        if (!this.isBrowser || (event.origin !== window.location.origin && event.origin !== 'null')) {
             return;
         }
 
