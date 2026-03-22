@@ -151,6 +151,11 @@
                         <div class="push-text">
                             <h2>Daily Wisdom via Push Notifications</h2>
                             <p>Receive Thirukkural directly on your device at 8 AM daily. No login required!</p>
+                            <div class="push-highlights">
+                                <span>One tap setup</span>
+                                <span>No login required</span>
+                                <span>Delivered at 8 AM</span>
+                            </div>
                         </div>
                     </div>
 
@@ -189,19 +194,35 @@
 
     <section class="sample-email-section">
         <div class="container">
-            <div class="sample-email-wrapper card fade-in">
-                <div class="sample-content">
+            <div class="sample-email-shell card fade-in">
+                <div class="sample-copy">
+                    <div class="sample-eyebrow">Try Before You Subscribe</div>
                     <h2>Try a Sample Email</h2>
-                    <p>Not ready to subscribe? Send yourself a one-time sample email to see what it looks like.</p>
-                    <div class="sample-form">
-                        <input type="email" [(ngModel)]="sampleEmail" placeholder="Enter your email address"
-                            class="form-input" [disabled]="isLoadingSample" (keyup.enter)="sendSampleEmail()">
-                        <button class="btn btn-secondary" (click)="sendSampleEmail()" [disabled]="isLoadingSample">
-                            <span *ngIf="!isLoadingSample">Send Sample</span>
-                            <span *ngIf="isLoadingSample">Sending...</span>
-                        </button>
+                    <p>Not ready to subscribe? Send yourself a one-time sample email to see what daily delivery looks like.</p>
+                    <div class="sample-benefits">
+                        <div class="sample-benefit">
+                            <strong>Real delivery format</strong>
+                            <span>See the exact reading experience that lands in your inbox.</span>
+                        </div>
+                        <div class="sample-benefit">
+                            <strong>No signup required</strong>
+                            <span>Test the content quality before creating an account.</span>
+                        </div>
                     </div>
-                    <p class="sample-note">Limited to 1 sample email per day.</p>
+                </div>
+
+                <div class="sample-email-wrapper">
+                    <div class="sample-content">
+                        <div class="sample-form">
+                            <input type="email" [(ngModel)]="sampleEmail" placeholder="Enter your email address"
+                                class="form-input" [disabled]="isLoadingSample" (keyup.enter)="sendSampleEmail()">
+                            <button class="btn btn-secondary" (click)="sendSampleEmail()" [disabled]="isLoadingSample">
+                                <span *ngIf="!isLoadingSample">Send Sample</span>
+                                <span *ngIf="isLoadingSample">Sending...</span>
+                            </button>
+                        </div>
+                        <p class="sample-note">Limited to 1 sample email per day.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -219,6 +240,10 @@
                 <ng-template #loginPrompt>
                     <div class="subscribe-cta card fade-in">
                         <div class="cta-content">
+                            <div class="status-badge">
+                                <span class="status-dot"></span>
+                                <span>Email, push, and embeddable widget ready</span>
+                            </div>
                             <h2>Ready to get started?</h2>
                             <p>Sign in with your Google account to begin your journey of wisdom.</p>
                             <div class="cta-actions">

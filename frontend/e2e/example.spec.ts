@@ -61,6 +61,7 @@ test('public widget script can render a fixed kural embed', async ({ page }) => 
           data-target="#widget-host"
           data-kural="1"
           data-theme="light"
+          data-loading="eager"
         ></script>
     `);
 
@@ -81,6 +82,7 @@ test('public widget script can render a random compact embed', async ({ page }) 
           data-mode="random"
           data-layout="compact"
           data-language="english"
+          data-loading="eager"
         ></script>
     `);
 
