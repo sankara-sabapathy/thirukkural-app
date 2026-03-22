@@ -34,9 +34,10 @@ test('widget docs page shows install snippet and preview', async ({ page }) => {
 
     const defaultEmbedSection = page.locator('.widget-install').first();
 
-    await expect(page.locator('h1')).toContainText('Daily Kural Widget');
-    await expect(defaultEmbedSection.locator('.code-block')).toContainText('widgets/daily-kural.js');
-    await expect(page.locator('.preview-frame iframe')).toBeVisible();
+    await expect(page.locator('h1')).toContainText('Customizable Thirukkural Widget');
+    await expect(defaultEmbedSection.locator('.code-block')).toContainText('data-mode="random"');
+    await expect(page.locator('.preview-card')).toHaveCount(3);
+    await expect(page.locator('.preview-frame iframe').first()).toBeVisible();
 });
 
 test('public widget script can render a fixed kural embed', async ({ page }) => {
@@ -53,9 +54,29 @@ test('public widget script can render a fixed kural embed', async ({ page }) => 
         ></script>
     `);
 
-    const frame = page.frameLocator('iframe[title="Daily Thirukkural widget"]');
+    const frame = page.frameLocator('iframe[title="Featured Thirukkural widget"]');
     await expect(frame.locator('.widget-title')).toContainText('Thirukkural 1');
-    await expect(frame.locator('.widget-link')).toContainText('Read full meaning');
+    await expect(frame.locator('.widget-link')).toContainText('Read Thirukkural 1');
+});
+
+test('public widget script can render a random compact embed', async ({ page }) => {
+    await page.goto('/');
+    const widgetScriptUrl = new URL('/widgets/daily-kural.js', page.url()).toString();
+
+    await page.setContent(`
+        <div id="widget-host"></div>
+        <script
+          src="${widgetScriptUrl}"
+          data-target="#widget-host"
+          data-mode="random"
+          data-layout="compact"
+          data-language="english"
+        ></script>
+    `);
+
+    const frame = page.frameLocator('iframe[title="Random Thirukkural widget"]');
+    await expect(frame.locator('.widget-title')).toContainText(/Thirukkural \d+/);
+    await expect(frame.locator('.widget-refresh')).toContainText('Show another');
 });
 
 test('kural detail links back to its adhigaram page', async ({ page }) => {

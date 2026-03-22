@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>Daily Thirukkural Widget</title>
+  <title>Thirukkural Widget</title>
   <style>
     @font-face {
       font-family: 'Inter';
@@ -41,24 +41,37 @@
 
     :root {
       --widget-accent: #2563eb;
-      --widget-accent-soft: rgba(37, 99, 235, 0.12);
+      --widget-accent-soft: rgba(37, 99, 235, 0.16);
+      --widget-accent-outline: rgba(37, 99, 235, 0.24);
       --widget-bg: #ffffff;
       --widget-surface: #f8fafc;
+      --widget-surface-strong: rgba(255, 255, 255, 0.78);
       --widget-text: #0f172a;
       --widget-subtle: #475569;
       --widget-border: rgba(37, 99, 235, 0.14);
-      --widget-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+      --widget-radius: 22px;
+      --widget-font-scale: 1;
+      --widget-shadow: 0 22px 46px rgba(15, 23, 42, 0.14);
       color-scheme: light;
     }
 
     [data-theme="dark"] {
       --widget-bg: #0f172a;
       --widget-surface: #162338;
+      --widget-surface-strong: rgba(15, 23, 42, 0.7);
       --widget-text: #f8fafc;
       --widget-subtle: #cbd5e1;
       --widget-border: rgba(96, 165, 250, 0.24);
-      --widget-shadow: 0 18px 40px rgba(2, 6, 23, 0.45);
+      --widget-shadow: 0 22px 46px rgba(2, 6, 23, 0.45);
       color-scheme: dark;
+    }
+
+    [data-shadow="none"] {
+      --widget-shadow: none;
+    }
+
+    [data-shadow="strong"] {
+      --widget-shadow: 0 28px 56px rgba(15, 23, 42, 0.2);
     }
 
     html,
@@ -73,19 +86,48 @@
       padding: 8px;
     }
 
-    .widget-card {
-      border-radius: 20px;
-      overflow: hidden;
+    #widget-root {
+      width: 100%;
+    }
+
+    .widget-card,
+    .widget-state {
+      border-radius: var(--widget-radius);
       border: 1px solid var(--widget-border);
       background:
-        radial-gradient(circle at top left, var(--widget-accent-soft), transparent 46%),
+        radial-gradient(circle at top left, var(--widget-accent-soft), transparent 48%),
         linear-gradient(180deg, var(--widget-bg), var(--widget-surface));
       box-shadow: var(--widget-shadow);
       color: var(--widget-text);
+      overflow: hidden;
     }
 
     .widget-inner {
+      padding: 20px;
+      display: grid;
+      gap: 16px;
+    }
+
+    [data-layout="compact"] .widget-inner {
       padding: 18px;
+      gap: 14px;
+    }
+
+    [data-layout="minimal"] .widget-inner {
+      padding: 16px;
+      gap: 12px;
+    }
+
+    .widget-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .widget-title-wrap {
+      flex: 1;
+      min-width: 0;
     }
 
     .widget-eyebrow {
@@ -100,54 +142,86 @@
     }
 
     .widget-title {
-      margin: 12px 0 6px;
-      font-size: 26px;
+      margin: 10px 0 6px;
+      font-size: calc(2rem * var(--widget-font-scale));
+      line-height: 1;
       font-weight: 800;
       letter-spacing: -0.04em;
+    }
+
+    [data-layout="compact"] .widget-title {
+      font-size: calc(1.6rem * var(--widget-font-scale));
+    }
+
+    [data-layout="minimal"] .widget-title {
+      font-size: calc(1.35rem * var(--widget-font-scale));
+      margin-top: 8px;
     }
 
     .widget-meta {
       margin: 0;
       font-size: 13px;
+      line-height: 1.6;
       color: var(--widget-subtle);
     }
 
+    .widget-body {
+      display: grid;
+      gap: 14px;
+    }
+
     .widget-lines {
-      margin: 18px 0 14px;
       padding: 16px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.36);
+      border-radius: calc(var(--widget-radius) - 6px);
+      background: var(--widget-surface-strong);
       border: 1px solid rgba(148, 163, 184, 0.18);
     }
 
-    [data-theme="dark"] .widget-lines {
-      background: rgba(15, 23, 42, 0.32);
+    [data-layout="minimal"] .widget-lines {
+      padding: 0;
+      border: 0;
+      background: transparent;
     }
 
     .widget-lines p {
       margin: 0;
       font-family: 'Noto Sans Tamil', sans-serif;
-      font-size: 19px;
+      font-size: calc(1.15rem * var(--widget-font-scale));
       line-height: 1.8;
-      text-align: center;
+      text-align: var(--widget-text-align, left);
+    }
+
+    [data-layout="compact"] .widget-lines p {
+      font-size: calc(1.05rem * var(--widget-font-scale));
+      line-height: 1.65;
+    }
+
+    [data-layout="minimal"] .widget-lines p {
+      font-size: calc(1rem * var(--widget-font-scale));
+      line-height: 1.6;
     }
 
     .widget-lines p + p {
       margin-top: 4px;
     }
 
-    .widget-translation {
+    .widget-meaning {
       margin: 0;
+      font-size: calc(0.95rem * var(--widget-font-scale));
+      line-height: 1.75;
+      text-align: var(--widget-text-align, left);
       color: var(--widget-subtle);
-      line-height: 1.7;
-      font-size: 14px;
+    }
+
+    [data-layout="minimal"] .widget-meaning {
+      font-size: calc(0.88rem * var(--widget-font-scale));
+      line-height: 1.65;
     }
 
     .widget-tags {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin: 16px 0 18px;
     }
 
     .widget-tag {
@@ -169,26 +243,60 @@
 
     .widget-actions {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
       gap: 12px;
+      flex-wrap: wrap;
     }
 
-    .widget-link {
+    .widget-action-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .widget-link,
+    .widget-refresh {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       min-height: 42px;
       padding: 0 16px;
       border-radius: 12px;
-      background: var(--widget-accent);
-      color: #ffffff;
+      font-size: 14px;
       font-weight: 700;
       text-decoration: none;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    .widget-link {
+      background: var(--widget-accent);
+      color: #ffffff;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
+    }
+
+    .widget-refresh {
+      border: 1px solid var(--widget-accent-outline);
+      background: transparent;
+      color: var(--widget-text);
+      cursor: pointer;
+    }
+
+    .widget-link:hover,
+    .widget-refresh:hover {
+      transform: translateY(-1px);
+    }
+
+    .widget-refresh:disabled {
+      opacity: 0.65;
+      cursor: wait;
+      transform: none;
     }
 
     .widget-brand {
       font-size: 12px;
+      line-height: 1.5;
       color: var(--widget-subtle);
       text-align: right;
     }
@@ -199,24 +307,84 @@
       font-weight: 700;
     }
 
-    .widget-loading,
-    .widget-error {
+    [data-align="center"] {
+      --widget-text-align: center;
+    }
+
+    [data-align="center"] .widget-title-wrap,
+    [data-align="center"] .widget-brand {
+      text-align: center;
+    }
+
+    [data-align="center"] .widget-head,
+    [data-align="center"] .widget-actions {
+      justify-content: center;
+    }
+
+    .widget-state {
       min-height: 220px;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
       padding: 24px;
+    }
+
+    .widget-state-inner {
+      display: grid;
+      gap: 12px;
+      justify-items: center;
       color: var(--widget-subtle);
-      border-radius: 20px;
-      border: 1px solid var(--widget-border);
-      background: linear-gradient(180deg, var(--widget-bg), var(--widget-surface));
-      box-shadow: var(--widget-shadow);
+    }
+
+    .widget-spinner {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 3px solid var(--widget-accent-outline);
+      border-top-color: var(--widget-accent);
+      animation: widget-spin 0.9s linear infinite;
+    }
+
+    @keyframes widget-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 420px) {
+      .widget-inner {
+        padding: 16px;
+      }
+
+      .widget-head,
+      .widget-actions {
+        align-items: stretch;
+      }
+
+      .widget-link,
+      .widget-refresh {
+        width: 100%;
+      }
+
+      .widget-action-group {
+        width: 100%;
+      }
+
+      .widget-brand {
+        width: 100%;
+        text-align: left;
+      }
     }
   </style>
 </head>
 <body>
-  <div id="widget-root" class="widget-loading">Loading today&apos;s Thirukkural...</div>
+  <div id="widget-root" class="widget-state widget-loading">
+    <div class="widget-state-inner">
+      <div class="widget-spinner" aria-hidden="true"></div>
+      <p>Loading a Thirukkural...</p>
+    </div>
+  </div>
   <script src="/widgets/daily-kural-frame.js" defer></script>
 </body>
 </html>

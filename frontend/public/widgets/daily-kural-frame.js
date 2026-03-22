@@ -2,30 +2,58 @@
   var TOTAL_KURALS = 1330;
   var MS_PER_DAY = 24 * 60 * 60 * 1000;
   var DAILY_EPOCH_UTC = Date.UTC(2024, 0, 1);
+  var SITE_ORIGIN = window.location.origin;
   var params = new URLSearchParams(window.location.search);
   var widgetId = params.get('widgetId') || '';
-  var theme = normalizeTheme(params.get('theme'));
-  var accent = normalizeAccent(params.get('accent'));
   var requestedKural = parseKuralId(params.get('kural'));
+  var mode = normalizeMode(params.get('mode'), requestedKural);
+  var theme = resolveTheme(params.get('theme'));
+  var layout = normalizeChoice(params.get('layout'), ['spotlight', 'compact', 'minimal']) || 'spotlight';
+  var language = normalizeChoice(params.get('language'), ['bilingual', 'tamil', 'english']) || 'bilingual';
+  var meaning = normalizeChoice(params.get('meaning'), ['translation', 'couplet', 'explanation']) || 'translation';
+  var align = normalizeChoice(params.get('align'), ['left', 'center']) || 'left';
+  var accent = normalizeAccent(params.get('accent'));
+  var radius = normalizeNumber(params.get('radius'), 0, 32, 22);
+  var shadow = normalizeChoice(params.get('shadow'), ['none', 'soft', 'strong']) || 'soft';
+  var fontScale = normalizeFloat(params.get('fontScale'), 0.9, 1.2, 1);
+  var showMeta = normalizeBoolean(params.get('showMeta'), true);
+  var showTags = normalizeBoolean(params.get('showTags'), layout !== 'minimal');
+  var showRefresh = mode === 'random' && normalizeBoolean(params.get('showRefresh'), true);
+  var ctaText = normalizeText(params.get('ctaText'), 48);
+  var parentOrigin = resolveParentOrigin();
   var root = document.getElementById('widget-root');
+  var resizeObserver = null;
+  var currentKuralNumber = null;
 
   if (!root) {
     return;
   }
 
   document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.setAttribute('data-layout', layout);
+  document.documentElement.setAttribute('data-align', align);
+  document.documentElement.setAttribute('data-shadow', shadow);
   document.documentElement.style.setProperty('--widget-accent', accent);
-  document.documentElement.style.setProperty('--widget-accent-soft', hexToSoftRgba(accent));
+  document.documentElement.style.setProperty('--widget-accent-soft', hexToSoftRgba(accent, 0.16));
+  document.documentElement.style.setProperty('--widget-accent-outline', hexToSoftRgba(accent, 0.24));
+  document.documentElement.style.setProperty('--widget-radius', radius + 'px');
+  document.documentElement.style.setProperty('--widget-font-scale', String(fontScale));
+
+  if (window.ResizeObserver) {
+    resizeObserver = new ResizeObserver(postHeight);
+    resizeObserver.observe(document.body);
+    resizeObserver.observe(document.documentElement);
+  } else {
+    window.addEventListener('resize', postHeight);
+  }
 
   window.addEventListener('load', postHeight);
-  window.addEventListener('resize', postHeight);
 
-  loadKural().catch(function () {
-    renderError();
-  });
+  renderLoading();
+  loadKural(false).catch(renderError);
 
-  async function loadKural() {
-    var kuralId = requestedKural || getDailyKuralId();
+  async function loadKural(forceNewRandom) {
+    var kuralId = resolveKuralId(forceNewRandom);
     var chunkId = getChunkId(kuralId);
     var response = await fetch('/data/thirukkural/' + chunkId + '.json');
 
@@ -40,40 +68,140 @@
       throw new Error('Kural not found');
     }
 
+    currentKuralNumber = kural.number;
     renderKural(kural);
   }
 
-  function renderKural(kural) {
-    var detailUrl = 'https://thirukkural.site/kural/' + kural.number + '?utm_source=daily_widget&utm_medium=embed';
+  function resolveKuralId(forceNewRandom) {
+    if (mode === 'fixed' && requestedKural) {
+      return requestedKural;
+    }
 
-    root.className = 'widget-card';
+    if (mode === 'daily') {
+      return getDailyKuralId();
+    }
+
+    return getRandomKuralId(forceNewRandom ? currentKuralNumber : null);
+  }
+
+  function renderLoading() {
+    root.className = 'widget-state widget-loading';
     root.innerHTML =
-      '<div class="widget-inner">' +
-        '<div class="widget-eyebrow">Daily Thirukkural</div>' +
-        '<h1 class="widget-title">Thirukkural ' + escapeHtml(String(kural.number)) + '</h1>' +
-        '<p class="widget-meta">' + escapeHtml(kural.adikaram_tr) + ' - ' + escapeHtml(kural.pal_tr) + '</p>' +
-        '<div class="widget-lines">' +
-          '<p>' + escapeHtml(kural.line1) + '</p>' +
-          '<p>' + escapeHtml(kural.line2) + '</p>' +
-        '</div>' +
-        '<p class="widget-translation">' + escapeHtml(kural.translation) + '</p>' +
-        '<div class="widget-tags">' +
-          '<span class="widget-tag">' + escapeHtml(kural.pal_tr) + '</span>' +
-          '<span class="widget-tag">' + escapeHtml(kural.iyal_tr) + '</span>' +
-          '<span class="widget-tag">Adhigaram ' + escapeHtml(String(Math.floor((kural.number - 1) / 10) + 1)) + '</span>' +
-        '</div>' +
-        '<div class="widget-actions">' +
-          '<a class="widget-link" href="' + detailUrl + '" target="_blank" rel="noopener noreferrer">Read full meaning</a>' +
-          '<div class="widget-brand">Powered by <a href="https://thirukkural.site/?utm_source=daily_widget&utm_medium=embed" target="_blank" rel="noopener noreferrer">Thirukkural Daily</a></div>' +
-        '</div>' +
+      '<div class="widget-state-inner">' +
+        '<div class="widget-spinner" aria-hidden="true"></div>' +
+        '<p>Loading a Thirukkural...</p>' +
       '</div>';
-
     postHeight();
   }
 
+  function renderKural(kural) {
+    var chapterId = Math.floor((kural.number - 1) / 10) + 1;
+    var detailUrl = buildDetailUrl(kural.number);
+    var homeUrl = SITE_ORIGIN + '/?utm_source=thirukkural_widget&utm_medium=embed';
+    var meaningText = pickMeaning(kural);
+    var eyebrowLabel = mode === 'daily'
+      ? 'Today\'s Thirukkural'
+      : mode === 'fixed'
+        ? 'Featured Thirukkural'
+        : 'Random Thirukkural';
+
+    root.className = 'widget-ready';
+    root.innerHTML =
+      '<article class="widget-card" data-layout="' + escapeHtml(layout) + '">' +
+        '<div class="widget-inner">' +
+          '<div class="widget-head">' +
+            '<div class="widget-title-wrap">' +
+              '<div class="widget-eyebrow">' + escapeHtml(eyebrowLabel) + '</div>' +
+              '<h1 class="widget-title">Thirukkural ' + escapeHtml(String(kural.number)) + '</h1>' +
+              (showMeta ? '<p class="widget-meta">' + escapeHtml(kural.adikaram_tr) + ' - ' + escapeHtml(kural.iyal_tr) + ' - ' + escapeHtml(kural.pal_tr) + '</p>' : '') +
+            '</div>' +
+            (showRefresh ? '<button class="widget-refresh" type="button" data-action="refresh">Show another</button>' : '') +
+          '</div>' +
+          buildBody(kural, meaningText) +
+          (showTags ? buildTags(kural, chapterId) : '') +
+          '<div class="widget-actions">' +
+            '<div class="widget-action-group">' +
+              '<a class="widget-link" href="' + escapeHtml(detailUrl) + '" target="_blank" rel="nofollow noopener noreferrer">' +
+                escapeHtml(ctaText || ('Read Thirukkural ' + kural.number)) +
+              '</a>' +
+            '</div>' +
+            '<div class="widget-brand">' +
+              'Powered by <a href="' + escapeHtml(homeUrl) + '" target="_blank" rel="nofollow noopener noreferrer">Thirukkural Daily</a>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</article>';
+
+    bindActions();
+    postHeight();
+  }
+
+  function buildBody(kural, meaningText) {
+    var linesHtml = '';
+    var meaningHtml = '';
+
+    if (language !== 'english') {
+      linesHtml =
+        '<div class="widget-lines">' +
+          '<p>' + escapeHtml(kural.line1) + '</p>' +
+          '<p>' + escapeHtml(kural.line2) + '</p>' +
+        '</div>';
+    }
+
+    if (language !== 'tamil') {
+      meaningHtml = '<p class="widget-meaning">' + escapeHtml(meaningText) + '</p>';
+    }
+
+    if (layout === 'minimal') {
+      return '<div class="widget-body widget-body-minimal">' + linesHtml + meaningHtml + '</div>';
+    }
+
+    if (layout === 'compact') {
+      return '<div class="widget-body widget-body-compact">' + linesHtml + meaningHtml + '</div>';
+    }
+
+    return '<div class="widget-body widget-body-spotlight">' + linesHtml + meaningHtml + '</div>';
+  }
+
+  function buildTags(kural, chapterId) {
+    return (
+      '<div class="widget-tags">' +
+        '<span class="widget-tag">' + escapeHtml(kural.pal_tr) + '</span>' +
+        '<span class="widget-tag">' + escapeHtml(kural.iyal_tr) + '</span>' +
+        '<span class="widget-tag">Adhigaram ' + escapeHtml(String(chapterId)) + '</span>' +
+      '</div>'
+    );
+  }
+
+  function bindActions() {
+    var refreshButton = root.querySelector('[data-action="refresh"]');
+    if (!refreshButton) {
+      return;
+    }
+
+    refreshButton.addEventListener('click', function () {
+      refreshButton.disabled = true;
+      refreshButton.textContent = 'Loading...';
+      loadKural(true).catch(renderError);
+    });
+  }
+
   function renderError() {
-    root.className = 'widget-error';
-    root.innerHTML = 'Unable to load today&apos;s Thirukkural right now.';
+    root.className = 'widget-state widget-error';
+    root.innerHTML =
+      '<div class="widget-state-inner">' +
+        '<p>Unable to load a Thirukkural right now.</p>' +
+        '<button class="widget-refresh" type="button" data-action="retry">Try again</button>' +
+      '</div>';
+
+    var retry = root.querySelector('[data-action="retry"]');
+    if (retry) {
+      retry.addEventListener('click', function () {
+        renderLoading();
+        loadKural(true).catch(renderError);
+      });
+    }
+
     postHeight();
   }
 
@@ -82,24 +210,69 @@
       return;
     }
 
+    var targetOrigin = parentOrigin || '*';
     window.parent.postMessage({
       source: 'thirukkural-widget',
       widgetId: widgetId,
       height: document.documentElement.scrollHeight
-    }, '*');
+    }, targetOrigin);
   }
 
-function getDailyKuralId() {
-  var now = new Date();
-  var todayUtc = Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate()
-  );
-  var daysSinceEpoch = Math.floor((todayUtc - DAILY_EPOCH_UTC) / MS_PER_DAY);
-  var normalized = ((daysSinceEpoch % TOTAL_KURALS) + TOTAL_KURALS) % TOTAL_KURALS;
-  return normalized + 1;
-}
+  function resolveParentOrigin() {
+    if (!document.referrer) {
+      return '';
+    }
+
+    try {
+      return new URL(document.referrer).origin;
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function buildDetailUrl(kuralNumber) {
+    return SITE_ORIGIN + '/kural/' + kuralNumber + '?utm_source=thirukkural_widget&utm_medium=embed';
+  }
+
+  function pickMeaning(kural) {
+    if (meaning === 'couplet' && kural.couplet) {
+      return kural.couplet;
+    }
+
+    if (meaning === 'explanation' && kural.explanation) {
+      return kural.explanation;
+    }
+
+    return kural.translation || kural.couplet || kural.explanation || '';
+  }
+
+  function getDailyKuralId() {
+    var now = new Date();
+    var todayUtc = Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate()
+    );
+    var daysSinceEpoch = Math.floor((todayUtc - DAILY_EPOCH_UTC) / MS_PER_DAY);
+    var normalized = ((daysSinceEpoch % TOTAL_KURALS) + TOTAL_KURALS) % TOTAL_KURALS;
+    return normalized + 1;
+  }
+
+  function getRandomKuralId(previousKuralNumber) {
+    var candidate = previousKuralNumber;
+
+    while (candidate === previousKuralNumber || !candidate) {
+      if (window.crypto && window.crypto.getRandomValues) {
+        var bytes = new Uint32Array(1);
+        window.crypto.getRandomValues(bytes);
+        candidate = (bytes[0] % TOTAL_KURALS) + 1;
+      } else {
+        candidate = Math.floor(Math.random() * TOTAL_KURALS) + 1;
+      }
+    }
+
+    return candidate;
+  }
 
   function getChunkId(kuralId) {
     var start = Math.floor((kuralId - 1) / 100) * 100 + 1;
@@ -108,7 +281,7 @@ function getDailyKuralId() {
   }
 
   function parseKuralId(value) {
-    if (!value || !/^\d+$/.test(value)) {
+    if (!value || !/^\d+$/.test(String(value))) {
       return null;
     }
 
@@ -116,23 +289,93 @@ function getDailyKuralId() {
     return parsed >= 1 && parsed <= TOTAL_KURALS ? parsed : null;
   }
 
-  function normalizeTheme(value) {
-    if (value === 'dark' || value === 'light') {
-      return value;
+  function normalizeMode(value, kuralId) {
+    var normalized = normalizeChoice(value, ['random', 'daily', 'fixed']);
+    if (normalized) {
+      return normalized === 'fixed' && !kuralId ? 'random' : normalized;
+    }
+
+    return kuralId ? 'fixed' : 'random';
+  }
+
+  function resolveTheme(value) {
+    var normalized = normalizeChoice(value, ['light', 'dark', 'auto']) || 'auto';
+    if (normalized === 'light' || normalized === 'dark') {
+      return normalized;
     }
 
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
 
+  function normalizeChoice(value, allowed) {
+    if (!value) {
+      return '';
+    }
+
+    var normalized = String(value).trim().toLowerCase();
+    return allowed.indexOf(normalized) >= 0 ? normalized : '';
+  }
+
   function normalizeAccent(value) {
-    if (value && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value)) {
-      return value;
+    if (value && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(String(value).trim())) {
+      return String(value).trim();
     }
 
     return '#2563eb';
   }
 
-  function hexToSoftRgba(hex) {
+  function normalizeBoolean(value, fallback) {
+    if (value === null || value === undefined || value === '') {
+      return fallback;
+    }
+
+    var normalized = String(value).trim().toLowerCase();
+    if (normalized === 'false' || normalized === '0' || normalized === 'no') {
+      return false;
+    }
+
+    if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
+      return true;
+    }
+
+    return fallback;
+  }
+
+  function normalizeNumber(value, min, max, fallback) {
+    if (!value) {
+      return fallback;
+    }
+
+    var parsed = parseInt(String(value).trim(), 10);
+    if (!Number.isFinite(parsed)) {
+      return fallback;
+    }
+
+    return Math.max(min, Math.min(max, parsed));
+  }
+
+  function normalizeFloat(value, min, max, fallback) {
+    if (!value) {
+      return fallback;
+    }
+
+    var parsed = parseFloat(String(value).trim());
+    if (!Number.isFinite(parsed)) {
+      return fallback;
+    }
+
+    return Math.max(min, Math.min(max, parsed));
+  }
+
+  function normalizeText(value, maxLength) {
+    if (!value) {
+      return '';
+    }
+
+    return String(value).trim().slice(0, maxLength);
+  }
+
+  function hexToSoftRgba(hex, alpha) {
     var normalized = hex.replace('#', '');
     if (normalized.length === 3) {
       normalized = normalized.split('').map(function (char) { return char + char; }).join('');
@@ -142,7 +385,7 @@ function getDailyKuralId() {
     var green = parseInt(normalized.slice(2, 4), 16);
     var blue = parseInt(normalized.slice(4, 6), 16);
 
-    return 'rgba(' + red + ', ' + green + ', ' + blue + ', 0.12)';
+    return 'rgba(' + red + ', ' + green + ', ' + blue + ', ' + alpha + ')';
   }
 
   function escapeHtml(value) {

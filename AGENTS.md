@@ -156,7 +156,7 @@
 ## SEO Gaps / Not Yet Implemented
 - No slugged Kural URLs such as `/kural/1-agara-mudhala...`; current production shape is `/kural/:id`.
 - No zoneless migration tied to SEO work.
-- Authority-building automation is still not implemented. The repo now includes a hosted embeddable Daily Kural widget at `frontend/public/widgets/daily-kural.js` and a docs page at `/widgets/daily-kural`, but broader backlink/distribution workflows are still pending.
+- Authority-building automation is still not implemented. The repo now includes a hosted, customizable Thirukkural widget at `frontend/public/widgets/daily-kural.js` and a docs page at `/widgets/daily-kural`, but broader backlink/distribution workflows are still pending.
 
 ## CI/CD Reality
 - `.github/workflows/backend-deploy.yml`: manual backend deploy plus optional SSM setup and seed.

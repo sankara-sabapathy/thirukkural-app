@@ -1,72 +1,112 @@
 <div class="widget-docs-container">
     <section class="widget-hero">
         <div class="widget-eyebrow">Embeddable Widget</div>
-        <h1>Daily Kural Widget</h1>
+        <h1>Customizable Thirukkural Widget</h1>
         <p class="widget-intro">
-            Add a compact Thirukkural card to any website. The widget updates daily, links back to the full Kural page,
-            and gives you a lightweight attribution surface that can earn backlinks naturally.
+            Add a hosted Thirukkural widget to any website with random, daily, or fixed Kural modes, flexible layouts,
+            and a lightweight iframe delivery model that stays isolated from the host site.
         </p>
     </section>
 
     <section class="widget-preview card">
         <div class="section-header">
-            <h2>Live Preview</h2>
-            <p>This preview uses the same public widget files that external sites load.</p>
+            <h2>Layout Previews</h2>
+            <p>These previews are rendered by the exact public widget frame used in external embeds.</p>
         </div>
 
-        <div class="preview-frame">
-            <iframe
-                src="/widgets/daily-kural-frame.html?kural=1&theme=light"
-                title="Daily Kural widget preview"
-                loading="lazy"
-            ></iframe>
+        <div class="preview-grid">
+            <article class="preview-card" *ngFor="let preview of previews">
+                <div class="preview-copy">
+                    <h3>{{ preview.title }}</h3>
+                    <p>{{ preview.description }}</p>
+                </div>
+                <div class="preview-frame">
+                    <iframe
+                        [src]="preview.src"
+                        [title]="preview.title + ' widget preview'"
+                        loading="lazy"
+                    ></iframe>
+                </div>
+            </article>
         </div>
     </section>
 
     <section class="widget-install card">
         <div class="section-header">
-            <h2>Default Embed</h2>
-            <p>Paste this script where you want the widget to appear.</p>
+            <h2>Quick Start</h2>
+            <p>
+                This is the default integration. It renders a random Kural in the spotlight layout with bilingual
+                content.
+            </p>
         </div>
 
-        <pre class="code-block"><code>{{ scriptSnippet }}</code></pre>
-        <button mat-flat-button color="primary" (click)="copySnippet(scriptSnippet)">
+        <pre class="code-block"><code>{{ quickStartSnippet }}</code></pre>
+        <button mat-flat-button color="primary" (click)="copySnippet(quickStartSnippet)">
             <mat-icon>content_copy</mat-icon>
-            Copy Embed Code
+            Copy Quick Start
         </button>
     </section>
 
     <section class="widget-install card">
         <div class="section-header">
-            <h2>Customization</h2>
-            <p>You can control theme, accent color, and a fixed Kural for editorial placements or previews.</p>
+            <h2>Preset Integrations</h2>
+            <p>Choose a preset that fits your site, then fine-tune the options below.</p>
         </div>
 
-        <pre class="code-block"><code>{{ customSnippet }}</code></pre>
-        <button mat-stroked-button color="primary" (click)="copySnippet(customSnippet)">
+        <div class="preset-grid">
+            <article class="preset-card" *ngFor="let preset of presetSnippets">
+                <h3>{{ preset.title }}</h3>
+                <p>{{ preset.description }}</p>
+                <pre class="code-block"><code>{{ preset.code }}</code></pre>
+                <button mat-stroked-button color="primary" (click)="copySnippet(preset.code)">
+                    <mat-icon>content_copy</mat-icon>
+                    Copy Preset
+                </button>
+            </article>
+        </div>
+    </section>
+
+    <section class="widget-install card">
+        <div class="section-header">
+            <h2>Advanced API</h2>
+            <p>
+                If you need to mount the widget into a specific host element after loading the script, use the public
+                JavaScript API.
+            </p>
+        </div>
+
+        <pre class="code-block"><code>{{ advancedSnippet }}</code></pre>
+        <button mat-stroked-button color="primary" (click)="copySnippet(advancedSnippet)">
             <mat-icon>content_copy</mat-icon>
-            Copy Custom Snippet
+            Copy API Example
         </button>
+    </section>
+
+    <section class="widget-install card">
+        <div class="section-header">
+            <h2>Customization Options</h2>
+            <p>The widget is configurable through `data-*` attributes or the JS API options object.</p>
+        </div>
 
         <div class="options-list">
-            <div class="option-item"><strong>data-theme</strong><span>`light` or `dark`</span></div>
-            <div class="option-item"><strong>data-accent</strong><span>hex color such as `#0f766e`</span></div>
-            <div class="option-item"><strong>data-kural</strong><span>optional fixed Kural number from `1` to `1330`</span></div>
-            <div class="option-item"><strong>data-width</strong><span>optional inline width, for example `360px`</span></div>
-            <div class="option-item"><strong>data-max-width</strong><span>optional maximum width, default `420px`</span></div>
+            <div class="option-item" *ngFor="let option of options">
+                <div class="option-main">
+                    <strong>{{ option.name }}</strong>
+                    <span>{{ option.values }}</span>
+                </div>
+                <p>{{ option.description }}</p>
+            </div>
         </div>
     </section>
 
     <section class="widget-notes card">
         <div class="section-header">
-            <h2>Implementation Notes</h2>
+            <h2>Implementation Best Practices</h2>
+            <p>These are the standards this widget now follows and the rules integrators should keep in mind.</p>
         </div>
 
         <ul>
-            <li>The widget is rendered inside a hosted iframe, so it stays visually stable on third-party sites.</li>
-            <li>It links back to the full Kural page on `thirukkural.site` with attribution.</li>
-            <li>The default widget rotates daily using a UTC-based schedule.</li>
-            <li>For editorial placements, you can pin a specific Kural with `data-kural`.</li>
+            <li *ngFor="let practice of bestPractices">{{ practice }}</li>
         </ul>
     </section>
 </div>

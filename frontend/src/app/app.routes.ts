@@ -24,9 +24,9 @@ const routeSeo = {
         type: 'website'
     },
     widgetDocs: {
-        title: 'Daily Kural Widget',
-        description: 'Embed a Daily Thirukkural widget on your website with a lightweight script and direct links back to the full Kural pages.',
-        keywords: 'Thirukkural widget, embed daily kural, daily wisdom widget, Tamil quote widget',
+        title: 'Embeddable Thirukkural Widget',
+        description: 'Embed a customizable Thirukkural widget on any website with random, daily, or fixed Kurals, multiple layouts, and lightweight iframe delivery.',
+        keywords: 'Thirukkural widget, embed thirukkural, random kural widget, Tamil quote widget, customizable widget',
         type: 'website'
     },
     pricing: {
