@@ -1,9 +1,10 @@
-name: Auto-Deploy Dev (Feature Branches)
+name: Auto-Deploy Dev (Feature and Codex Branches)
 
 on:
   push:
     branches:
       - 'feature/*'
+      - 'codex/*'
 
 jobs:
   # 1. Run Backend Unit Tests
