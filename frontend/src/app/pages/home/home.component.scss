@@ -856,7 +856,7 @@
     }
 }
 
-[data-theme="dark"] .page-main {
+:host-context([data-theme="dark"]) .page-main {
     .hero-stats {
         background: rgba(15, 23, 42, 0.52);
         border-color: rgba(148, 163, 184, 0.14);
