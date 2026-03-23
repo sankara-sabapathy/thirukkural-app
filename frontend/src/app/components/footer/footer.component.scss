@@ -86,6 +86,25 @@
     }
 }
 
+:host-context([data-theme="dark"]) {
+    .main-footer {
+        background:
+            linear-gradient(180deg, rgba(15, 23, 42, 0.68), rgba(2, 6, 23, 0.94));
+        border-top-color: rgba(148, 163, 184, 0.14);
+    }
+
+    .brand-tagline,
+    .footer-link,
+    .footer-meta p,
+    .footer-meta .tech-info {
+        color: var(--text-secondary);
+    }
+
+    .footer-link:hover {
+        color: var(--text-primary);
+    }
+}
+
 @media (max-width: 768px) {
     .main-footer {
         padding: 3.5rem 0 3rem;
