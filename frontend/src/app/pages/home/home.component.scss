@@ -856,6 +856,40 @@
     }
 }
 
+:host-context([data-theme="dark"]) {
+    .push-notification-section {
+        .push-wrapper {
+            background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.14) 0%, rgba(var(--accent-primary-rgb), 0.12) 100%);
+            border-color: rgba(var(--accent-primary-rgb), 0.18);
+        }
+
+        .push-highlights span {
+            background: rgba(var(--bg-body-rgb), 0.5);
+            border-color: rgba(var(--text-tertiary-rgb), 0.2);
+        }
+
+        .push-toggle-container {
+            background: rgba(var(--bg-body-rgb), 0.46);
+            border-color: rgba(var(--text-tertiary-rgb), 0.16);
+        }
+
+        .toggle-switch {
+            background: rgba(var(--bg-body-rgb), 0.72);
+            border-color: rgba(var(--text-tertiary-rgb), 0.24);
+        }
+
+        .toggle-slider {
+            background: rgba(var(--text-primary-rgb), 0.98);
+            box-shadow: 0 6px 16px rgba(var(--bg-deep-rgb), 0.35);
+        }
+
+        .push-status {
+            background: rgba(var(--bg-body-rgb), 0.42);
+            border-color: rgba(var(--text-tertiary-rgb), 0.14);
+        }
+    }
+}
+
 @media (max-width: 768px) {
     .hero-title {
         font-size: 3rem;
