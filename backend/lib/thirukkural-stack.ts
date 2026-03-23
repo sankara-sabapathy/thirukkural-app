@@ -515,9 +515,10 @@ export class ThirukkuralStack extends cdk.Stack {
         const widgetAssetBehavior = {
             ...websiteBehavior,
             // The embeddable widget runs in a sandboxed iframe with an opaque "null" origin.
-            // Add an unconditional CORS header only on the exact public asset paths it consumes.
+            // In dev, those asset subrequests do not carry HTTP basic-auth credentials, so keep
+            // just the CORS response function on widget assets while the rest of the site remains protected.
             functionAssociations: [
-                ...functionAssociations,
+                ...(isProd ? functionAssociations : []),
                 {
                     function: widgetCorsFn,
                     eventType: cloudfront.FunctionEventType.VIEWER_RESPONSE,
