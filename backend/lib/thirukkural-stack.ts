@@ -496,6 +496,13 @@ export class ThirukkuralStack extends cdk.Stack {
             });
         }
 
+        const widgetCorsFn = new cloudfront.Function(this, 'WidgetCorsFn', {
+            code: cloudfront.FunctionCode.fromFile({
+                filePath: path.join(__dirname, '../src/cloudfront/widget-cors.js'),
+            }),
+            runtime: cloudfront.FunctionRuntime.JS_2_0,
+        });
+
         const websiteOrigin = S3BucketOrigin.withOriginAccessControl(websiteBucket);
         const websiteBehavior = {
             origin: websiteOrigin,
@@ -507,9 +514,16 @@ export class ThirukkuralStack extends cdk.Stack {
 
         const widgetAssetBehavior = {
             ...websiteBehavior,
-            // The embeddable widget runs in a sandboxed iframe with an opaque "null" origin,
-            // so the specific public asset paths it consumes must allow cross-origin reads.
-            responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS,
+            // The embeddable widget runs in a sandboxed iframe with an opaque "null" origin.
+            // In dev, those asset subrequests do not carry HTTP basic-auth credentials, so keep
+            // just the CORS response function on widget assets while the rest of the site remains protected.
+            functionAssociations: [
+                ...(isProd ? functionAssociations : []),
+                {
+                    function: widgetCorsFn,
+                    eventType: cloudfront.FunctionEventType.VIEWER_RESPONSE,
+                },
+            ],
         };
 
         const distribution = new cloudfront.Distribution(this, 'WebsiteDistribution', {
