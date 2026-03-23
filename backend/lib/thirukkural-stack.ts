@@ -496,6 +496,13 @@ export class ThirukkuralStack extends cdk.Stack {
             });
         }
 
+        const widgetCorsFn = new cloudfront.Function(this, 'WidgetCorsFn', {
+            code: cloudfront.FunctionCode.fromFile({
+                filePath: path.join(__dirname, '../src/cloudfront/widget-cors.js'),
+            }),
+            runtime: cloudfront.FunctionRuntime.JS_2_0,
+        });
+
         const websiteOrigin = S3BucketOrigin.withOriginAccessControl(websiteBucket);
         const websiteBehavior = {
             origin: websiteOrigin,
@@ -505,25 +512,17 @@ export class ThirukkuralStack extends cdk.Stack {
             functionAssociations: functionAssociations,
         };
 
-        const widgetAssetCorsPolicy = new cloudfront.ResponseHeadersPolicy(this, 'WidgetAssetCorsPolicy', {
-            comment: 'Allow sandboxed widget iframes to read public Kural data and font assets',
-            customHeadersBehavior: {
-                customHeaders: [
-                    {
-                        header: 'Access-Control-Allow-Origin',
-                        value: '*',
-                        override: true,
-                    },
-                ],
-            },
-        });
-
         const widgetAssetBehavior = {
             ...websiteBehavior,
             // The embeddable widget runs in a sandboxed iframe with an opaque "null" origin.
-            // Add an unconditional CORS header on the exact public asset paths it consumes so
-            // the browser can read those responses even when a proxy/CDN in front strips Origin.
-            responseHeadersPolicy: widgetAssetCorsPolicy,
+            // Add an unconditional CORS header only on the exact public asset paths it consumes.
+            functionAssociations: [
+                ...functionAssociations,
+                {
+                    function: widgetCorsFn,
+                    eventType: cloudfront.FunctionEventType.VIEWER_RESPONSE,
+                },
+            ],
         };
 
         const distribution = new cloudfront.Distribution(this, 'WebsiteDistribution', {
