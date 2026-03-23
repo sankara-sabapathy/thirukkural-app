@@ -57,6 +57,7 @@ export class ThirukkuralStack extends cdk.Stack {
         // Dynamic Domains
         const apiDomainName = isProd ? `api.${baseDomain}` : `${stage}-api.${baseDomain}`;
         const siteDomainName = isProd ? baseDomain : `${stage}.${baseDomain}`;
+        const cloudFrontFunctionName = (suffix: string) => `thirukkural-${stage}-${suffix}`;
 
         // Let's use specific domain logic based on stage to be safe, assuming baseDomain is 'krss.online'
         // If baseDomain is flexible, we might need to pass full domains in SSM. 
@@ -472,6 +473,7 @@ export class ThirukkuralStack extends cdk.Stack {
 
         if (!isProd) {
             const basicAuthFn = new cloudfront.Function(this, 'BasicAuthFn', {
+                functionName: cloudFrontFunctionName('basic-auth'),
                 code: cloudfront.FunctionCode.fromFile({
                     filePath: path.join(__dirname, '../src/cloudfront/basic-auth.js'),
                 }),
@@ -484,6 +486,7 @@ export class ThirukkuralStack extends cdk.Stack {
             });
         } else {
             const uriRewriteFn = new cloudfront.Function(this, 'UriRewriteFn', {
+                functionName: cloudFrontFunctionName('uri-rewrite'),
                 code: cloudfront.FunctionCode.fromFile({
                     filePath: path.join(__dirname, '../src/cloudfront/uri-rewrite.js'),
                 }),
@@ -497,6 +500,7 @@ export class ThirukkuralStack extends cdk.Stack {
         }
 
         const widgetCorsFn = new cloudfront.Function(this, 'WidgetCorsFn', {
+            functionName: cloudFrontFunctionName('widget-cors'),
             code: cloudfront.FunctionCode.fromFile({
                 filePath: path.join(__dirname, '../src/cloudfront/widget-cors.js'),
             }),
