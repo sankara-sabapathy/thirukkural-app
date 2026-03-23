@@ -505,11 +505,25 @@ export class ThirukkuralStack extends cdk.Stack {
             functionAssociations: functionAssociations,
         };
 
+        const widgetAssetCorsPolicy = new cloudfront.ResponseHeadersPolicy(this, 'WidgetAssetCorsPolicy', {
+            comment: 'Allow sandboxed widget iframes to read public Kural data and font assets',
+            customHeadersBehavior: {
+                customHeaders: [
+                    {
+                        header: 'Access-Control-Allow-Origin',
+                        value: '*',
+                        override: true,
+                    },
+                ],
+            },
+        });
+
         const widgetAssetBehavior = {
             ...websiteBehavior,
-            // The embeddable widget runs in a sandboxed iframe with an opaque "null" origin,
-            // so the specific public asset paths it consumes must allow cross-origin reads.
-            responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS,
+            // The embeddable widget runs in a sandboxed iframe with an opaque "null" origin.
+            // Add an unconditional CORS header on the exact public asset paths it consumes so
+            // the browser can read those responses even when a proxy/CDN in front strips Origin.
+            responseHeadersPolicy: widgetAssetCorsPolicy,
         };
 
         const distribution = new cloudfront.Distribution(this, 'WebsiteDistribution', {
