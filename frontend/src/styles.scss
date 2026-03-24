@@ -3,18 +3,28 @@
 :root {
     /* Colors */
     --primary: #2563eb;
+    --primary-rgb: 37, 99, 235;
     --primary-dark: #1d4ed8;
     --primary-light: #60a5fa;
+    --primary-light-rgb: 96, 165, 250;
     --accent: #f59e0b;
     --accent-primary: #6366f1;
+    --accent-primary-rgb: 99, 102, 241;
 
     --bg-body: #f8fafc;
+    --bg-body-rgb: 248, 250, 252;
     --bg-card: #ffffff;
+    --bg-card-rgb: 255, 255, 255;
     --bg-surface: #f1f5f9;
+    --bg-surface-rgb: 241, 245, 249;
+    --bg-deep-rgb: 2, 6, 23;
 
     --text-primary: #0f172a;
+    --text-primary-rgb: 15, 23, 42;
     --text-secondary: #475569;
+    --text-secondary-rgb: 71, 85, 105;
     --text-tertiary: #94a3b8;
+    --text-tertiary-rgb: 148, 163, 184;
 
     --border-color: #e2e8f0;
 
@@ -34,17 +44,109 @@
 /* Dark Mode */
 [data-theme="dark"] {
     --bg-body: #0f172a;
+    --bg-body-rgb: 15, 23, 42;
     --bg-card: #1e293b;
+    --bg-card-rgb: 30, 41, 59;
     --bg-surface: #334155;
+    --bg-surface-rgb: 51, 65, 85;
+    --bg-deep-rgb: 2, 6, 23;
 
     --text-primary: #f8fafc;
+    --text-primary-rgb: 248, 250, 252;
     --text-secondary: #cbd5e1;
+    --text-secondary-rgb: 203, 213, 225;
     --text-tertiary: #94a3b8;
+    --text-tertiary-rgb: 148, 163, 184;
 
     --border-color: #334155;
 
     --header-bg: rgba(15, 15, 30, 0.8);
     --mobile-menu-bg: linear-gradient(180deg, rgba(15, 15, 30, 0.98) 0%, rgba(20, 20, 35, 0.98) 100%);
+}
+
+[data-theme="dark"] app-home .page-main {
+    .hero-stats {
+        background: rgba(var(--bg-body-rgb), 0.52);
+        border-color: rgba(var(--text-tertiary-rgb), 0.14);
+        box-shadow: 0 18px 40px rgba(var(--bg-deep-rgb), 0.22);
+    }
+
+    .stat-divider {
+        background: rgba(var(--text-tertiary-rgb), 0.24);
+    }
+
+    .feature-card {
+        background: linear-gradient(180deg, rgba(var(--bg-card-rgb), 0.96), rgba(var(--bg-body-rgb), 0.92));
+    }
+
+    .widget-feature-shell {
+        background:
+            radial-gradient(circle at top left, rgba(var(--accent-primary-rgb), 0.18), transparent 42%),
+            linear-gradient(135deg, rgba(var(--bg-card-rgb), 0.96), rgba(var(--bg-body-rgb), 0.94));
+        border-color: rgba(var(--accent-primary-rgb), 0.12);
+    }
+
+    .widget-feature-pill,
+    .widget-preview-chip,
+    .sample-benefit,
+    .push-highlights span {
+        background: rgba(var(--bg-body-rgb), 0.5);
+        border-color: rgba(var(--text-tertiary-rgb), 0.2);
+    }
+
+    .widget-showcase-stage {
+        background: rgba(var(--bg-body-rgb), 0.64);
+        border-color: rgba(var(--text-tertiary-rgb), 0.2);
+        box-shadow: inset 0 1px 0 rgba(var(--text-tertiary-rgb), 0.08);
+    }
+
+    .widget-preview-chip.active {
+        border-color: rgba(var(--primary-light-rgb), 0.4);
+        box-shadow: 0 12px 28px rgba(var(--bg-body-rgb), 0.34);
+        background: linear-gradient(180deg, rgba(var(--bg-card-rgb), 0.95), rgba(var(--bg-body-rgb), 0.92));
+    }
+
+    .push-wrapper {
+        background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.14) 0%, rgba(var(--accent-primary-rgb), 0.12) 100%);
+        border-color: rgba(var(--accent-primary-rgb), 0.18);
+    }
+
+    .push-toggle-container {
+        background: rgba(var(--bg-body-rgb), 0.46);
+        border-color: rgba(var(--text-tertiary-rgb), 0.16);
+    }
+
+    .toggle-switch {
+        background: rgba(var(--bg-body-rgb), 0.72);
+        border-color: rgba(var(--text-tertiary-rgb), 0.24);
+    }
+
+    .toggle-slider {
+        background: rgba(var(--text-primary-rgb), 0.98);
+        box-shadow: 0 6px 16px rgba(var(--bg-deep-rgb), 0.35);
+    }
+
+    .push-status,
+    .status-badge {
+        background: rgba(var(--bg-body-rgb), 0.42);
+        border: 1px solid rgba(var(--text-tertiary-rgb), 0.14);
+    }
+
+    .sample-email-section {
+        background: rgba(var(--bg-body-rgb), 0.32);
+    }
+
+    .notification-banner {
+        background: rgba(var(--bg-deep-rgb), 0.92);
+        border-color: rgba(var(--primary-light-rgb), 0.18);
+        box-shadow: 0 18px 36px rgba(var(--bg-deep-rgb), 0.45);
+    }
+
+    .subscribe-cta {
+        background:
+            radial-gradient(circle at top center, rgba(var(--accent-primary-rgb), 0.16), transparent 52%),
+            linear-gradient(180deg, rgba(var(--bg-card-rgb), 0.96), rgba(var(--bg-body-rgb), 0.92));
+    }
 }
 
 html,
