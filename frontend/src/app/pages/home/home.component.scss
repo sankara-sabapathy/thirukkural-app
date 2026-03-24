@@ -885,7 +885,7 @@
 
         .push-status {
             background: rgba(var(--bg-body-rgb), 0.42);
-            border-color: rgba(var(--text-tertiary-rgb), 0.14);
+            border: 1px solid rgba(var(--text-tertiary-rgb), 0.14);
         }
     }
 }
