@@ -8,6 +8,76 @@ export interface AiExplanation {
     tamil: string;
 }
 
+function stripMarkdownFence(text: string): string {
+    return text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+}
+
+function extractFirstJsonObject(text: string): string | null {
+    const start = text.indexOf('{');
+    if (start === -1) {
+        return null;
+    }
+
+    let depth = 0;
+    let inString = false;
+    let escaping = false;
+
+    for (let i = start; i < text.length; i++) {
+        const char = text[i];
+
+        if (escaping) {
+            escaping = false;
+            continue;
+        }
+
+        if (char === '\\') {
+            escaping = true;
+            continue;
+        }
+
+        if (char === '"') {
+            inString = !inString;
+            continue;
+        }
+
+        if (inString) {
+            continue;
+        }
+
+        if (char === '{') {
+            depth++;
+        } else if (char === '}') {
+            depth--;
+
+            if (depth === 0) {
+                return text.slice(start, i + 1);
+            }
+        }
+    }
+
+    return null;
+}
+
+export function parseAiExplanationResponse(responseText: string): AiExplanation {
+    const cleanedText = stripMarkdownFence(responseText);
+    const jsonText = extractFirstJsonObject(cleanedText);
+
+    if (!jsonText) {
+        throw new Error('No JSON object found in Gemini response');
+    }
+
+    const parsed = JSON.parse(jsonText) as Partial<AiExplanation>;
+
+    if (typeof parsed.english !== 'string' || typeof parsed.tamil !== 'string') {
+        throw new Error('Gemini response is missing required english/tamil fields');
+    }
+
+    return {
+        english: parsed.english.trim(),
+        tamil: parsed.tamil.trim(),
+    };
+}
+
 /**
  * Helper to fetch Kural to understand the original text if we need to explain it.
  */
@@ -89,9 +159,7 @@ You MUST provide your output as a raw JSON string without markdown or code block
             return null;
         }
 
-        // Remove potential markdown wrappers if the model misbehaves despite system instructions
-        const cleanText = responseText.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
-        const generated = JSON.parse(cleanText) as AiExplanation;
+        const generated = parseAiExplanationResponse(responseText);
 
         // 4. Save to DynamoDB permanently
         await docClient.send(new UpdateCommand({
