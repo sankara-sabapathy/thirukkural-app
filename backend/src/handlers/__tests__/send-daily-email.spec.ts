@@ -24,9 +24,13 @@ vi.mock('web-push', () => ({
 vi.mock('../../shared/secrets', () => ({
     getSecret: vi.fn(),
 }));
+vi.mock('../../shared/ai-utils', () => ({
+    getOrGenerateAiExplanation: vi.fn(),
+}));
 
 import { getRandomKural } from '../../shared/kural-utils';
 import { sendEmail } from '../../shared/email-service';
+import { getOrGenerateAiExplanation } from '../../shared/ai-utils';
 
 describe('Send Daily Email Handler', () => {
     const originalEnv = process.env;
@@ -56,6 +60,7 @@ describe('Send Daily Email Handler', () => {
 
         // Default mock for getSecret
         vi.mocked(secrets.getSecret).mockResolvedValue('priv');
+        vi.mocked(getOrGenerateAiExplanation).mockResolvedValue(null);
 
         (getRandomKural as any).mockResolvedValue(mockKural);
 
