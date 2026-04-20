@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, map, tap, catchError, switchMap } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface Kural {
     number: number;
@@ -161,6 +162,35 @@ export class KuralService {
                         return of(undefined);
                     })
                 );
+            })
+        );
+    }
+
+    /**
+     * Checks if an AI explanation already exists for a kural. 
+     * Returns the explanation if it exists, or null if it doesn't (404).
+     */
+    getExistingAiExplanation(id: number): Observable<{english: string, tamil: string} | null> {
+        const url = `${environment.api.baseUrl}/ai/${id}/explanation`;
+        return this.http.get<{english: string, tamil: string}>(url).pipe(
+            catchError(err => {
+                if (err.status !== 404) {
+                    console.error(`Failed to get existing AI explanation for kural ${id}`, err);
+                }
+                return of(null);
+            })
+        );
+    }
+
+    /**
+     * Forces generation of a new AI explanation for a kural.
+     */
+    generateAiExplanation(id: number): Observable<{english: string, tamil: string} | null> {
+        const url = `${environment.api.baseUrl}/ai/${id}/explanation`;
+        return this.http.post<{english: string, tamil: string}>(url, {}).pipe(
+            catchError(err => {
+                console.error(`Failed to generate AI explanation for kural ${id}`, err);
+                return of(null);
             })
         );
     }

@@ -10,6 +10,7 @@ import { generateSystemEmail } from '../shared/email-templates';
 import * as webpush from 'web-push';
 import { PRICING_CONFIG } from '../shared/types';
 import { sendToTelegramChannel } from '../shared/send-telegram';
+import { getOrGenerateAiExplanation } from '../shared/ai-utils';
 
 
 export const handler = async (): Promise<void> => {
@@ -62,6 +63,22 @@ export const handler = async (): Promise<void> => {
             mu_karu: safeJsonParse(randomKural.mu_karu),
             salaman: safeJsonParse(randomKural.salaman)
         };
+
+        // Try to fetch or trigger AI explanation generation if not present in DB result directly (though it should be if generated before)
+        let ai_explanation_en = randomKural.ai_explanation_en;
+        let ai_explanation_ta = randomKural.ai_explanation_ta;
+        
+        if (!ai_explanation_en || !ai_explanation_ta) {
+            console.log(`AI Explanation missing for Kural ${kuralData.kuralId}. Attempting to generate...`);
+            const generated = await getOrGenerateAiExplanation(kuralData.kuralId, true);
+            if (generated) {
+                ai_explanation_en = generated.english;
+                ai_explanation_ta = generated.tamil;
+            }
+        }
+
+        kuralData.ai_explanation_en = ai_explanation_en;
+        kuralData.ai_explanation_ta = ai_explanation_ta;
 
         // 3. Send email to each user with delay
         if (users.length > 0) {

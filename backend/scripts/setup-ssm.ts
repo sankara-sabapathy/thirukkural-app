@@ -72,6 +72,7 @@ const CONFIG: StringMap = {
         'razorpay_key_id',
         'razorpay_key_secret',
         'razorpay_webhook_secret',
+        'google_gemini_api_key',
     ]
 };
 

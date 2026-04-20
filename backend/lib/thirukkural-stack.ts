@@ -215,6 +215,7 @@ export class ThirukkuralStack extends cdk.Stack {
             PARAM_RAZORPAY_WEBHOOK_SECRET: getSecretParamName('razorpay_webhook_secret'),
             PARAM_TELEGRAM_BOT_TOKEN: getSecretParamName('telegram_bot_token'),
             PARAM_TELEGRAM_CHANNEL_ID: getSecretParamName('telegram_channel_id'),
+            PARAM_GOOGLE_GEMINI_API_KEY: getSecretParamName('google_gemini_api_key'),
         };
 
         const nodeJsProps: nodejs.NodejsFunctionProps = {
@@ -272,9 +273,17 @@ export class ThirukkuralStack extends cdk.Stack {
             memorySize: 256,
         });
 
+        const kuralAiFn = new nodejs.NodejsFunction(this, 'KuralAiFn', {
+            entry: path.join(__dirname, '../src/handlers/kural-ai.ts'),
+            ...nodeJsProps,
+            timeout: cdk.Duration.seconds(30),
+            memorySize: 256,
+        });
+
         // Permissions
         kuralTable.grantReadData(sendEmailFn);
         kuralTable.grantReadData(sendSampleEmailFn);
+        kuralTable.grantReadWriteData(kuralAiFn);
         usersTable.grantReadWriteData(userProfileFn);
         usersTable.grantReadWriteData(sendEmailFn);
         usersTable.grantReadWriteData(unsubscribeEmailFn);
@@ -294,7 +303,8 @@ export class ThirukkuralStack extends cdk.Stack {
 
         const lambdas = [
             userProfileFn, sendEmailFn, sendSampleEmailFn,
-            subscribePushFn, unsubscribeEmailFn, unsubscribePushFn
+            subscribePushFn, unsubscribeEmailFn, unsubscribePushFn,
+            kuralAiFn
         ];
 
         lambdas.forEach(fn => fn.addToRolePolicy(ssmPolicy));
@@ -419,6 +429,19 @@ export class ThirukkuralStack extends cdk.Stack {
 
         const subscribeWithDeviceId = subscribe.addResource('{deviceId}');
         subscribeWithDeviceId.addMethod('DELETE', new apigateway.LambdaIntegration(unsubscribePushFn));
+
+        // AI Routes
+        const ai = api.root.addResource('ai');
+        const aiWithId = ai.addResource('{id}');
+        const aiExplanation = aiWithId.addResource('explanation');
+        aiExplanation.addMethod('GET', new apigateway.LambdaIntegration(kuralAiFn), {
+            authorizer,
+            authorizationType: apigateway.AuthorizationType.COGNITO,
+        });
+        aiExplanation.addMethod('POST', new apigateway.LambdaIntegration(kuralAiFn), {
+            authorizer,
+            authorizationType: apigateway.AuthorizationType.COGNITO,
+        });
 
         // Payment Routes
         const payment = api.root.addResource('payment');
