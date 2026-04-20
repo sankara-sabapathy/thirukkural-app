@@ -7,7 +7,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { KuralService, Kural } from '../../services/kural.service';
-import { switchMap, map, tap, catchError, distinctUntilChanged, shareReplay, take } from 'rxjs/operators';
+import { switchMap, map, tap, catchError, distinctUntilChanged, shareReplay, take, filter } from 'rxjs/operators';
 import { Observable, of, merge } from 'rxjs';
 import { SeoService } from '../../services/seo.service';
 import { KURAL_FILTER_MAPPING } from '../kural-list/kural-filter-mapping';
@@ -84,6 +84,7 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
                 this.resetAiState();
 
                 return this.authService.authResolved$.pipe(
+                    filter(authResolved => authResolved),
                     take(1),
                     tap(() => {
                         if (this.authService.canUseProtectedApi()) {
