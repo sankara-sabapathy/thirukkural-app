@@ -182,6 +182,28 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
                 </div>
             </div>
 
+            <!-- AI Explanation Section -->
+            ${(hasContent(ai_explanation_en) || hasContent(ai_explanation_ta)) ? `
+            <div style="padding: 30px 40px; background-color: #f7fee7; border-top: 1px solid #e2e8f0;">
+                <h3 style="margin-top: 0; color: #3f6212; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; font-weight: 700; display: flex; align-items: center;">✨ AI Explanation</h3>
+                
+                ${hasContent(ai_explanation_en) ? `
+                <div style="margin-bottom: 20px;">
+                    <strong style="display: block; margin-bottom: 8px; font-size: 12px; color: #4d7c0f; text-transform: uppercase; letter-spacing: 0.5px;">Simple English</strong>
+                    <p style="font-size: 15px; line-height: 1.6; color: #3f6212; margin: 0; font-family: 'Inter', sans-serif;">
+                        ${ai_explanation_en}
+                    </p>
+                </div>
+                ` : ''}
+
+                ${hasContent(ai_explanation_ta) ? `
+                <div style="${hasContent(ai_explanation_en) ? 'border-top: 1px dashed #bef264; padding-top: 20px;' : ''}">
+                    <strong style="display: block; margin-bottom: 8px; font-size: 12px; color: #4d7c0f; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Noto Sans Tamil', sans-serif;">எளிய தமிழ் உரை</strong>
+                    <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #3f6212; font-family: 'Noto Sans Tamil', sans-serif;">${ai_explanation_ta}</p>
+                </div>
+                ` : ''}
+            </div>` : ''}
+
             <!-- English Meaning Section -->
             ${(hasContent(translation) || hasContent(explanation)) ? `
             <div style="padding: 30px 40px; background-color: ${lightBg}; border-top: 1px solid #e2e8f0;">
@@ -204,27 +226,6 @@ export const generateKuralEmail = (kural: Kural, isSample: boolean = false, unsu
                 ` : ''}
             </div>` : ''}
 
-            <!-- AI Explanation Section -->
-            ${(hasContent(ai_explanation_en) || hasContent(ai_explanation_ta)) ? `
-            <div style="padding: 30px 40px; background-color: #f7fee7; border-top: 1px solid #e2e8f0;">
-                <h3 style="margin-top: 0; color: #3f6212; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; font-weight: 700; display: flex; align-items: center;">✨ AI Explanation</h3>
-                
-                ${hasContent(ai_explanation_en) ? `
-                <div style="margin-bottom: 20px;">
-                    <strong style="display: block; margin-bottom: 8px; font-size: 12px; color: #4d7c0f; text-transform: uppercase; letter-spacing: 0.5px;">Simple English</strong>
-                    <p style="font-size: 15px; line-height: 1.6; color: #3f6212; margin: 0; font-family: 'Inter', sans-serif;">
-                        ${ai_explanation_en}
-                    </p>
-                </div>
-                ` : ''}
-
-                ${hasContent(ai_explanation_ta) ? `
-                <div style="${hasContent(ai_explanation_en) ? 'border-top: 1px dashed #bef264; padding-top: 20px;' : ''}">
-                    <strong style="display: block; margin-bottom: 8px; font-size: 12px; color: #4d7c0f; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Noto Sans Tamil', sans-serif;">எளிய தமிழ் உரை</strong>
-                    <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #3f6212; font-family: 'Noto Sans Tamil', sans-serif;">${ai_explanation_ta}</p>
-                </div>
-                ` : ''}
-            </div>` : ''}
 
             <!-- Tamil Commentaries Section -->
             <div style="padding: 40px 30px;">
