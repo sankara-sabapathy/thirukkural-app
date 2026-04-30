@@ -281,8 +281,8 @@ export class ThirukkuralStack extends cdk.Stack {
         });
 
         // Permissions
-        kuralTable.grantReadData(sendEmailFn);
-        kuralTable.grantReadData(sendSampleEmailFn);
+        kuralTable.grantReadWriteData(sendEmailFn);
+        kuralTable.grantReadWriteData(sendSampleEmailFn);
         kuralTable.grantReadWriteData(kuralAiFn);
         usersTable.grantReadWriteData(userProfileFn);
         usersTable.grantReadWriteData(sendEmailFn);

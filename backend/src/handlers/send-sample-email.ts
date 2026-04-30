@@ -7,6 +7,7 @@ import { generateKuralEmail, Kural } from '../shared/email-templates';
 import { getRandomKural } from '../shared/kural-utils';
 
 import { sendEmail } from '../shared/email-service';
+import { getOrGenerateAiExplanation } from '../shared/ai-utils';
 
 const RATE_LIMIT_SECONDS = 24 * 60 * 60; // 24 hours
 
@@ -110,6 +111,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             mu_karu: safeJsonParse(randomKural.mu_karu),
             salaman: safeJsonParse(randomKural.salaman)
         };
+
+        // Fetch or trigger AI explanation generation
+        let ai_explanation_en = randomKural.ai_explanation_en;
+        let ai_explanation_ta = randomKural.ai_explanation_ta;
+        
+        if (!ai_explanation_en || !ai_explanation_ta) {
+            console.log(`AI Explanation missing for Kural ${kuralData.kuralId}. Attempting to generate...`);
+            const generated = await getOrGenerateAiExplanation(kuralData.kuralId, true);
+            if (generated) {
+                ai_explanation_en = generated.english;
+                ai_explanation_ta = generated.tamil;
+            }
+        }
+
+        kuralData.ai_explanation_en = ai_explanation_en;
+        kuralData.ai_explanation_ta = ai_explanation_ta;
 
         const { subject, text, html } = generateKuralEmail(kuralData, true); // isSample = true
 
