@@ -185,14 +185,9 @@ export class KuralService {
     /**
      * Forces generation of a new AI explanation for a kural.
      */
-    generateAiExplanation(id: number): Observable<{english: string, tamil: string} | null> {
+    generateAiExplanation(id: number): Observable<{english: string, tamil: string}> {
         const url = `${environment.api.baseUrl}/ai/${id}/explanation`;
-        return this.http.post<{english: string, tamil: string}>(url, {}).pipe(
-            catchError(err => {
-                console.error(`Failed to generate AI explanation for kural ${id}`, err);
-                return of(null);
-            })
-        );
+        return this.http.post<{english: string, tamil: string}>(url, {});
     }
 
     /**

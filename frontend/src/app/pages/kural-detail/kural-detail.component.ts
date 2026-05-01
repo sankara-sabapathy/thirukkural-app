@@ -258,15 +258,29 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
         this.aiNotAvailableYet = false;
         this.cdr.markForCheck();
 
-        this.kuralService.generateAiExplanation(this.currentNumber).subscribe(explanation => {
-            this.isAiLoading = false;
-            if (explanation) {
+        this.kuralService.generateAiExplanation(this.currentNumber).subscribe({
+            next: (explanation) => {
+                this.isAiLoading = false;
                 this.aiExplanation = explanation;
-            } else {
+                this.cdr.markForCheck();
+            },
+            error: (err) => {
+                console.error('AI Generation Error:', err);
+                this.isAiLoading = false;
                 this.aiNotAvailableYet = true;
-                this.snackBar.open('Failed to generate AI explanation. Please try again.', 'Close', { duration: 3000 });
+                
+                let errorMessage = 'Failed to generate AI explanation. Please try again.';
+                if (err?.error?.error?.message) {
+                    errorMessage = err.error.error.message;
+                }
+                
+                this.snackBar.open(errorMessage, 'Close', { 
+                    duration: 5000,
+                    panelClass: ['snackbar-error']
+                });
+                
+                this.cdr.markForCheck();
             }
-            this.cdr.markForCheck();
         });
     }
 

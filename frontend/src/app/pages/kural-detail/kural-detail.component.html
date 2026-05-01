@@ -101,7 +101,7 @@
                     </div>
 
                     <!-- AI Explanation Section -->
-                    <ng-container *ngIf="canUseAi$ | async">
+                    <ng-container *ngIf="canUseAi$ | async; else aiLoginPrompt">
                         <div class="content-section ai-section" *ngIf="aiExplanation || aiNotAvailableYet || isAiLoading">
                             <h2 style="display: flex; align-items: center; gap: 8px; color: #3f6212;">
                                 <span>✨</span>
@@ -125,7 +125,7 @@
                             </div>
                             
                             <div *ngIf="aiNotAvailableYet && !isAiLoading" style="margin-top: 15px;">
-                                <p style="color: #64748b; font-size: 14px; margin-bottom: 12px;">Get a highly simplified, context-aware explanation for this Kural powered by Gemini AI.</p>
+                                <p style="color: #64748b; font-size: 14px; margin-bottom: 12px;">Get a highly simplified, context-aware explanation for this Kural powered by AI.</p>
                                 <button mat-flat-button style="background-color: #3f6212; color: #fff;" (click)="generateAiExplanation()">
                                     <mat-icon style="color: #bef264;">auto_awesome</mat-icon>
                                     Generate Meaning
@@ -133,6 +133,23 @@
                             </div>
                         </div>
                     </ng-container>
+
+                    <ng-template #aiLoginPrompt>
+                        <div class="content-section ai-section" style="border: 1px dashed var(--border-color); background-color: var(--bg-surface); padding: 20px; border-radius: 8px;">
+                            <h2 style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); margin-bottom: 0.5rem; font-size: 1.15rem;">
+                                <span>✨</span>
+                                AI Explanation
+                            </h2>
+                            <div style="margin-top: 10px;">
+                                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 15px; line-height: 1.6;">
+                                    Sign in to generate a highly simplified, context-aware explanation for this Kural powered by AI.
+                                </p>
+                                <button class="btn btn-outline" style="font-size: 14px; padding: 0.5rem 1.2rem; display: inline-flex; align-items: center;" (click)="authService.login()">
+                                    Sign In to Generate
+                                </button>
+                            </div>
+                        </div>
+                    </ng-template>
 
                     <!-- Category Information -->
                     <div class="ultra-categories-row">
