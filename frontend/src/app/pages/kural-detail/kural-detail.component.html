@@ -100,6 +100,57 @@
                         </div>
                     </div>
 
+                    <!-- AI Explanation Section -->
+                    <ng-container *ngIf="canUseAi$ | async; else aiLoginPrompt">
+                        <div class="content-section ai-section" *ngIf="aiExplanation || aiNotAvailableYet || isAiLoading">
+                            <h2 style="display: flex; align-items: center; gap: 8px; color: #3f6212;">
+                                <span>✨</span>
+                                AI Explanation
+                            </h2>
+                            
+                            <div *ngIf="aiExplanation" class="ai-content" style="background-color: #f7fee7; padding: 20px; border-radius: 8px; border: 1px solid #bef264;">
+                                <div>
+                                    <strong style="color: #4d7c0f; font-size: 13px; text-transform: uppercase;">Simple English</strong>
+                                    <p style="color: #3f6212; margin-top: 8px; font-size: 15px; line-height: 1.6;">{{ aiExplanation.english }}</p>
+                                </div>
+                                <div style="margin-top: 15px; border-top: 1px dashed #bef264; padding-top: 15px;">
+                                    <strong style="color: #4d7c0f; font-size: 13px; text-transform: uppercase; font-family: 'Noto Sans Tamil', sans-serif;">எளிய தமிழ் உரை</strong>
+                                    <p style="color: #3f6212; margin-top: 8px; font-size: 15px; line-height: 1.7; font-family: 'Noto Sans Tamil', sans-serif;">{{ aiExplanation.tamil }}</p>
+                                </div>
+                            </div>
+                            
+                            <div *ngIf="isAiLoading" style="display: flex; align-items: center; gap: 15px; margin-top: 15px; padding: 20px; background-color: #f8fafc; border-radius: 8px;">
+                                <mat-spinner diameter="30"></mat-spinner>
+                                <span style="color: #64748b; font-size: 14px;">Gemini is analyzing this Kural...</span>
+                            </div>
+                            
+                            <div *ngIf="aiNotAvailableYet && !isAiLoading" style="margin-top: 15px;">
+                                <p style="color: #64748b; font-size: 14px; margin-bottom: 12px;">Get a highly simplified, context-aware explanation for this Kural powered by AI.</p>
+                                <button mat-flat-button style="background-color: #3f6212; color: #fff;" (click)="generateAiExplanation()">
+                                    <mat-icon style="color: #bef264;">auto_awesome</mat-icon>
+                                    Generate Meaning
+                                </button>
+                            </div>
+                        </div>
+                    </ng-container>
+
+                    <ng-template #aiLoginPrompt>
+                        <div class="content-section ai-section" style="border: 1px dashed var(--border-color); background-color: var(--bg-surface); padding: 20px; border-radius: 8px;">
+                            <h2 style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); margin-bottom: 0.5rem; font-size: 1.15rem;">
+                                <span>✨</span>
+                                AI Explanation
+                            </h2>
+                            <div style="margin-top: 10px;">
+                                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 15px; line-height: 1.6;">
+                                    Sign in to generate a highly simplified, context-aware explanation for this Kural powered by AI.
+                                </p>
+                                <button class="btn btn-outline" style="font-size: 14px; padding: 0.5rem 1.2rem; display: inline-flex; align-items: center;" (click)="authService.login()">
+                                    Sign In to Generate
+                                </button>
+                            </div>
+                        </div>
+                    </ng-template>
+
                     <!-- Category Information -->
                     <div class="ultra-categories-row">
                         <div class="category-pill">
@@ -156,6 +207,7 @@
                         </h2>
                         <p>{{ kural.explanation }}</p>
                     </div>
+
 
                     <!-- Tamil Commentaries Section -->
                     <div class="commentaries-section"

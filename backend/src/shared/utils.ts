@@ -12,6 +12,7 @@ export const createResponse = (statusCode: number, body: any, origin?: string): 
     return {
         statusCode,
         headers: {
+            'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': allowedOrigin,
             'Access-Control-Allow-Credentials': true,
             'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',

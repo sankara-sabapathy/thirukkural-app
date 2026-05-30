@@ -79,7 +79,7 @@
         background: linear-gradient(180deg, rgba(var(--bg-card-rgb), 0.96), rgba(var(--bg-body-rgb), 0.92));
     }
 
-    .widget-feature-shell {
+    .widget-feature-shell, .ai-feature-shell {
         background:
             radial-gradient(circle at top left, rgba(var(--accent-primary-rgb), 0.18), transparent 42%),
             linear-gradient(135deg, rgba(var(--bg-card-rgb), 0.96), rgba(var(--bg-body-rgb), 0.94));
@@ -87,6 +87,7 @@
     }
 
     .widget-feature-pill,
+    .ai-highlights span,
     .widget-preview-chip,
     .sample-benefit,
     .push-highlights span {

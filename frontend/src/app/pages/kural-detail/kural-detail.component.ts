@@ -7,10 +7,11 @@ import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { KuralService, Kural } from '../../services/kural.service';
-import { switchMap, map, tap, catchError, distinctUntilChanged, shareReplay } from 'rxjs/operators';
+import { switchMap, map, tap, catchError, distinctUntilChanged, shareReplay, take, filter } from 'rxjs/operators';
 import { Observable, of, merge } from 'rxjs';
 import { SeoService } from '../../services/seo.service';
 import { KURAL_FILTER_MAPPING } from '../kural-list/kural-filter-mapping';
+import { AuthService } from '../../services/auth.service';
 
 // Helper for JSON-LD structured data
 import { DOCUMENT } from '@angular/common';
@@ -42,6 +43,12 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
     isSharing = false;
     isCopied = false;
 
+    // AI State
+    aiExplanation: { english: string, tamil: string } | null = null;
+    isAiLoading = false;
+    aiNotAvailableYet = false;
+    canUseAi$: Observable<boolean> = of(false);
+
     @ViewChild('captureArea') captureArea!: ElementRef;
 
     constructor(
@@ -51,8 +58,11 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
         private snackBar: MatSnackBar,
         private cdr: ChangeDetectorRef,
         private seoService: SeoService,
+        public authService: AuthService,
         @Inject(DOCUMENT) private doc: Document
-    ) { }
+    ) { 
+        this.canUseAi$ = this.authService.canUseProtectedApi$;
+    }
 
     ngOnInit(): void {
         // Create an observable that immediately emits the snapshot value, then listens to paramMap changes
@@ -70,20 +80,32 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
                 this.currentNumber = id;
                 this.loading = !isInitialRouteLoad;
                 isInitialRouteLoad = false;
-                return this.kuralService.getKural(id).pipe(
-                    tap((kural) => {
-                        this.loading = false;
-                        this.cdr.markForCheck();
-                        if (kural) {
-                            this.updateMetaTags(kural);
+                
+                this.resetAiState();
+
+                return this.authService.authResolved$.pipe(
+                    filter(authResolved => authResolved),
+                    take(1),
+                    tap(() => {
+                        if (this.authService.canUseProtectedApi()) {
+                            this.checkExistingAiExplanation(id);
                         }
                     }),
-                    catchError(error => {
-                        console.error('Error fetching kural:', error);
-                        this.loading = false;
-                        this.cdr.markForCheck();
-                        return of(undefined);
-                    })
+                    switchMap(() => this.kuralService.getKural(id).pipe(
+                        tap((kural) => {
+                            this.loading = false;
+                            this.cdr.markForCheck();
+                            if (kural) {
+                                this.updateMetaTags(kural);
+                            }
+                        }),
+                        catchError(error => {
+                            console.error('Error fetching kural:', error);
+                            this.loading = false;
+                            this.cdr.markForCheck();
+                            return of(undefined);
+                        })
+                    ))
                 );
             }),
             shareReplay(1) // Share the result to prevent multiple subscriptions from triggering multiple HTTP requests
@@ -210,6 +232,56 @@ export class KuralDetailComponent implements OnInit, OnDestroy {
         if (this.currentNumber > 1) {
             this.router.navigate(['/kural', this.currentNumber - 1]);
         }
+    }
+
+    resetAiState(): void {
+        this.aiExplanation = null;
+        this.isAiLoading = false;
+        this.aiNotAvailableYet = false;
+        this.cdr.markForCheck();
+    }
+
+    checkExistingAiExplanation(id: number): void {
+        this.kuralService.getExistingAiExplanation(id).subscribe(explanation => {
+            if (explanation) {
+                this.aiExplanation = explanation;
+                this.aiNotAvailableYet = false;
+            } else {
+                this.aiNotAvailableYet = true;
+            }
+            this.cdr.markForCheck();
+        });
+    }
+
+    generateAiExplanation(): void {
+        this.isAiLoading = true;
+        this.aiNotAvailableYet = false;
+        this.cdr.markForCheck();
+
+        this.kuralService.generateAiExplanation(this.currentNumber).subscribe({
+            next: (explanation) => {
+                this.isAiLoading = false;
+                this.aiExplanation = explanation;
+                this.cdr.markForCheck();
+            },
+            error: (err) => {
+                console.error('AI Generation Error:', err);
+                this.isAiLoading = false;
+                this.aiNotAvailableYet = true;
+                
+                let errorMessage = 'Failed to generate AI explanation. Please try again.';
+                if (err?.error?.error?.message) {
+                    errorMessage = err.error.error.message;
+                }
+                
+                this.snackBar.open(errorMessage, 'Close', { 
+                    duration: 5000,
+                    panelClass: ['snackbar-error']
+                });
+                
+                this.cdr.markForCheck();
+            }
+        });
     }
 
     nextKural(): void {
